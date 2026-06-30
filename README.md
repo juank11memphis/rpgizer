@@ -1,8 +1,8 @@
 # RPGizer
 
-RPGizer is a web app foundation for turning personal goals into RPG-style Adventures. This repository currently contains the initial application scaffold: a Next.js App Router app, Tailwind styling, PostgreSQL/Drizzle tooling, Docker-based local database support, and planning documents for future product work.
+RPGizer is a web app foundation for turning personal goals into RPG-style Adventures. This repository currently contains a Next.js App Router app, Tailwind styling, PostgreSQL/Drizzle tooling, Docker-based local database support, Google Sign-In, auth persistence tables, and planning documents for future product work.
 
-This scaffold intentionally does **not** include Adventure creation, AI/Game Master flows, authentication, deployment setup, or product database tables yet.
+This foundation intentionally does **not** include Adventure creation, AI/Game Master flows, deployment setup, or broader account-management features yet.
 
 ## Prerequisites
 
@@ -24,13 +24,43 @@ This scaffold intentionally does **not** include Adventure creation, AI/Game Mas
    cp .env.example .env.local
    ```
 
-3. Confirm `.env.local` contains the development database URL:
+3. Fill in the local-only values in `.env.local`:
 
    ```env
    DATABASE_URL=postgres://postgres:postgres@localhost:15432/rpgizer
+   AUTH_SECRET=replace-with-a-local-auth-secret
+   GOOGLE_CLIENT_ID=replace-with-your-google-oauth-client-id
+   GOOGLE_CLIENT_SECRET=replace-with-your-google-oauth-client-secret
+   NEXTAUTH_URL=http://localhost:3002
    ```
 
-`DATABASE_URL` is required for Drizzle commands. Keep `.env.local` local-only; do not commit real secrets.
+`DATABASE_URL` is required for Drizzle commands. `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `NEXTAUTH_URL` are required for local Google Sign-In. Keep `.env.local` local-only; do not commit real secrets or Google credentials.
+
+## Google Sign-In local setup
+
+RPGizer uses Google as the only sign-in provider for the MVP. To run it locally:
+
+1. Create an OAuth client for a web application in Google Cloud.
+2. Add this authorized redirect URI for the local Auth.js callback:
+
+   ```text
+   http://localhost:3002/api/auth/callback/google
+   ```
+
+3. Copy the OAuth client ID and client secret into `.env.local`:
+
+   ```env
+   GOOGLE_CLIENT_ID=replace-with-your-google-oauth-client-id
+   GOOGLE_CLIENT_SECRET=replace-with-your-google-oauth-client-secret
+   ```
+
+4. Set `NEXTAUTH_URL` to the local app URL used by the callback:
+
+   ```env
+   NEXTAUTH_URL=http://localhost:3002
+   ```
+
+Generate a local `AUTH_SECRET` value for your machine and store it only in `.env.local`. Do not commit real OAuth credentials, generated secrets, tokens, or private Google project values.
 
 ## Local development
 
@@ -47,7 +77,7 @@ pnpm build
 pnpm start
 ```
 
-The app currently serves a minimal RPGizer-branded landing shell that validates the scaffold and styling setup.
+The app serves the RPGizer landing experience and routes the start-adventure call to Google Sign-In before handing authenticated users to `/adventures/new`.
 
 ## Local PostgreSQL
 
@@ -74,7 +104,7 @@ docker compose ps postgres
 
 Drizzle reads `DATABASE_URL` from the environment, uses `src/db/schema.ts` as the schema entrypoint, and writes migrations under `drizzle/`.
 
-The current schema is intentionally empty for the project scaffold. Future approved persistence features should add product tables and migrations when their scope requires them.
+Google Sign-In persistence uses Drizzle-managed auth tables. Apply migrations to the configured database before validating sign-in persistence.
 
 Generate migrations after schema changes:
 
@@ -88,11 +118,18 @@ Apply generated migrations to the configured database:
 pnpm db:migrate
 ```
 
-For the local Docker database, run Drizzle commands with `.env.local` loaded or with `DATABASE_URL` provided in your shell. Because the scaffold schema is currently empty, `pnpm db:generate` is expected to report no schema changes until an approved persistence feature adds tables. `pnpm db:migrate` is still valid and prepares Drizzle's migration tracking schema/table.
+For the local Docker database, start PostgreSQL first and run Drizzle commands with `.env.local` loaded or with `DATABASE_URL` provided in your shell:
+
+```bash
+docker compose up -d postgres
+DATABASE_URL=postgres://postgres:postgres@localhost:15432/rpgizer pnpm db:migrate
+```
+
+These migrations create the auth persistence tables needed for first-time and returning Google sign-in sessions.
 
 ## Validation commands
 
-Run the scaffold checks individually:
+Run the application checks individually:
 
 ```bash
 pnpm lint
@@ -102,7 +139,7 @@ pnpm build
 
 There is no combined `validate` script yet. Use the explicit sequence above for application validation.
 
-Database-related validation for the current scaffold:
+Database-related validation:
 
 ```bash
 docker compose up -d postgres
