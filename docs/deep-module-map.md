@@ -1,0 +1,257 @@
+# Deep Module Map
+
+## Purpose
+
+This Deep Module Map defines durable implementation boundaries for RPGizer. It guides technical design, feature briefs, and implementation planning by identifying modules with simple outside promises and meaningful hidden complexity.
+
+The map is derived from the Product Vision, Business Domain Model, Capabilities Map, and module-boundary review. It intentionally avoids prescribing folders, services, APIs, database tables, or framework structure.
+
+## Modules
+
+### User Identity
+
+- Suggested module slug: `user-identity`
+- Simple interface / outside promise: Know who the current User is, authenticate them through Google, and enforce that Users only access Adventures they own.
+- Hidden complexity:
+  - Google authentication details.
+  - Session state and current-user resolution.
+  - Sign-in and sign-out lifecycle.
+  - User creation/linking from external identity.
+  - Adventure ownership checks.
+  - Consistent authorization failures.
+- Owns:
+  - User identity and authentication state.
+  - Mapping Google-authenticated people to RPGizer Users.
+  - Ownership enforcement for User-owned Adventures.
+  - The rule that every Adventure belongs to one User.
+- Does not own:
+  - Adventure roadmap content.
+  - Progression rules.
+  - Game Master conversation behavior.
+  - Generic database access for other modules.
+- Key scenarios:
+  - A visitor signs in with Google.
+  - A returning User sees their Adventures.
+  - A User attempts to access an Adventure they do not own.
+- Related modules:
+  - Game Master Assistant needs current-user context for guided conversations.
+  - Adventure Planner generates Adventures for a specific User-owned draft.
+  - Progression Engine applies progress only to User-owned Adventures.
+  - Adventure Experience Presenter prepares only authorized Adventure views.
+- Boundary notes:
+  - This module is intentionally included even though Google auth is external, because RPGizer needs a stable internal promise around current User and Adventure ownership.
+
+### Game Master Assistant
+
+- Suggested module slug: `game-master-assistant`
+- Simple interface / outside promise: Continue the User's guided Adventure conversation, from interview to generation to explanation to chat-based roadmap updates.
+- Hidden complexity:
+  - One-question-at-a-time interview flow.
+  - Conversation continuity and message history.
+  - Context selection for LLM calls.
+  - Prompt construction and response shaping.
+  - Intent detection: interview answer, generate request, explanation request, progress discussion, or roadmap update request.
+  - Readiness assessment before generation.
+  - Safe, non-authoritative handling of high-stakes goals.
+  - Routing generation and update work to Adventure Planner without exposing planning internals.
+- Owns:
+  - The Game Master role as the AI assistant and product guide.
+  - Interview orchestration.
+  - Conversation memory needed to continue the Adventure discussion.
+  - Deciding whether to ask another question or request Adventure generation.
+  - Interpreting user-triggered roadmap update requests.
+  - Explaining the Roadmap in RPG-savvy, grounded language.
+- Does not own:
+  - Final roadmap structure and quality rules.
+  - RPG semantic rules as a reusable system.
+  - Applying progress events, XP, levels, or achievements.
+  - UI presentation models.
+  - User authentication or ownership.
+- Key scenarios:
+  - The User starts a new Adventure and the Game Master asks the first question.
+  - The User answers interview questions until enough context exists.
+  - The Game Master requests a generated Adventure from Adventure Planner.
+  - The User asks why a Boss Fight or Side Quest exists.
+  - The User says a Side Quest is not possible and asks for an alternative.
+- Related modules:
+  - Calls Adventure Planner for generation and targeted roadmap revision.
+  - Uses User Identity for current User and ownership context.
+  - Must respect cross-module Safety & Trust rules.
+  - May use Adventure Experience Presenter output to explain visible roadmap structure.
+- Boundary notes:
+  - The Game Master Assistant orchestrates and converses; it should not assemble the roadmap recipe itself.
+  - Roadmap updates through chat are MVP, but direct manual content editing is not.
+
+### Adventure Planner
+
+- Suggested module slug: `adventure-planner`
+- Simple interface / outside promise: Create or revise a coherent, actionable, RPG-style Adventure Roadmap from clarified User intent.
+- Hidden complexity:
+  - Transforming interview context into Acts, Main Quests, Side Quests, Boss Fights, Skills, Inventory, Achievements, and next actions.
+  - Deciding roadmap shape, phase boundaries, milestone placement, and quest granularity.
+  - Preserving the Goal while making it playable.
+  - Balancing required Main Quests with interesting optional Side Quests.
+  - Designing Boss Fights as meaningful challenge milestones.
+  - Designing Adventure-specific Skills and XP opportunities.
+  - Suggesting practical Inventory Items tied to readiness.
+  - Defining Achievement unlock conditions.
+  - Validating roadmap quality before exposing it.
+  - Producing targeted revisions that preserve larger Adventure coherence.
+- Owns:
+  - Generated Roadmap structure and quality.
+  - The rules that generated RPG elements map to real-world progress.
+  - Quest done conditions.
+  - Side Quest meaningfulness.
+  - Boss Fight milestone quality.
+  - Practical Inventory recommendations.
+  - Generated Skill and Achievement definitions.
+  - Targeted roadmap revision semantics.
+- Does not own:
+  - Conversation flow or prompt memory.
+  - User authentication.
+  - Applying completed progress events.
+  - Presentation/view-model decisions.
+  - Low-level RPG metaphor definitions when those can be delegated to RPG Metaphor System.
+- Key scenarios:
+  - Generate the first Roadmap after the Interview reaches readiness.
+  - Replace one impossible Side Quest while preserving the Act and Goal.
+  - Validate that every Quest has a clear done condition.
+  - Ensure Inventory Items are real-world readiness items rather than random loot.
+- Related modules:
+  - Called by Game Master Assistant.
+  - Uses RPG Metaphor System for coherent RPG semantics and constraints.
+  - Produces Roadmap structures consumed by Progression Engine and Adventure Experience Presenter.
+- Boundary notes:
+  - Adventure Planner owns the plan, not the conversation.
+  - It should hide generation recipe details from callers.
+  - It should not become a generic LLM wrapper.
+
+### RPG Metaphor System
+
+- Suggested module slug: `rpg-metaphor-system`
+- Simple interface / outside promise: Provide coherent RPG semantics, constraints, and flavor guidance so RPGizer feels like a real RPG rather than a productivity app with labels.
+- Hidden complexity:
+  - RPG vocabulary and concept rules.
+  - How Main Quests, Side Quests, Boss Fights, Skills, Inventory, Achievements, XP, levels, and progression should differ.
+  - What makes RPG flavor motivating instead of cringe or confusing.
+  - Intensity and thematic fit for different goal types.
+  - Consistency between generated roadmap structure, progress meaning, and presentation language.
+  - Future variation in genre, theme, tone, or look-and-feel.
+- Owns:
+  - RPG concept semantics.
+  - Constraints for RPG-native naming and framing.
+  - Guidance for how RPG elements should feel and relate.
+  - Reusable rules that keep generated and presented Adventures coherent.
+- Does not own:
+  - The final generated Roadmap.
+  - Skill XP calculation or progression state changes.
+  - Chat orchestration.
+  - UI layout or component decisions.
+  - User identity.
+- Key scenarios:
+  - Adventure Planner asks how to frame a difficult milestone as a Boss Fight.
+  - Adventure Planner asks whether a candidate Side Quest feels meaningful or like filler.
+  - Adventure Experience Presenter asks how to label or group RPG progress concepts consistently.
+  - Game Master Assistant needs RPG-savvy language that stays clear and grounded.
+- Related modules:
+  - Used by Adventure Planner during generation and revision.
+  - Informs Progression Engine's progression meaning without owning state changes.
+  - Informs Adventure Experience Presenter framing without owning UI.
+  - Informs Game Master Assistant voice without owning conversation.
+- Boundary notes:
+  - This module must stay narrow. It owns RPG semantics and constraints, not every RPG-related behavior.
+  - If it becomes a vague “RPG everything” module, responsibilities should move back to Planner, Progression, or Presenter.
+
+### Progression Engine
+
+- Suggested module slug: `progression-engine`
+- Simple interface / outside promise: Apply User progress events and update Adventure progress consistently.
+- Hidden complexity:
+  - Quest completion effects.
+  - Boss Fight completion effects.
+  - Inventory acquisition effects.
+  - Skill XP awarding.
+  - Skill level-up thresholds and outcomes.
+  - Achievement unlock checks.
+  - Adventure state transitions.
+  - Progress summaries and momentum signals.
+  - Preventing invalid or duplicate progress effects.
+- Owns:
+  - Manual Quest and Boss completion effects.
+  - Manual Inventory acquisition effects.
+  - Skill XP and level changes.
+  - Achievement unlocks.
+  - Adventure lifecycle transitions driven by progress.
+  - The core momentum event: Quest Completed.
+- Does not own:
+  - Roadmap generation or content edits.
+  - Game Master conversation.
+  - Authentication or ownership.
+  - RPG semantic definitions except as needed to apply progression rules.
+  - UI presentation decisions.
+- Key scenarios:
+  - The User completes a Side Quest and gains XP in linked Skills.
+  - The User completes a Boss Fight and advances a major milestone.
+  - The User acquires an Inventory Item and unlocks a readiness Achievement.
+  - A Skill crosses a level threshold and levels up.
+  - The final Boss Fight is completed and the Adventure becomes Completed.
+- Related modules:
+  - Consumes Roadmap structures created by Adventure Planner.
+  - May consult RPG Metaphor System for progression meaning.
+  - Outputs progress state used by Adventure Experience Presenter.
+  - Requires User Identity ownership checks before applying changes.
+- Boundary notes:
+  - Achievement unlocking stays inside this module for MVP.
+  - The module should let callers say “complete this quest” or “acquire this item” without knowing cascading XP, level, achievement, and state rules.
+
+### Adventure Experience Presenter
+
+- Suggested module slug: `adventure-experience-presenter`
+- Simple interface / outside promise: Prepare an Adventure for RPG-native display so the User can understand the path, choose a next action, and feel momentum.
+- Hidden complexity:
+  - Organizing Acts, Quests, Boss Fights, Skills, Inventory, Achievements, and progress into a playable experience.
+  - Choosing what to emphasize as the next useful action.
+  - Presenting required vs optional progress clearly.
+  - Making Boss Fights feel special.
+  - Summarizing Skill levels and XP meaning.
+  - Showing Inventory readiness without making it feel like a shopping list.
+  - Handling Drafting, Generated, In Progress, Completed, and Archived states.
+  - Supporting future theme/look-and-feel variations by Adventure type.
+  - Avoiding boring productivity-dashboard patterns.
+- Owns:
+  - Adventure-facing presentation models.
+  - RPG-native grouping and emphasis for display.
+  - Next-action presentation.
+  - View-ready summaries of progress, Skills, Inventory, Boss Fights, and Achievements.
+  - Presentation rules for different Adventure states.
+- Does not own:
+  - Actual UI component implementation choices.
+  - Roadmap generation.
+  - Progress state mutation.
+  - Game Master conversation.
+  - Authentication.
+- Key scenarios:
+  - The generated Adventure lands on the Adventure Detail Page.
+  - The User returns to an In Progress Adventure and needs to know what to do next.
+  - The User views Skills, Inventory, Achievements, and Boss Fights as an RPG experience.
+  - A future Adventure theme changes the look and feel without changing core domain rules.
+- Related modules:
+  - Consumes Adventure and progress state from Adventure Planner and Progression Engine outputs.
+  - Uses RPG Metaphor System guidance for coherent RPG framing.
+  - Uses User Identity indirectly to ensure only authorized Adventures are presented.
+  - May provide context that Game Master Assistant can reference when explaining the visible Adventure.
+- Boundary notes:
+  - This is a deep module because presentation is a major product differentiator, not a thin screen wrapper.
+  - It should hide view-model and experience-shaping decisions from feature code.
+
+## Cross-Module Rules
+
+- **User ownership applies everywhere**: Any module that reads, presents, generates for, updates, or progresses an Adventure must operate within the current User's ownership boundary.
+- **No generic persistence module**: Each module owns its own persistence needs internally. Database details should not leak across module interfaces, and there should not be a central “repository module” for all Adventure data.
+- **Safety & Trust constrains AI behavior**: Game Master Assistant and Adventure Planner must keep high-stakes guidance structural, safe, and non-authoritative.
+- **RPG flavor must serve actionability**: RPG Metaphor System, Adventure Planner, Progression Engine, and Adventure Experience Presenter must keep RPG concepts tied to real-world progress.
+- **Roadmap content changes go through the Game Master Assistant**: MVP does not support direct manual content editing. User-requested content changes are interpreted by Game Master Assistant and applied through targeted Adventure Planner revisions.
+- **Progress actions are direct and manual**: Quest completion, Boss Fight completion, and Inventory acquisition are manually triggered by the User and applied by Progression Engine.
+- **Generated roadmap quality is owned before presentation**: Adventure Planner should not expose a Roadmap that lacks clear done conditions, meaningful Side Quests, practical Inventory, or real-world grounding.
+- **Presentation is not mutation**: Adventure Experience Presenter prepares view-ready experience models but does not change Adventure state.
+- **External integrations stay behind module promises**: Google auth and LLM provider details should be hidden behind User Identity and Game Master Assistant / Adventure Planner boundaries.
