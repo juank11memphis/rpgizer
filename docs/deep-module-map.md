@@ -8,6 +8,45 @@ The map is derived from the Product Vision, Business Domain Model, Capabilities 
 
 ## Modules
 
+### Public Product Introduction
+
+- Suggested module slug: `public-product-introduction`
+- Simple interface / outside promise: Prepare the public landing experience so Visitors understand RPGizer, feel invited by the RPG-native promise, and can choose to start an Adventure.
+- Hidden complexity:
+  - Translating RPGizer's product promise into clear Visitor-facing hierarchy.
+  - Choosing which RPG concepts to preview before an Adventure exists.
+  - Keeping public RPG flavor exciting, mature, and non-childish.
+  - Composing example goal-to-Adventure transformations that explain value without testimonials or pricing.
+  - Balancing the primary start CTA with lower-commitment education such as “See How It Works.”
+  - Avoiding guaranteed-success, expert-advice, or overhyped marketing claims.
+  - Preserving a clean handoff from public introduction into Adventure Creation / authentication as needed.
+- Owns:
+  - Visitor-facing product introduction semantics.
+  - Landing-page content structure and CTA intent.
+  - Public examples that explain RPGizer's playable-goal promise.
+  - Public-facing RPG tone boundaries before an Adventure exists.
+  - The handoff intent from Visitor interest to starting an Adventure.
+- Does not own:
+  - Authenticated User identity or Google authentication mechanics.
+  - The Adventure Creation flow after a Visitor starts.
+  - Generated Roadmap content.
+  - Presentation of real User-owned Adventures.
+  - RPG semantic definitions as a reusable system.
+  - UI component rendering or framework layout implementation.
+- Key scenarios:
+  - A Visitor lands on RPGizer and needs to understand the product in seconds.
+  - A Visitor uses “See How It Works” to learn the goal-to-Adventure flow before starting.
+  - A Visitor sees a fictional Adventure Log preview that explains quests, boss fights, skills, and inventory without requiring an existing Adventure.
+  - A Visitor chooses “Start a New Adventure” and is routed toward Adventure Creation.
+- Related modules:
+  - Uses RPG Metaphor System for public RPG language and tone guardrails.
+  - Hands interested Visitors toward User Identity and Adventure Creation boundaries.
+  - Must not depend on Adventure Experience Presenter because no real Adventure exists yet.
+- Boundary notes:
+  - This module owns public introduction, not the core product loop.
+  - It should stay narrow until richer marketing pages, pricing, social proof, or content marketing become real product needs.
+  - It may use fictional examples, but those examples must not become generated Adventure content.
+
 ### User Identity
 
 - Suggested module slug: `user-identity`
@@ -152,11 +191,13 @@ The map is derived from the Product Vision, Business Domain Model, Capabilities 
   - Adventure Planner asks how to frame a difficult milestone as a Boss Fight.
   - Adventure Planner asks whether a candidate Side Quest feels meaningful or like filler.
   - Adventure Experience Presenter asks how to label or group RPG progress concepts consistently.
+  - Public Product Introduction asks how to preview RPG concepts for Visitors without making the product feel childish or confusing.
   - Game Master Assistant needs RPG-savvy language that stays clear and grounded.
 - Related modules:
   - Used by Adventure Planner during generation and revision.
   - Informs Progression Engine's progression meaning without owning state changes.
   - Informs Adventure Experience Presenter framing without owning UI.
+  - Informs Public Product Introduction's public RPG tone without owning landing-page composition.
   - Informs Game Master Assistant voice without owning conversation.
 - Boundary notes:
   - This module must stay narrow. It owns RPG semantics and constraints, not every RPG-related behavior.
@@ -226,6 +267,7 @@ The map is derived from the Product Vision, Business Domain Model, Capabilities 
   - Presentation rules for different Adventure states.
 - Does not own:
   - Actual UI component implementation choices.
+  - Public landing-page introduction before an Adventure exists.
   - Roadmap generation.
   - Progress state mutation.
   - Game Master conversation.
@@ -243,15 +285,18 @@ The map is derived from the Product Vision, Business Domain Model, Capabilities 
 - Boundary notes:
   - This is a deep module because presentation is a major product differentiator, not a thin screen wrapper.
   - It should hide view-model and experience-shaping decisions from feature code.
+  - If it changes roadmap content, that belongs to Adventure Planner; if it reframes existing content for display and action, it belongs here.
 
 ## Cross-Module Rules
 
-- **User ownership applies everywhere**: Any module that reads, presents, generates for, updates, or progresses an Adventure must operate within the current User's ownership boundary.
+- **Visitor and User boundaries are different**: Public Product Introduction serves Visitors before authentication or Adventure ownership; modules that read, present, generate for, update, or progress real Adventures must operate within the current User's ownership boundary.
+- **User ownership applies everywhere after authentication**: Any module that reads, presents, generates for, updates, or progresses a real Adventure must operate within the current User's ownership boundary.
 - **No generic persistence module**: Each module owns its own persistence needs internally. Database details should not leak across module interfaces, and there should not be a central “repository module” for all Adventure data.
 - **Safety & Trust constrains AI behavior**: Game Master Assistant and Adventure Planner must keep high-stakes guidance structural, safe, and non-authoritative.
-- **RPG flavor must serve actionability**: RPG Metaphor System, Adventure Planner, Progression Engine, and Adventure Experience Presenter must keep RPG concepts tied to real-world progress.
+- **RPG flavor must serve actionability**: RPG Metaphor System, Public Product Introduction, Adventure Planner, Progression Engine, and Adventure Experience Presenter must keep RPG concepts tied to real-world progress.
 - **Roadmap content changes go through the Game Master Assistant**: MVP does not support direct manual content editing. User-requested content changes are interpreted by Game Master Assistant and applied through targeted Adventure Planner revisions.
 - **Progress actions are direct and manual**: Quest completion, Boss Fight completion, and Inventory acquisition are manually triggered by the User and applied by Progression Engine.
 - **Generated roadmap quality is owned before presentation**: Adventure Planner should not expose a Roadmap that lacks clear done conditions, meaningful Side Quests, practical Inventory, or real-world grounding.
+- **Public introduction is not Adventure presentation**: Public Product Introduction can show fictional examples and explain concepts, but real User-owned Adventure display belongs to Adventure Experience Presenter.
 - **Presentation is not mutation**: Adventure Experience Presenter prepares view-ready experience models but does not change Adventure state.
 - **External integrations stay behind module promises**: Google auth and LLM provider details should be hidden behind User Identity and Game Master Assistant / Adventure Planner boundaries.

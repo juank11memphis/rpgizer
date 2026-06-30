@@ -12,6 +12,7 @@ The business domain is not generic task management. It is the transformation of 
 
 In scope for the business model:
 
+- Visitors who encounter RPGizer through the public product introduction before signing in or starting an Adventure.
 - Google-authenticated Users who own Adventures.
 - A Game Master that interviews users, generates Adventures, explains the roadmap, and helps revise it through user-triggered conversation.
 - Adventures that move from interview to generated roadmap to active progress.
@@ -21,6 +22,7 @@ In scope for the business model:
 - Skill XP and leveling driven primarily by Quest and Boss completion.
 - Achievements unlocked automatically from meaningful progress.
 - Targeted roadmap updates through the Game Master.
+- A public entry point that explains the RPGizer promise, shows the RPG-native value, and invites Visitors to start an Adventure.
 
 Out of scope for the initial domain model:
 
@@ -35,6 +37,7 @@ Out of scope for the initial domain model:
 
 | Term | Definition |
 | --- | --- |
+| Visitor | A person evaluating RPGizer through the public landing experience before they become an authenticated User or start an Adventure. |
 | User | A Google-authenticated person who owns and progresses through Adventures. |
 | Goal | The real-life outcome the User wants to achieve. A Goal is the raw ambition before RPGizer turns it into an Adventure. |
 | Adventure | The playable container for a Goal. It includes the interview context, generated roadmap, progression, edits, Skills, Inventory, Achievements, and current state. |
@@ -55,6 +58,7 @@ Out of scope for the initial domain model:
 | Achievement | An automatically unlocked recognition of meaningful progress patterns, such as completing key quests, acquiring important inventory, defeating a Boss Fight, or leveling Skills. |
 | Adventure Detail Page | The place where the User reviews, follows, edits, and discusses an Adventure after generation. |
 | Roadmap Update | A targeted change to an Adventure made by the Game Master after the User asks for help adjusting a specific part. |
+| Landing Page | The public entry point that introduces RPGizer, communicates the playable-goal promise, and invites a Visitor to start an Adventure. |
 
 ### Synonym Clarification
 
@@ -63,6 +67,7 @@ Out of scope for the initial domain model:
 - “Quest” may refer to Main Quests and Side Quests collectively. Boss Fights are special milestone challenges and should not be treated as ordinary tasks.
 - “Inventory” means real-world readiness items, not random fantasy loot.
 - “Game Master” is the AI assistant role, not a human coach or expert advisor.
+- “Visitor” is a pre-auth/public-site role; “User” is an authenticated Adventure owner.
 
 ## Bounded Contexts & Subdomains
 
@@ -76,6 +81,7 @@ Core subdomains:
 
 Supporting subdomains:
 
+- **Public Product Introduction**: public-facing product explanation that helps Visitors understand the RPGizer promise and decide to start an Adventure.
 - **User Identity**: Google-authenticated Users who own Adventures.
 - **Adventure Presentation**: Adventure Detail Page concepts that make the generated roadmap reviewable and actionable.
 - **Safety & Trust**: boundaries around high-stakes goals and AI-generated guidance.
@@ -100,6 +106,7 @@ flowchart TB
     end
 
     subgraph Supporting["Supporting Subdomains"]
+      PublicIntro["Public Product Introduction"]
       Identity["User Identity"]
       Presentation["Adventure Presentation"]
       Trust["Safety & Trust"]
@@ -107,6 +114,7 @@ flowchart TB
   end
 
   subgraph ProjectOwned["Project-Owned Outputs"]
+    Landing["Landing Page"]
     Adventure["Adventure"]
     Roadmap["RPG Roadmap"]
     Progress["Progress State"]
@@ -118,6 +126,8 @@ flowchart TB
     Expert["Expert Advice Domains"]
   end
 
+  PublicIntro --> Landing
+  PublicIntro --> Creation
   Identity --> Creation
   Creation --> Adventure
   Creation --> Roadmap
@@ -136,6 +146,8 @@ flowchart TB
 
 ### Conceptual Entities / Objects
 
+- **Visitor** can encounter the Landing Page before becoming a User or starting an Adventure.
+- **Landing Page** presents RPGizer's promise and directs a Visitor toward starting an Adventure.
 - **User** owns zero or more Adventures.
 - **Adventure** belongs to one User and represents one Goal.
 - **Adventure** has one current lifecycle state.
@@ -151,6 +163,8 @@ flowchart TB
 
 ```mermaid
 flowchart TB
+  Visitor["Visitor"] -->|views| Landing["Landing Page"]
+  Landing -->|invites start| Adventure["Adventure"]
   User["User"] -->|owns| Adventure["Adventure"]
   Adventure -->|is based on| Goal["Goal"]
   Adventure -->|clarified by| Interview["Interview"]
@@ -178,6 +192,8 @@ flowchart TB
 
 ### Attributes / Characteristics
 
+- Visitor: public-site role, interest in the RPGizer promise, intent to learn or start.
+- Landing Page: public promise, RPG-native value explanation, examples, trust framing, and calls to start an Adventure.
 - Adventure: title, Goal, current state, generated tone/theme, Acts, progress summary, Game Master context.
 - Interview: ordered questions and answers, readiness status, missing context, safety concerns if any.
 - Quest: title, description, type, Act, completion state, concrete done condition, linked Skills, optional Inventory references.
@@ -188,6 +204,8 @@ flowchart TB
 
 ### Relationships & Cardinality
 
+- One Visitor may become one User by authenticating or starting the Adventure flow.
+- One Landing Page can introduce many Visitors to RPGizer.
 - One User can have many Adventures.
 - One Adventure has one Goal, but that Goal may be refined during the Interview or later Game Master conversation.
 - One Adventure has many Acts once generated.
@@ -201,6 +219,8 @@ flowchart TB
 
 ### Invariants
 
+- The Landing Page must invite action without pretending that a Visitor has already created an Adventure.
+- Public RPG flavor must make RPGizer feel exciting while keeping the product promise clear.
 - Every Adventure must belong to a User.
 - Every Adventure must be tied to a real-life Goal.
 - The Game Master must ask one focused Interview question at a time.
@@ -222,6 +242,7 @@ flowchart TB
 
 ### Policies
 
+- When a Visitor chooses to start an Adventure, the product should move them into the Adventure Creation flow.
 - When the User starts an Adventure, the Game Master begins an Interview rather than generating immediately.
 - When the Interview lacks enough context, the Game Master asks another focused question.
 - When the readiness threshold is met, the Game Master generates the Adventure Roadmap.
@@ -247,6 +268,7 @@ Adventure states:
 
 ### Domain Events
 
+- Visitor Invited to Start Adventure
 - User Authenticated
 - Adventure Started
 - Interview Question Asked
@@ -270,6 +292,7 @@ The most important momentum event is **Quest Completed**. It proves RPGizer is h
 
 ### Assumptions
 
+- MVP includes a public landing entry point before authentication or Adventure ownership.
 - MVP uses Google auth.
 - MVP Adventures are mostly self-contained.
 - A cross-adventure character/player profile is future evolution.

@@ -4,7 +4,7 @@
 
 This Capabilities Map translates RPGizer's Product Vision and Business Domain Model into business/product abilities. It describes what the product must be able to do, organized by subdomain, without prescribing implementation structure.
 
-RPGizer's core capability is turning a real-life goal into a playable Adventure that helps the User take action through RPG-style progression.
+RPGizer's core capability is turning a real-life goal into a playable Adventure that helps the User take action through RPG-style progression. Public product introduction supports that loop by helping Visitors understand the promise and choose to start.
 
 ## Capability Map
 
@@ -43,6 +43,14 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 
 ### Supporting Subdomains
 
+#### Public Product Introduction
+
+- **Introduce the Playable-Goal Promise**: Help a Visitor quickly understand that RPGizer turns real-life goals into playable Adventures, not generic task lists.
+- **Create RPG-Native Excitement**: Use old-school RPG energy, language, and examples to make the product feel adventurous before a Visitor signs in or starts.
+- **Explain the Product Value Clearly**: Show how RPGizer reduces overwhelm by turning vague ambition into focused questions, quests, boss fights, skills, inventory, achievements, and next actions.
+- **Build Start-Enough Trust**: Communicate that RPGizer creates a motivating first path while preserving user agency and avoiding guaranteed-outcome or expert-advice claims.
+- **Invite Adventure Creation**: Give Visitors a strong primary call to action to start a new Adventure and a softer path to see how the product works before committing.
+
 #### User Identity
 
 - **Authenticate with Google**: Let Users sign in through Google for the MVP.
@@ -76,18 +84,21 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 
 ## Capability Dependencies / Sequencing
 
-1. **Authenticate with Google** enables Users to own and return to Adventures.
-2. **Start a New Adventure** begins the core product loop.
-3. **Capture Goal Context One Question at a Time** must happen before generation.
-4. **Assess Adventure Readiness** determines whether to continue the Interview or generate the Roadmap.
-5. **Generate a Playable Roadmap** creates the first usable Adventure Detail Page.
-6. **Adventure Presentation** must make the generated structure feel RPG-native and actionable.
-7. **Adventure Progression** capabilities let the User complete Quests, acquire Inventory, gain XP, level Skills, unlock Achievements, and build momentum.
-8. **Game Master Assistant roadmap updates** let the User adapt the Adventure through chat without direct manual content editing.
-9. **Safety & Trust** constrains all generation and update capabilities, especially for high-stakes Goals.
+1. **Public Product Introduction** helps Visitors understand RPGizer and choose whether to start.
+2. **Invite Adventure Creation** routes interested Visitors toward **Start a New Adventure**, with **See How It Works** as a lower-commitment path.
+3. **Authenticate with Google** enables Users to own and return to Adventures.
+4. **Start a New Adventure** begins the core product loop.
+5. **Capture Goal Context One Question at a Time** must happen before generation.
+6. **Assess Adventure Readiness** determines whether to continue the Interview or generate the Roadmap.
+7. **Generate a Playable Roadmap** creates the first usable Adventure Detail Page.
+8. **Adventure Presentation** must make the generated structure feel RPG-native and actionable.
+9. **Adventure Progression** capabilities let the User complete Quests, acquire Inventory, gain XP, level Skills, unlock Achievements, and build momentum.
+10. **Game Master Assistant roadmap updates** let the User adapt the Adventure through chat without direct manual content editing.
+11. **Safety & Trust** constrains public claims, generation, and update capabilities, especially for high-stakes Goals.
 
 ## Known Gaps / Evolution Notes
 
+- Public product introduction should stay focused on helping Visitors start; richer marketing pages, pricing, community proof, or content marketing can evolve later.
 - Cross-adventure character/player identity is future evolution, not MVP.
 - Manual roadmap content editing is not MVP; content changes happen through the Game Master Assistant.
 - Whole-roadmap regeneration is not MVP; updates should be targeted through chat.

@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "RPGizer",
-  description: "A Next.js foundation for the RPGizer web app.",
+  title: "RPGizer — Turn Goals into Adventures",
+  description:
+    "Turn real-life goals into playable adventures with quests, boss fights, skills, inventory, achievements, and clear next actions.",
 };
 
 export default function RootLayout({
@@ -13,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
 }
