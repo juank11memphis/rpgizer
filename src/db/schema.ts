@@ -1,10 +1,13 @@
 import {
+  check,
   integer,
   pgTable,
   primaryKey,
   text,
   timestamp,
+  unique,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: text("id")
@@ -55,5 +58,56 @@ export const verificationTokens = pgTable(
   },
   (verificationToken) => [
     primaryKey({ columns: [verificationToken.identifier, verificationToken.token] }),
+  ],
+);
+
+export const adventures = pgTable(
+  "adventures",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    goalText: text("goalText").notNull(),
+    title: text("title"),
+    state: text("state").notNull().default("drafting"),
+    readinessStatus: text("readinessStatus").notNull().default("not_ready"),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (adventure) => [
+    check("adventures_state_check", sql`${adventure.state} in ('drafting')`),
+    check(
+      "adventures_readiness_status_check",
+      sql`${adventure.readinessStatus} in ('not_ready', 'ready_to_generate')`,
+    ),
+  ],
+);
+
+export const adventureInterviewMessages = pgTable(
+  "adventureInterviewMessages",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (message) => [
+    check(
+      "adventure_interview_messages_role_check",
+      sql`${message.role} in ('user', 'game_master')`,
+    ),
+    unique("adventure_interview_messages_adventure_sequence_unique").on(
+      message.adventureId,
+      message.sequenceNumber,
+    ),
   ],
 );
