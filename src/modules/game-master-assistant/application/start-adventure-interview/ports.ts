@@ -51,3 +51,6 @@ export type StartAdventureInterviewRepository = {
 export type GameMasterInterviewer = {
   askNextQuestion(input: InterviewTurnRequest): Promise<InterviewTurnResult>;
 };
+
+export { GameMasterInterviewerError } from "./provider-error";
+export type { GameMasterInterviewerErrorCode } from "./provider-error";

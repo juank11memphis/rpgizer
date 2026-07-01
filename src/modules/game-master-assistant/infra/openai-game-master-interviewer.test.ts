@@ -1,0 +1,268 @@
+import { describe, expect, it, vi, type Mock } from "vitest";
+import type { Response, ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
+
+import { GameMasterInterviewerError } from "../application/start-adventure-interview/provider-error";
+import type { InterviewTurnRequest } from "../application/start-adventure-interview/ports";
+import { OpenAIGameMasterInterviewer } from "./openai-game-master-interviewer";
+
+type CreateResponseMock = Mock<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>;
+
+type MockOpenAIClient = {
+  responses: {
+    create: CreateResponseMock;
+  };
+};
+
+const validStructuredOutput = {
+  messageToUser: "A fine quest. What does success look like in the real world?",
+  readinessStatus: "not_ready",
+  coveredSignals: {
+    motivation: true,
+    successDefinition: false,
+    currentStage: false,
+    pastFriction: false,
+    constraints: false,
+    existingInventory: false,
+    likelyMissingResources: false,
+    safetyBoundary: true,
+  },
+  summaryDelta: "The User wants to become a chef because cooking feels creative.",
+};
+
+describe("OpenAIGameMasterInterviewer", () => {
+  it("calls OpenAI Responses with the Markdown prompt as instructions and returns RPGizer-owned data", async () => {
+    const client = createMockClient(
+      responseWithOutput(JSON.stringify(validStructuredOutput)),
+    );
+    const interviewer = createInterviewer(client);
+
+    const result = await interviewer.askNextQuestion(baseRequest());
+
+    expect(result).toEqual({
+      messageToUser: "A fine quest. What does success look like in the real world?",
+      readinessStatus: "not_ready",
+      coveredSignals: ["motivation", "safetyBoundary"],
+      summaryDelta: "The User wants to become a chef because cooking feels creative.",
+    });
+
+    expect(client.responses.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "gpt-5.5",
+        instructions: "Prompt instructions",
+        max_output_tokens: 800,
+        store: false,
+        safety_identifier: "user-1",
+      }),
+    );
+    const request = client.responses.create.mock.calls[0]?.[0];
+    expect(request?.text?.format).toMatchObject({
+      type: "json_schema",
+      name: "rpgizer_interview_turn_result",
+      strict: true,
+    });
+    expect(request?.input).toEqual([
+      {
+        role: "user",
+        content: JSON.stringify({
+          adventureId: "adventure-1",
+          goalText: "Become a chef",
+          readinessStatus: "not_ready",
+        }),
+      },
+      { role: "user", content: "Become a chef" },
+      { role: "assistant", content: "What is your current cooking level?" },
+      { role: "user", content: "I can cook eggs and pasta." },
+    ]);
+  });
+
+  it("normalizes a blank summary delta to null", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          summaryDelta: "   ",
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).resolves.toMatchObject({
+      summaryDelta: null,
+    });
+  });
+
+  it("translates prompt loading failure into a stable provider request failure", async () => {
+    const client = createMockClient(
+      responseWithOutput(JSON.stringify(validStructuredOutput)),
+    );
+    const interviewer = new OpenAIGameMasterInterviewer({
+      client,
+      config: { apiKey: "sk-test", model: "gpt-5.5" },
+      promptPath: "/tmp/rpgizer-missing-game-master-prompt.md",
+    });
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_request_failed",
+    });
+    expect(client.responses.create).not.toHaveBeenCalled();
+  });
+
+  it("translates API rejection into a stable provider request failure", async () => {
+    const client = createMockClient(Promise.reject(new Error("401 raw provider detail")));
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_request_failed",
+      message: "OpenAI Game Master interviewer request failed.",
+    });
+  });
+
+  it("rejects missing messageToUser before trusting provider output", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          messageToUser: " ",
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("rejects invalid readiness status", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          readinessStatus: "almost_ready",
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("rejects malformed covered signals", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          coveredSignals: {
+            ...validStructuredOutput.coveredSignals,
+            motivation: "yes",
+          },
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("rejects invalid summary delta", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          summaryDelta: 123,
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("rejects refused or incomplete output", async () => {
+    const refusedClient = createMockClient({
+      ...responseWithOutput(""),
+      output: [
+        {
+          type: "message",
+          content: [{ type: "refusal", refusal: "I cannot help with that." }],
+        },
+      ],
+    } as Response);
+    const incompleteClient = createMockClient({
+      ...responseWithOutput(JSON.stringify(validStructuredOutput)),
+      status: "incomplete",
+    } as Response);
+
+    await expect(createInterviewer(refusedClient).askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+    await expect(createInterviewer(incompleteClient).askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("surfaces missing configuration as a stable configuration error", () => {
+    expect(() => new OpenAIGameMasterInterviewer()).toThrow(GameMasterInterviewerError);
+  });
+});
+
+function createInterviewer(client: MockOpenAIClient): OpenAIGameMasterInterviewer {
+  return new OpenAIGameMasterInterviewer({
+    client,
+    config: { apiKey: "sk-test", model: "gpt-5.5" },
+    instructions: "Prompt instructions",
+  });
+}
+
+function createMockClient(response: Response | Promise<Response>): MockOpenAIClient {
+  return {
+    responses: {
+      create: vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>().mockReturnValue(
+        response instanceof Promise ? response : Promise.resolve(response),
+      ),
+    },
+  };
+}
+
+function responseWithOutput(outputText: string): Response {
+  return {
+    status: "completed",
+    output_text: outputText,
+    output: [],
+  } as unknown as Response;
+}
+
+function baseRequest(): InterviewTurnRequest {
+  return {
+    userId: "user-1",
+    adventureId: "adventure-1",
+    goalText: "Become a chef",
+    readinessStatus: "not_ready",
+    transcript: [
+      message("message-1", "user", "Become a chef", 1),
+      message("message-2", "game_master", "What is your current cooking level?", 2),
+      message("message-3", "user", "I can cook eggs and pasta.", 3),
+    ],
+  };
+}
+
+function message(
+  id: string,
+  role: "user" | "game_master",
+  content: string,
+  sequenceNumber: number,
+) {
+  return {
+    id,
+    role,
+    content,
+    sequenceNumber,
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  };
+}
