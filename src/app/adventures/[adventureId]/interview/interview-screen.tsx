@@ -1,17 +1,100 @@
+"use client";
+
 import Link from "next/link";
+import { useState, useTransition } from "react";
 
 import type { AdventureInterview } from "@/modules/game-master-assistant/application/get-adventure-interview/output";
+import type { InterviewMessage } from "@/modules/game-master-assistant/domain/interview-message";
 
 import { AnswerComposer } from "./answer-composer";
+import {
+  initialInterviewAnswerFormState,
+  type InterviewAnswerFormState,
+  type SubmitInterviewAnswerAction,
+} from "./actions-core";
+import { submitInterviewAnswerAction } from "./actions";
 import { InterviewTranscript } from "./interview-transcript";
 import { deriveInterviewDraftTitle } from "./interview-title";
 
 type InterviewScreenProps = {
   interview: AdventureInterview;
+  submitAnswer?: SubmitInterviewAnswerAction;
+  initialSubmissionState?: InterviewAnswerFormState;
 };
 
-export function InterviewScreen({ interview }: InterviewScreenProps) {
+type SaveStatus = "saved" | "saving" | "not_saved";
+
+export function InterviewScreen({
+  interview,
+  submitAnswer = submitInterviewAnswerAction,
+  initialSubmissionState = initialInterviewAnswerFormState,
+}: InterviewScreenProps) {
   const draftTitle = deriveInterviewDraftTitle(interview.draft.goalText);
+  const [isPending, startTransition] = useTransition();
+  const [answerText, setAnswerText] = useState(initialSubmissionState.answerText);
+  const [submissionState, setSubmissionState] = useState(initialSubmissionState);
+  const [transcript, setTranscript] = useState<InterviewMessage[]>(
+    initialSubmissionState.transcript ?? interview.transcript,
+  );
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>(() =>
+    initialSubmissionState.status === "recoverable_failure" ? "not_saved" : "saved",
+  );
+
+  const submitForm = (input: {
+    answerText?: string;
+    retryUserMessageId?: string;
+  }) => {
+    if (isPending) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("adventureId", interview.draft.id);
+
+    if (input.answerText !== undefined) {
+      formData.set("answerText", input.answerText);
+    }
+
+    if (input.retryUserMessageId !== undefined) {
+      formData.set("retryUserMessageId", input.retryUserMessageId);
+    }
+
+    setSaveStatus("saving");
+    startTransition(async () => {
+      const nextState = await submitAnswer(submissionState, formData);
+      setSubmissionState(nextState);
+
+      if (nextState.transcript) {
+        setTranscript(nextState.transcript);
+      }
+
+      if (nextState.status === "success") {
+        setAnswerText("");
+        setSaveStatus("saved");
+        return;
+      }
+
+      if (nextState.status === "recoverable_failure") {
+        setAnswerText(nextState.answerText);
+        setSaveStatus("not_saved");
+        return;
+      }
+
+      setSaveStatus("saved");
+    });
+  };
+
+  const handleSubmit = () => {
+    submitForm({ answerText });
+  };
+
+  const handleRetry = () => {
+    if (!submissionState.retryUserMessageId) {
+      return;
+    }
+
+    submitForm({ retryUserMessageId: submissionState.retryUserMessageId });
+  };
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#07030d] text-stone-100">
@@ -28,8 +111,11 @@ export function InterviewScreen({ interview }: InterviewScreenProps) {
           >
             RPGizer
           </Link>
-          <span className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-200">
-            Saved
+          <span
+            className="text-sm font-bold uppercase tracking-[0.18em] text-emerald-200"
+            aria-live="polite"
+          >
+            {saveStatusLabel(saveStatus)}
           </span>
         </header>
 
@@ -45,12 +131,33 @@ export function InterviewScreen({ interview }: InterviewScreenProps) {
               Continue Adventure draft interview
             </h1>
             <div className="mt-7 space-y-8">
-              <InterviewTranscript transcript={interview.transcript} />
-              <AnswerComposer />
+              <InterviewTranscript transcript={transcript} />
+              <AnswerComposer
+                answerText={answerText}
+                fieldError={submissionState.fieldError}
+                formError={submissionState.formError}
+                isPending={isPending}
+                canRetry={Boolean(submissionState.retryUserMessageId)}
+                onAnswerTextChange={setAnswerText}
+                onSubmit={handleSubmit}
+                onRetry={handleRetry}
+              />
             </div>
           </section>
         </div>
       </div>
     </main>
   );
+}
+
+function saveStatusLabel(status: SaveStatus): string {
+  if (status === "saving") {
+    return "Saving…";
+  }
+
+  if (status === "not_saved") {
+    return "Not saved";
+  }
+
+  return "Saved";
 }

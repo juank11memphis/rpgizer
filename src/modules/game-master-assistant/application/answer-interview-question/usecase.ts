@@ -1,5 +1,9 @@
 import { normalizeRequiredInterviewText } from "../../domain/interview-message";
-import { normalizeInterviewProviderFailure } from "../start-adventure-interview/provider-error";
+import type { InterviewMessage } from "../../domain/interview-message";
+import {
+  InterviewProviderFailure,
+  normalizeInterviewProviderFailure,
+} from "../start-adventure-interview/provider-error";
 import type { AnswerInterviewQuestionInput } from "./input";
 import type { AnswerInterviewQuestionOutput } from "./output";
 import type {
@@ -16,7 +20,10 @@ export async function answerInterviewQuestion(
   input: AnswerInterviewQuestionInput,
   dependencies: AnswerInterviewQuestionDependencies,
 ): Promise<AnswerInterviewQuestionOutput> {
-  const answerText = normalizeRequiredInterviewText("Answer", input.answerText);
+  const retryUserMessageId = readRetryUserMessageId(input);
+  const answerText = retryUserMessageId
+    ? null
+    : normalizeRequiredInterviewText("Answer", readAnswerText(input));
   const repository = dependencies.adventureDraftRepository;
 
   const existingInterview = await repository.getDraftWithTranscript({
@@ -28,13 +35,19 @@ export async function answerInterviewQuestion(
     throw new Error("Adventure draft was not found.");
   }
 
-  const userMessage = await repository.appendInterviewMessage({
-    userId: input.userId,
-    adventureId: input.adventureId,
-    role: "user",
-    content: answerText,
-  });
-  const transcriptWithAnswer = [...existingInterview.transcript, userMessage];
+  const userMessage =
+    retryUserMessageId
+      ? findRetryUserMessage(existingInterview.transcript, retryUserMessageId)
+      : await repository.appendInterviewMessage({
+          userId: input.userId,
+          adventureId: input.adventureId,
+          role: "user",
+          content: answerText ?? "",
+        });
+  const transcriptWithAnswer =
+    retryUserMessageId
+      ? existingInterview.transcript
+      : [...existingInterview.transcript, userMessage];
 
   const interviewerResult = await askGameMasterInterviewer(() =>
     dependencies.gameMasterInterviewer.askNextQuestion({
@@ -45,6 +58,17 @@ export async function answerInterviewQuestion(
       transcript: transcriptWithAnswer,
     }),
   );
+
+  if (interviewerResult instanceof InterviewProviderFailure) {
+    return {
+      status: "recoverable_failure",
+      draft: existingInterview.draft,
+      transcript: transcriptWithAnswer,
+      preservedUserMessage: userMessage,
+      retryUserMessageId: userMessage.id,
+      message: interviewerResult.userMessage,
+    };
+  }
 
   const gameMasterMessageText = normalizeRequiredInterviewText(
     "Game Master message",
@@ -65,6 +89,7 @@ export async function answerInterviewQuestion(
   });
 
   return {
+    status: "success",
     draft: {
       ...existingInterview.draft,
       readinessStatus: interviewerResult.readinessStatus,
@@ -75,10 +100,50 @@ export async function answerInterviewQuestion(
   };
 }
 
-async function askGameMasterInterviewer<T>(ask: () => Promise<T>): Promise<T> {
+function readAnswerText(input: AnswerInterviewQuestionInput): string {
+  if ("answerText" in input && typeof input.answerText === "string") {
+    return input.answerText;
+  }
+
+  throw new Error("Answer must not be blank.");
+}
+
+function readRetryUserMessageId(
+  input: AnswerInterviewQuestionInput,
+): string | null {
+  return "retryUserMessageId" in input &&
+    typeof input.retryUserMessageId === "string"
+    ? input.retryUserMessageId
+    : null;
+}
+
+function findRetryUserMessage(
+  transcript: InterviewMessage[],
+  retryUserMessageId: string,
+): InterviewMessage {
+  const userMessage = transcript.find(
+    (message) => message.id === retryUserMessageId && message.role === "user",
+  );
+
+  if (!userMessage) {
+    throw new Error("Saved answer was not found.");
+  }
+
+  return userMessage;
+}
+
+async function askGameMasterInterviewer<T>(
+  ask: () => Promise<T>,
+): Promise<T | InterviewProviderFailure> {
   try {
     return await ask();
   } catch (error) {
-    throw normalizeInterviewProviderFailure(error);
+    const normalizedError = normalizeInterviewProviderFailure(error);
+
+    if (normalizedError instanceof InterviewProviderFailure) {
+      return normalizedError;
+    }
+
+    throw normalizedError;
   }
 }

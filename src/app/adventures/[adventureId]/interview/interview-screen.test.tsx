@@ -3,10 +3,29 @@ import { describe, expect, it } from "vitest";
 
 import type { AdventureInterview } from "@/modules/game-master-assistant/application/get-adventure-interview/output";
 
+import { AnswerComposer } from "./answer-composer";
+import { INTERVIEW_SAVE_FAILURE_MESSAGE } from "./actions-core";
 import { InterviewScreen } from "./interview-screen";
 
-function renderInterviewMarkup(interview: AdventureInterview): string {
-  return renderToStaticMarkup(<InterviewScreen interview={interview} />);
+function renderInterviewMarkup(
+  interview: AdventureInterview,
+  props: Partial<Parameters<typeof InterviewScreen>[0]> = {},
+): string {
+  return renderToStaticMarkup(
+    <InterviewScreen
+      interview={interview}
+      submitAnswer={async () => ({
+        status: "success",
+        answerText: "",
+        fieldError: null,
+        formError: null,
+        draft: interview.draft,
+        transcript: interview.transcript,
+        retryUserMessageId: null,
+      })}
+      {...props}
+    />,
+  );
 }
 
 describe("InterviewScreen", () => {
@@ -67,7 +86,7 @@ describe("InterviewScreen", () => {
     expect(currentQuestionIndex).toBeGreaterThan(currentQuestionHeadingIndex);
   });
 
-  it("renders a reachable answer composer without wiring submission behavior", () => {
+  it("renders a reachable answer composer wired for submission", () => {
     const markup = renderInterviewMarkup({
       draft: {
         id: "adventure-1",
@@ -83,8 +102,114 @@ describe("InterviewScreen", () => {
     expect(markup).toContain('for="interview-answer"');
     expect(markup).toContain("Your answer");
     expect(markup).toContain("Type your answer...");
-    expect(markup).toContain('type="button"');
+    expect(markup).toContain('type="submit"');
     expect(markup).toContain("Send");
     expect(markup).toContain("Saved for later.");
   });
+
+  it("renders recoverable failure state with retry and preserved transcript", () => {
+    const interview = buildInterview();
+    const markup = renderInterviewMarkup(interview, {
+      initialSubmissionState: {
+        status: "recoverable_failure",
+        answerText: "",
+        fieldError: null,
+        formError: INTERVIEW_SAVE_FAILURE_MESSAGE,
+        draft: interview.draft,
+        transcript: [
+          ...interview.transcript,
+          message("message-4", "user", "I can cook eggs and pasta.", 4),
+        ],
+        retryUserMessageId: "message-4",
+      },
+    });
+
+    expect(markup).toContain("Not saved");
+    expect(markup).toContain(INTERVIEW_SAVE_FAILURE_MESSAGE);
+    expect(markup).toContain("Retry Save");
+    expect(markup).toContain("I can cook eggs and pasta.");
+    expect(markup.match(/I can cook eggs and pasta\./g)).toHaveLength(1);
+  });
+
+  it("renders a successful updated transcript with the User answer and next Game Master message", () => {
+    const interview = buildInterview();
+    const markup = renderInterviewMarkup(interview, {
+      initialSubmissionState: {
+        status: "success",
+        answerText: "",
+        fieldError: null,
+        formError: null,
+        draft: interview.draft,
+        transcript: [
+          ...interview.transcript,
+          message("message-4", "user", "I can cook eggs and pasta.", 4),
+          message(
+            "message-5",
+            "game_master",
+            "What tools do you already have?",
+            5,
+          ),
+        ],
+        retryUserMessageId: null,
+      },
+    });
+
+    expect(markup).toContain("Saved");
+    expect(markup).toContain("I can cook eggs and pasta.");
+    expect(markup).toContain("What tools do you already have?");
+  });
+
+  it("renders pending composer state with disabled duplicate-submit controls", () => {
+    const markup = renderToStaticMarkup(
+      <AnswerComposer
+        answerText="I can cook eggs and pasta."
+        fieldError={null}
+        formError={null}
+        isPending={true}
+        canRetry={true}
+        onAnswerTextChange={() => undefined}
+        onSubmit={() => undefined}
+        onRetry={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Saving…");
+    expect(markup).toContain("disabled");
+    expect(markup).toContain('aria-live="polite"');
+  });
 });
+
+function buildInterview(): AdventureInterview {
+  return {
+    draft: {
+      id: "adventure-1",
+      goalText: "Become a chef",
+      state: "drafting",
+      readinessStatus: "not_ready",
+      updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+    },
+    transcript: [
+      message(
+        "message-1",
+        "game_master",
+        "What is your current cooking level?",
+        1,
+      ),
+    ],
+  };
+}
+
+function message(
+  id: string,
+  role: "user" | "game_master",
+  content: string,
+  sequenceNumber: number,
+) {
+  return {
+    id,
+    role,
+    content,
+    sequenceNumber,
+    createdAt: new Date("2026-01-02T00:00:00.000Z"),
+  };
+}
