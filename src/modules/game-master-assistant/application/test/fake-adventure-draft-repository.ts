@@ -76,6 +76,16 @@ export class FakeAdventureDraftRepository
     return message;
   }
 
+  getStoredDraftReadiness(adventureId: string): InterviewReadinessStatus | null {
+    return this.drafts.get(adventureId)?.readinessStatus ?? null;
+  }
+
+  getStoredTranscript(adventureId: string): InterviewMessage[] {
+    return [...(this.messagesByDraft.get(adventureId) ?? [])].sort(
+      (left, right) => left.sequenceNumber - right.sequenceNumber,
+    );
+  }
+
   async findActiveDraftForUser(userId: string) {
     const userDrafts = [...this.drafts.values()]
       .filter((draft) => draft.userId === userId && draft.state === ADVENTURE_DRAFT_STATE)
@@ -126,7 +136,7 @@ export class FakeAdventureDraftRepository
     const draft = this.drafts.get(input.adventureId);
 
     if (!draft || draft.userId !== input.userId) {
-      throw new Error("Adventure draft was not found for this User.");
+      throw new Error("Adventure draft was not found.");
     }
 
     const messages = this.messagesByDraft.get(input.adventureId) ?? [];
@@ -157,9 +167,7 @@ export class FakeAdventureDraftRepository
       return null;
     }
 
-    const transcript = [...(this.messagesByDraft.get(input.adventureId) ?? [])].sort(
-      (left, right) => left.sequenceNumber - right.sequenceNumber,
-    );
+    const transcript = this.getStoredTranscript(input.adventureId);
 
     return {
       draft: {
@@ -181,7 +189,7 @@ export class FakeAdventureDraftRepository
     const draft = this.drafts.get(input.adventureId);
 
     if (!draft || draft.userId !== input.userId) {
-      throw new Error("Adventure draft was not found for this User.");
+      throw new Error("Adventure draft was not found.");
     }
 
     draft.readinessStatus = input.readinessStatus;

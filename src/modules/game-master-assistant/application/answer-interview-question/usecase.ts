@@ -24,7 +24,7 @@ export async function answerInterviewQuestion(
   });
 
   if (!existingInterview) {
-    throw new Error("Adventure draft was not found for this User.");
+    throw new Error("Adventure draft was not found.");
   }
 
   const userMessage = await repository.appendInterviewMessage({
