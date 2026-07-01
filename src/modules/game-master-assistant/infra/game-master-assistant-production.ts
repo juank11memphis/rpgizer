@@ -37,7 +37,7 @@ export function createGameMasterAssistantProduction(
   const adventureDraftRepository =
     dependencies.adventureDraftRepository ??
     new DrizzleAdventureDraftRepository(dependencies.db ?? getGameMasterAssistantDb());
-  const gameMasterInterviewer =
+  const resolveGameMasterInterviewer = () =>
     dependencies.gameMasterInterviewer ?? new OpenAIGameMasterInterviewer();
 
   return {
@@ -47,7 +47,7 @@ export function createGameMasterAssistantProduction(
     startAdventureInterview(input: StartAdventureInterviewInput) {
       return startAdventureInterview(input, {
         adventureDraftRepository,
-        gameMasterInterviewer,
+        gameMasterInterviewer: resolveGameMasterInterviewer(),
       });
     },
     getAdventureInterview(input: GetAdventureInterviewInput) {
@@ -56,7 +56,7 @@ export function createGameMasterAssistantProduction(
     answerInterviewQuestion(input: AnswerInterviewQuestionInput) {
       return answerInterviewQuestion(input, {
         adventureDraftRepository,
-        gameMasterInterviewer,
+        gameMasterInterviewer: resolveGameMasterInterviewer(),
       });
     },
   };
