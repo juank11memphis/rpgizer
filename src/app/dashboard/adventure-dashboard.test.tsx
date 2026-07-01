@@ -40,6 +40,7 @@ describe("AdventureDashboard", () => {
     expect(markup).toContain("Interview in progress");
     expect(markup).toContain('href="/adventures/adventure-1/interview"');
     expect(markup).toContain("Continue Draft");
+    expect(markup).not.toContain('href="/adventures/new">Continue Draft');
     expect(markup).toContain('href="/adventures/new"');
     expect(markup).toContain("Start New Adventure");
     expect(markup).not.toContain("No adventures yet.");
