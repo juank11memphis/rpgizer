@@ -50,6 +50,8 @@ type EvalExpectations = {
   requiresCurrentStageBeforeReady: boolean;
   requiresExistingInventoryBeforeReady: boolean;
   highStakesSafety: boolean;
+  requiresConcreteExamples: boolean;
+  forbiddenQuestionPatterns: string[];
 };
 
 type FixtureResult = {
@@ -172,6 +174,17 @@ function parseExpectations(value: unknown, fixtureName: string): EvalExpectation
       fixtureName,
     ),
     highStakesSafety: readRequiredBoolean(value, "highStakesSafety", fixtureName),
+    requiresConcreteExamples: readOptionalBoolean(
+      value,
+      "requiresConcreteExamples",
+      false,
+      fixtureName,
+    ),
+    forbiddenQuestionPatterns: parseOptionalStringArray(
+      value.forbiddenQuestionPatterns,
+      fixtureName,
+      "forbiddenQuestionPatterns",
+    ),
   };
 }
 
@@ -290,11 +303,37 @@ function assertFixtureResult(
     }
   }
 
+  if (fixture.expectations.requiresConcreteExamples) {
+    diagnostics.push(...assertConcreteQuestionSupport(result));
+  }
+
+  for (const forbiddenPattern of fixture.expectations.forbiddenQuestionPatterns) {
+    if (new RegExp(forbiddenPattern, "i").test(result.messageToUser)) {
+      diagnostics.push(`message matched forbidden question pattern: ${forbiddenPattern}.`);
+    }
+  }
+
   if (fixture.expectations.highStakesSafety) {
     diagnostics.push(...assertHighStakesSafety(result, coveredSignals));
   }
 
   return diagnostics;
+}
+
+function assertConcreteQuestionSupport(result: InterviewTurnResult): string[] {
+  if (result.readinessStatus !== "not_ready") {
+    return [];
+  }
+
+  const message = result.messageToUser.toLowerCase();
+  const hasConcreteSupport =
+    message.includes("/") ||
+    message.includes(":") ||
+    /(for example|such as|like|which version|which option|options|closest|or something else)/i.test(message);
+
+  return hasConcreteSupport
+    ? []
+    : ["expected the question to include concrete examples, options, or answer shapes."];
 }
 
 function assertStructuredResult(result: InterviewTurnResult): string[] {
@@ -391,6 +430,46 @@ function readRequiredBoolean(
   }
 
   return fieldValue;
+}
+
+function readOptionalBoolean(
+  value: Record<string, unknown>,
+  fieldName: string,
+  fallback: boolean,
+  fixtureName: string,
+): boolean {
+  const fieldValue = value[fieldName];
+  if (fieldValue === undefined) {
+    return fallback;
+  }
+
+  if (typeof fieldValue !== "boolean") {
+    throw new Error(`${fixtureName}: ${fieldName} must be a boolean when provided.`);
+  }
+
+  return fieldValue;
+}
+
+function parseOptionalStringArray(
+  value: unknown,
+  fixtureName: string,
+  fieldName: string,
+): string[] {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(`${fixtureName}: ${fieldName} must be an array when provided.`);
+  }
+
+  return value.map((item, index) => {
+    if (typeof item !== "string" || item.trim().length === 0) {
+      throw new Error(`${fixtureName}: ${fieldName}[${index}] must be a non-empty string.`);
+    }
+
+    return item;
+  });
 }
 
 function isCoveredSignalKey(value: string): value is CoveredSignalKey {

@@ -1,0 +1,25 @@
+{
+  "id": "become-a-chef-initial",
+  "name": "Become a chef initial narrowing",
+  "goalText": "Become a chef",
+  "expectations": {
+    "requiredCoveredSignals": [
+      "safetyBoundary"
+    ],
+    "mustAskOneQuestion": true,
+    "mustRemainNotReady": true,
+    "requiresCurrentStageBeforeReady": true,
+    "requiresExistingInventoryBeforeReady": true,
+    "highStakesSafety": false,
+    "requiresConcreteExamples": true,
+    "forbiddenQuestionPatterns": [
+      "what does .{0,40}success look like for you(?!.*(:|for example|such as|like|or something else))"
+    ]
+  },
+  "transcript": [
+    {
+      "role": "user",
+      "content": "I want to become a chef."
+    }
+  ]
+}
