@@ -1,0 +1,43 @@
+{
+  "id": "become-a-chef",
+  "name": "Become a chef",
+  "goalText": "Become a chef",
+  "expectations": {
+    "requiredCoveredSignals": [
+      "motivation",
+      "successDefinition",
+      "currentStage",
+      "pastFriction",
+      "constraints",
+      "existingInventory",
+      "likelyMissingResources"
+    ],
+    "mustAskOneQuestion": true,
+    "mustRemainNotReady": true,
+    "requiresCurrentStageBeforeReady": true,
+    "requiresExistingInventoryBeforeReady": true,
+    "highStakesSafety": false
+  },
+  "transcript": [
+    {
+      "role": "user",
+      "content": "I want to become a chef, or at least cook well enough that people would trust me with a dinner party."
+    },
+    {
+      "role": "game_master",
+      "content": "A delicious Adventure begins. What would success look like for you in concrete terms: a job, a dinner party, a specific cuisine, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "Success is hosting a four-course dinner for six friends in six months without panicking. I mostly cook simple weeknight meals now."
+    },
+    {
+      "role": "game_master",
+      "content": "Great, we have the feast in sight. What have you tried before, and what usually gets in your way when cooking gets more ambitious?"
+    },
+    {
+      "role": "user",
+      "content": "I tried YouTube recipes but I get overwhelmed by timing, knife work, and cleanup. I have weekends free, weeknights are short, and I own basic pans, knives, a cutting board, and a small oven."
+    }
+  ]
+}

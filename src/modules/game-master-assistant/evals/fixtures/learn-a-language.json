@@ -1,0 +1,42 @@
+{
+  "id": "learn-a-language",
+  "name": "Learn Japanese",
+  "goalText": "Learn Japanese",
+  "expectations": {
+    "requiredCoveredSignals": [
+      "motivation",
+      "successDefinition",
+      "currentStage",
+      "constraints",
+      "existingInventory",
+      "likelyMissingResources"
+    ],
+    "mustAskOneQuestion": true,
+    "mustRemainNotReady": true,
+    "requiresCurrentStageBeforeReady": true,
+    "requiresExistingInventoryBeforeReady": true,
+    "highStakesSafety": false
+  },
+  "transcript": [
+    {
+      "role": "user",
+      "content": "I want to learn Japanese so I can travel more confidently and understand anime without subtitles someday."
+    },
+    {
+      "role": "game_master",
+      "content": "Excellent quest. What would a clear first victory look like for your Japanese Adventure?"
+    },
+    {
+      "role": "user",
+      "content": "In a year I want to handle basic travel conversations, read kana comfortably, and understand simple listening practice. I know hiragana and a few phrases."
+    },
+    {
+      "role": "game_master",
+      "content": "You have the first runes on the map. What time, tools, or study resources do you already have available?"
+    },
+    {
+      "role": "user",
+      "content": "I can study 25 minutes most mornings. I have Genki 1, Anki, headphones, and a language exchange app, but I have not found a consistent speaking partner."
+    }
+  ]
+}
