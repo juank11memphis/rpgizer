@@ -1,4 +1,5 @@
 import { normalizeRequiredInterviewText } from "../../domain/interview-message";
+import { normalizeInterviewProviderFailure } from "../start-adventure-interview/provider-error";
 import type { AnswerInterviewQuestionInput } from "./input";
 import type { AnswerInterviewQuestionOutput } from "./output";
 import type {
@@ -35,13 +36,15 @@ export async function answerInterviewQuestion(
   });
   const transcriptWithAnswer = [...existingInterview.transcript, userMessage];
 
-  const interviewerResult = await dependencies.gameMasterInterviewer.askNextQuestion({
-    userId: input.userId,
-    adventureId: input.adventureId,
-    goalText: existingInterview.draft.goalText,
-    readinessStatus: existingInterview.draft.readinessStatus,
-    transcript: transcriptWithAnswer,
-  });
+  const interviewerResult = await askGameMasterInterviewer(() =>
+    dependencies.gameMasterInterviewer.askNextQuestion({
+      userId: input.userId,
+      adventureId: input.adventureId,
+      goalText: existingInterview.draft.goalText,
+      readinessStatus: existingInterview.draft.readinessStatus,
+      transcript: transcriptWithAnswer,
+    }),
+  );
 
   const gameMasterMessageText = normalizeRequiredInterviewText(
     "Game Master message",
@@ -70,4 +73,12 @@ export async function answerInterviewQuestion(
     userMessage,
     gameMasterMessage,
   };
+}
+
+async function askGameMasterInterviewer<T>(ask: () => Promise<T>): Promise<T> {
+  try {
+    return await ask();
+  } catch (error) {
+    throw normalizeInterviewProviderFailure(error);
+  }
 }

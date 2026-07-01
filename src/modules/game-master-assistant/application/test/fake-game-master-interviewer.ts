@@ -7,20 +7,28 @@ import type {
 export class FakeGameMasterInterviewer implements GameMasterInterviewer {
   readonly requests: InterviewTurnRequest[] = [];
 
-  private queuedResults: InterviewTurnResult[] = [];
+  private queuedResults: Array<InterviewTurnResult | Error> = [];
 
   queueResult(result: InterviewTurnResult): void {
     this.queuedResults.push(result);
   }
 
+  queueError(error: Error): void {
+    this.queuedResults.push(error);
+  }
+
   async askNextQuestion(input: InterviewTurnRequest): Promise<InterviewTurnResult> {
     this.requests.push(input);
 
-    return (
-      this.queuedResults.shift() ?? {
-        messageToUser: "What would success look like for this Adventure?",
-        readinessStatus: "not_ready",
-      }
-    );
+    const result = this.queuedResults.shift() ?? {
+      messageToUser: "What would success look like for this Adventure?",
+      readinessStatus: "not_ready",
+    };
+
+    if (result instanceof Error) {
+      throw result;
+    }
+
+    return result;
   }
 }

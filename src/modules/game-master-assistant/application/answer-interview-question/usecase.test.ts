@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { answerInterviewQuestion } from "./usecase";
+import {
+  GameMasterInterviewerError,
+  INTERVIEW_PROVIDER_FAILURE_USER_MESSAGE,
+  InterviewProviderFailure,
+} from "../start-adventure-interview/provider-error";
 import { FakeAdventureDraftRepository } from "../test/fake-adventure-draft-repository";
 import { FakeGameMasterInterviewer } from "../test/fake-game-master-interviewer";
 
@@ -127,5 +132,57 @@ describe("answerInterviewQuestion", () => {
     expect(repository.getStoredDraftReadiness("adventure-1")).toBe("not_ready");
     expect(repository.appendedMessages).toEqual([]);
     expect(interviewer.requests).toEqual([]);
+  });
+
+  it("preserves the User answer and avoids appending a Game Master message when provider fails", async () => {
+    const repository = new FakeAdventureDraftRepository();
+    repository.seedDraft({
+      id: "adventure-1",
+      userId: "user-1",
+      goalText: "Become a chef",
+      readinessStatus: "not_ready",
+    });
+    repository.seedMessage({
+      adventureId: "adventure-1",
+      role: "user",
+      content: "Become a chef",
+      sequenceNumber: 1,
+    });
+    repository.seedMessage({
+      adventureId: "adventure-1",
+      role: "game_master",
+      content: "What is your current cooking level?",
+      sequenceNumber: 2,
+    });
+    const interviewer = new FakeGameMasterInterviewer();
+    interviewer.queueError(
+      new GameMasterInterviewerError(
+        "provider_output_invalid",
+        "raw invalid structured output detail",
+      ),
+    );
+
+    await expect(
+      answerInterviewQuestion(
+        {
+          userId: "user-1",
+          adventureId: "adventure-1",
+          answerText: "I can cook eggs and pasta.",
+        },
+        { adventureDraftRepository: repository, gameMasterInterviewer: interviewer },
+      ),
+    ).rejects.toMatchObject({
+      name: "InterviewProviderFailure",
+      code: "provider_output_invalid",
+      message: INTERVIEW_PROVIDER_FAILURE_USER_MESSAGE,
+      userMessage: INTERVIEW_PROVIDER_FAILURE_USER_MESSAGE,
+    } satisfies Partial<InterviewProviderFailure>);
+
+    expect(repository.getStoredTranscript("adventure-1").map((message) => [message.role, message.content])).toEqual([
+      ["user", "Become a chef"],
+      ["game_master", "What is your current cooking level?"],
+      ["user", "I can cook eggs and pasta."],
+    ]);
+    expect(repository.getStoredDraftReadiness("adventure-1")).toBe("not_ready");
   });
 });

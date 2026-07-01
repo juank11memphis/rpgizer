@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { startAdventureInterview } from "./usecase";
+import {
+  GameMasterInterviewerError,
+  INTERVIEW_PROVIDER_FAILURE_USER_MESSAGE,
+  InterviewProviderFailure,
+} from "./provider-error";
 import { FakeAdventureDraftRepository } from "../test/fake-adventure-draft-repository";
 import { FakeGameMasterInterviewer } from "../test/fake-game-master-interviewer";
 
@@ -46,6 +51,50 @@ describe("startAdventureInterview", () => {
       readinessStatus: "not_ready",
     });
     expect(interviewer.requests[0]?.transcript.map((message) => message.content)).toEqual([
+      "Become a chef",
+    ]);
+  });
+
+  it("persists ready_to_generate when the first interviewer response says the draft is ready", async () => {
+    const repository = new FakeAdventureDraftRepository();
+    const interviewer = new FakeGameMasterInterviewer();
+    interviewer.queueResult({
+      messageToUser: "I have what I need to shape this Adventure.",
+      readinessStatus: "ready_to_generate",
+    });
+
+    const result = await startAdventureInterview(
+      { userId: "user-1", goalText: "Become a chef" },
+      { adventureDraftRepository: repository, gameMasterInterviewer: interviewer },
+    );
+
+    expect(result.draft.readinessStatus).toBe("ready_to_generate");
+    expect(repository.getStoredDraftReadiness("adventure-1")).toBe("ready_to_generate");
+  });
+
+  it("normalizes provider failures without exposing provider internals", async () => {
+    const repository = new FakeAdventureDraftRepository();
+    const interviewer = new FakeGameMasterInterviewer();
+    interviewer.queueError(
+      new GameMasterInterviewerError(
+        "provider_request_failed",
+        "401 raw provider detail",
+      ),
+    );
+
+    await expect(
+      startAdventureInterview(
+        { userId: "user-1", goalText: "Become a chef" },
+        { adventureDraftRepository: repository, gameMasterInterviewer: interviewer },
+      ),
+    ).rejects.toMatchObject({
+      name: "InterviewProviderFailure",
+      code: "provider_request_failed",
+      message: INTERVIEW_PROVIDER_FAILURE_USER_MESSAGE,
+      userMessage: INTERVIEW_PROVIDER_FAILURE_USER_MESSAGE,
+    } satisfies Partial<InterviewProviderFailure>);
+
+    expect(repository.getStoredTranscript("adventure-1").map((message) => message.content)).toEqual([
       "Become a chef",
     ]);
   });
