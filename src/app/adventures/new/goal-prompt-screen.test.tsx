@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { EMPTY_GOAL_MESSAGE } from "./actions-core";
-import { GoalPromptForm } from "./goal-prompt-form";
+import { GoalPromptForm, shouldSubmitGoalFromKeyDown } from "./goal-prompt-form";
 import { GoalPromptScreen } from "./goal-prompt-screen";
 
 function renderMarkup(element: React.ReactElement): string {
@@ -22,6 +22,39 @@ describe("GoalPromptScreen", () => {
     expect(markup).toContain("I want to...");
     expect(markup).toContain("Begin the Interview");
     expect(markup).toContain('href="/dashboard"');
+  });
+
+
+
+  it("submits the initial goal prompt with Enter while preserving Shift+Enter for new lines", () => {
+    expect(
+      shouldSubmitGoalFromKeyDown({
+        key: "Enter",
+        shiftKey: false,
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldSubmitGoalFromKeyDown({
+        key: "Enter",
+        shiftKey: true,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldSubmitGoalFromKeyDown({
+        key: "a",
+        shiftKey: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldSubmitGoalFromKeyDown({
+        key: "Enter",
+        shiftKey: false,
+        nativeEvent: { isComposing: true },
+      }),
+    ).toBe(false);
   });
 
   it("renders inline empty validation state near the goal prompt", () => {

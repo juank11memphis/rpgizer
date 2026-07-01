@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { AdventureInterview } from "@/modules/game-master-assistant/application/get-adventure-interview/output";
 
-import { AnswerComposer } from "./answer-composer";
+import { AnswerComposer, shouldSubmitAnswerFromKeyDown } from "./answer-composer";
 import { INTERVIEW_SAVE_FAILURE_MESSAGE } from "./actions-core";
 import { InterviewScreen } from "./interview-screen";
 
@@ -157,6 +157,38 @@ describe("InterviewScreen", () => {
     expect(markup).toContain("Saved");
     expect(markup).toContain("I can cook eggs and pasta.");
     expect(markup).toContain("What tools do you already have?");
+  });
+
+
+  it("submits textarea answers with Enter while preserving Shift+Enter for new lines", () => {
+    expect(
+      shouldSubmitAnswerFromKeyDown({
+        key: "Enter",
+        shiftKey: false,
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldSubmitAnswerFromKeyDown({
+        key: "Enter",
+        shiftKey: true,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldSubmitAnswerFromKeyDown({
+        key: "a",
+        shiftKey: false,
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldSubmitAnswerFromKeyDown({
+        key: "Enter",
+        shiftKey: false,
+        nativeEvent: { isComposing: true },
+      }),
+    ).toBe(false);
   });
 
   it("renders pending composer state with disabled duplicate-submit controls", () => {

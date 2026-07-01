@@ -1,4 +1,11 @@
-import { sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, max, sql } from "drizzle-orm";
+import type { drizzle } from "drizzle-orm/postgres-js";
+
+import * as schema from "@/db/schema";
+import {
+  adventureInterviewMessages,
+  adventures,
+} from "@/db/schema";
 
 import { ADVENTURE_DRAFT_STATE } from "../domain/adventure-draft-state";
 import type { InterviewMessage, InterviewMessageRole } from "../domain/interview-message";
@@ -16,29 +23,22 @@ import type {
   StartAdventureInterviewRepository,
 } from "../application/start-adventure-interview/ports";
 
-export type GameMasterAssistantDb = {
-  execute(query: SQL): PromiseLike<Iterable<Record<string, unknown>>>;
-};
+export type GameMasterAssistantDb = ReturnType<typeof drizzle<typeof schema>>;
 
-type AdventureDraftRow = {
-  id: unknown;
-  goalText: unknown;
-  state: unknown;
-  readinessStatus: unknown;
-  updatedAt: unknown;
-};
+type AdventureDraftRow = Pick<
+  typeof adventures.$inferSelect,
+  "id" | "goalText" | "state" | "readinessStatus" | "updatedAt"
+>;
 
-type CreatedAdventureDraftRow = AdventureDraftRow & {
-  createdAt: unknown;
-};
+type CreatedAdventureDraftRow = Pick<
+  typeof adventures.$inferSelect,
+  "id" | "goalText" | "state" | "readinessStatus"
+>;
 
-type InterviewMessageRow = {
-  id: unknown;
-  role: unknown;
-  content: unknown;
-  sequenceNumber: unknown;
-  createdAt: unknown;
-};
+type InterviewMessageRow = Pick<
+  typeof adventureInterviewMessages.$inferSelect,
+  "id" | "role" | "content" | "sequenceNumber" | "createdAt"
+>;
 
 export class DrizzleAdventureDraftRepository
   implements
@@ -50,36 +50,45 @@ export class DrizzleAdventureDraftRepository
   constructor(private readonly db: GameMasterAssistantDb) {}
 
   async findActiveDraftForUser(userId: string): Promise<DashboardAdventureDraft | null> {
-    const rows = readRows<AdventureDraftRow>(await this.db.execute(sql`
-      select id, "goalText", state, "readinessStatus", "updatedAt"
-      from adventures
-      where "userId" = ${userId} and state = ${ADVENTURE_DRAFT_STATE}
-      order by "updatedAt" desc
-      limit 1
-    `));
+    const rows = await this.db
+      .select({
+        id: adventures.id,
+        goalText: adventures.goalText,
+        state: adventures.state,
+        readinessStatus: adventures.readinessStatus,
+        updatedAt: adventures.updatedAt,
+      })
+      .from(adventures)
+      .where(and(eq(adventures.userId, userId), eq(adventures.state, ADVENTURE_DRAFT_STATE)))
+      .orderBy(desc(adventures.updatedAt))
+      .limit(1);
 
     const row = rows[0];
     return row ? mapDashboardDraft(row) : null;
   }
 
   async createDraft(input: CreateAdventureDraftInput): Promise<CreatedAdventureDraft> {
-    const rows = readRows<CreatedAdventureDraftRow>(await this.db.execute(sql`
-      insert into adventures ("userId", "goalText", state, "readinessStatus")
-      values (${input.userId}, ${input.goalText}, ${input.state}, ${input.readinessStatus})
-      returning id, "goalText", state, "readinessStatus", "createdAt", "updatedAt"
-    `));
+    const rows = await this.db
+      .insert(adventures)
+      .values({
+        userId: input.userId,
+        goalText: input.goalText,
+        state: input.state,
+        readinessStatus: input.readinessStatus,
+      })
+      .returning({
+        id: adventures.id,
+        goalText: adventures.goalText,
+        state: adventures.state,
+        readinessStatus: adventures.readinessStatus,
+      });
 
     const row = rows[0];
     if (!row) {
       throw new Error("Adventure draft could not be created.");
     }
 
-    return {
-      id: readString(row.id, "adventure id"),
-      goalText: readString(row.goalText, "goal text"),
-      state: readDraftState(row.state),
-      readinessStatus: readReadinessStatus(row.readinessStatus),
-    };
+    return mapCreatedDraft(row);
   }
 
   async appendInterviewMessage(input: {
@@ -89,67 +98,104 @@ export class DrizzleAdventureDraftRepository
     content: string;
   }): Promise<InterviewMessage> {
     const content = normalizeRequiredInterviewText("Interview message", input.content);
-    const rows = readRows<InterviewMessageRow>(await this.db.execute(sql`
-      with authorized_draft as (
-        select id
-        from adventures
-        where id = ${input.adventureId}
-          and "userId" = ${input.userId}
-          and state = ${ADVENTURE_DRAFT_STATE}
-      ), next_message as (
-        insert into "adventureInterviewMessages" ("adventureId", role, content, "sequenceNumber")
-        select
-          authorized_draft.id,
-          ${input.role},
-          ${content},
-          coalesce((
-            select max("sequenceNumber") + 1
-            from "adventureInterviewMessages"
-            where "adventureId" = authorized_draft.id
-          ), 1)
-        from authorized_draft
-        returning id, role, content, "sequenceNumber", "createdAt", "adventureId"
-      ), touched_draft as (
-        update adventures
-        set "updatedAt" = (select max("createdAt") from next_message)
-        where id = (select "adventureId" from next_message)
-      )
-      select id, role, content, "sequenceNumber", "createdAt"
-      from next_message
-    `));
 
-    const row = rows[0];
-    if (!row) {
-      throw new Error("Adventure draft was not found.");
-    }
+    return this.db.transaction(async (tx) => {
+      const authorizedDrafts = await tx
+        .select({ id: adventures.id })
+        .from(adventures)
+        .where(
+          and(
+            eq(adventures.id, input.adventureId),
+            eq(adventures.userId, input.userId),
+            eq(adventures.state, ADVENTURE_DRAFT_STATE),
+          ),
+        )
+        .limit(1);
 
-    return mapInterviewMessage(row);
+      const authorizedDraft = authorizedDrafts[0];
+      if (!authorizedDraft) {
+        throw new Error("Adventure draft was not found.");
+      }
+
+      const sequenceRows = await tx
+        .select({
+          lastSequenceNumber: max(adventureInterviewMessages.sequenceNumber),
+        })
+        .from(adventureInterviewMessages)
+        .where(eq(adventureInterviewMessages.adventureId, authorizedDraft.id));
+      const lastSequenceNumber = sequenceRows[0]?.lastSequenceNumber;
+      const nextSequenceNumber = lastSequenceNumber === null || lastSequenceNumber === undefined
+        ? 1
+        : lastSequenceNumber + 1;
+
+      const messageRows = await tx
+        .insert(adventureInterviewMessages)
+        .values({
+          adventureId: authorizedDraft.id,
+          role: input.role,
+          content,
+          sequenceNumber: nextSequenceNumber,
+        })
+        .returning({
+          id: adventureInterviewMessages.id,
+          role: adventureInterviewMessages.role,
+          content: adventureInterviewMessages.content,
+          sequenceNumber: adventureInterviewMessages.sequenceNumber,
+          createdAt: adventureInterviewMessages.createdAt,
+        });
+
+      const message = messageRows[0];
+      if (!message) {
+        throw new Error("Interview message could not be created.");
+      }
+
+      await tx
+        .update(adventures)
+        .set({ updatedAt: message.createdAt })
+        .where(eq(adventures.id, authorizedDraft.id));
+
+      return mapInterviewMessage(message);
+    });
   }
 
   async getDraftWithTranscript(input: {
     userId: string;
     adventureId: string;
   }): Promise<AdventureInterview | null> {
-    const draftRows = readRows<AdventureDraftRow>(await this.db.execute(sql`
-      select id, "goalText", state, "readinessStatus", "updatedAt"
-      from adventures
-      where id = ${input.adventureId}
-        and "userId" = ${input.userId}
-        and state = ${ADVENTURE_DRAFT_STATE}
-      limit 1
-    `));
+    const draftRows = await this.db
+      .select({
+        id: adventures.id,
+        goalText: adventures.goalText,
+        state: adventures.state,
+        readinessStatus: adventures.readinessStatus,
+        updatedAt: adventures.updatedAt,
+      })
+      .from(adventures)
+      .where(
+        and(
+          eq(adventures.id, input.adventureId),
+          eq(adventures.userId, input.userId),
+          eq(adventures.state, ADVENTURE_DRAFT_STATE),
+        ),
+      )
+      .limit(1);
 
     const draftRow = draftRows[0];
     if (!draftRow) {
       return null;
     }
 
-    const messageRows = readRows<InterviewMessageRow>(await this.db.execute(sql`
-      select id, role, content, "sequenceNumber", "createdAt"
-      from "adventureInterviewMessages"
-      where "adventureId" = ${input.adventureId}
-      order by "sequenceNumber" asc
-    `));
+    const messageRows = await this.db
+      .select({
+        id: adventureInterviewMessages.id,
+        role: adventureInterviewMessages.role,
+        content: adventureInterviewMessages.content,
+        sequenceNumber: adventureInterviewMessages.sequenceNumber,
+        createdAt: adventureInterviewMessages.createdAt,
+      })
+      .from(adventureInterviewMessages)
+      .where(eq(adventureInterviewMessages.adventureId, input.adventureId))
+      .orderBy(adventureInterviewMessages.sequenceNumber);
 
     return {
       draft: mapInterviewDraft(draftRow),
@@ -162,14 +208,20 @@ export class DrizzleAdventureDraftRepository
     adventureId: string;
     readinessStatus: InterviewReadinessStatus;
   }): Promise<void> {
-    const rows = readRows<{ id: unknown }>(await this.db.execute(sql`
-      update adventures
-      set "readinessStatus" = ${input.readinessStatus}, "updatedAt" = now()
-      where id = ${input.adventureId}
-        and "userId" = ${input.userId}
-        and state = ${ADVENTURE_DRAFT_STATE}
-      returning id
-    `));
+    const rows = await this.db
+      .update(adventures)
+      .set({
+        readinessStatus: input.readinessStatus,
+        updatedAt: sql`now()`,
+      })
+      .where(
+        and(
+          eq(adventures.id, input.adventureId),
+          eq(adventures.userId, input.userId),
+          eq(adventures.state, ADVENTURE_DRAFT_STATE),
+        ),
+      )
+      .returning({ id: adventures.id });
 
     if (!rows[0]) {
       throw new Error("Adventure draft was not found.");
@@ -177,19 +229,22 @@ export class DrizzleAdventureDraftRepository
   }
 }
 
-function readRows<T extends Record<string, unknown>>(
-  rows: Iterable<Record<string, unknown>>,
-): T[] {
-  return Array.from(rows) as T[];
+function mapCreatedDraft(row: CreatedAdventureDraftRow): CreatedAdventureDraft {
+  return {
+    id: row.id,
+    goalText: row.goalText,
+    state: readDraftState(row.state),
+    readinessStatus: readReadinessStatus(row.readinessStatus),
+  };
 }
 
 function mapDashboardDraft(row: AdventureDraftRow): DashboardAdventureDraft {
   return {
-    id: readString(row.id, "adventure id"),
-    goalText: readString(row.goalText, "goal text"),
+    id: row.id,
+    goalText: row.goalText,
     state: readDraftState(row.state),
     readinessStatus: readReadinessStatus(row.readinessStatus),
-    updatedAt: readDate(row.updatedAt, "updated at"),
+    updatedAt: row.updatedAt,
   };
 }
 
@@ -204,15 +259,15 @@ function mapInterviewMessage(row: InterviewMessageRow): InterviewMessage {
   }
 
   return {
-    id: readString(row.id, "message id"),
+    id: row.id,
     role,
-    content: readString(row.content, "message content"),
-    sequenceNumber: readNumber(row.sequenceNumber, "sequence number"),
-    createdAt: readDate(row.createdAt, "message created at"),
+    content: row.content,
+    sequenceNumber: row.sequenceNumber,
+    createdAt: row.createdAt,
   };
 }
 
-function readDraftState(value: unknown): typeof ADVENTURE_DRAFT_STATE {
+function readDraftState(value: string): typeof ADVENTURE_DRAFT_STATE {
   if (value !== ADVENTURE_DRAFT_STATE) {
     throw new Error("Adventure draft row had an invalid state.");
   }
@@ -220,33 +275,9 @@ function readDraftState(value: unknown): typeof ADVENTURE_DRAFT_STATE {
   return value;
 }
 
-function readReadinessStatus(value: unknown): InterviewReadinessStatus {
-  if (typeof value !== "string" || !isInterviewReadinessStatus(value)) {
+function readReadinessStatus(value: string): InterviewReadinessStatus {
+  if (!isInterviewReadinessStatus(value)) {
     throw new Error("Adventure draft row had an invalid readiness status.");
-  }
-
-  return value;
-}
-
-function readString(value: unknown, name: string): string {
-  if (typeof value !== "string") {
-    throw new Error(`Expected ${name} to be a string.`);
-  }
-
-  return value;
-}
-
-function readNumber(value: unknown, name: string): number {
-  if (typeof value !== "number") {
-    throw new Error(`Expected ${name} to be a number.`);
-  }
-
-  return value;
-}
-
-function readDate(value: unknown, name: string): Date {
-  if (!(value instanceof Date)) {
-    throw new Error(`Expected ${name} to be a Date.`);
   }
 
   return value;

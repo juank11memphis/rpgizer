@@ -48,6 +48,14 @@ export function GoalPromptForm({
         aria-invalid={Boolean(state.fieldError)}
         className="min-h-44 w-full resize-y rounded-sm border border-amber-300/30 bg-[#12070c]/88 px-5 py-4 text-lg leading-8 text-stone-50 shadow-[0_26px_90px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.05)] outline-none placeholder:text-stone-500 focus:border-amber-200 focus:ring-2 focus:ring-amber-200 focus:ring-offset-2 focus:ring-offset-[#07030d] disabled:cursor-not-allowed disabled:opacity-70 sm:min-h-48"
         disabled={isPending}
+        onKeyDown={(event) => {
+          if (!shouldSubmitGoalFromKeyDown(event) || isPending) {
+            return;
+          }
+
+          event.preventDefault();
+          event.currentTarget.form?.requestSubmit();
+        }}
       />
       {errorMessage ? (
         <p
@@ -67,4 +75,19 @@ export function GoalPromptForm({
       </button>
     </form>
   );
+}
+
+
+export type GoalPromptKeyDownInput = {
+  key: string;
+  shiftKey: boolean;
+  nativeEvent?: {
+    isComposing?: boolean;
+  };
+};
+
+export function shouldSubmitGoalFromKeyDown(
+  event: GoalPromptKeyDownInput,
+): boolean {
+  return event.key === "Enter" && !event.shiftKey && !event.nativeEvent?.isComposing;
 }

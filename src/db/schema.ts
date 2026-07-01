@@ -12,7 +12,7 @@ import { sql } from "drizzle-orm";
 export const users = pgTable("users", {
   id: text("id")
     .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+    .default(sql`gen_random_uuid()::text`),
   name: text("name"),
   email: text("email").unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
@@ -66,7 +66,7 @@ export const adventures = pgTable(
   {
     id: text("id")
       .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+      .default(sql`gen_random_uuid()::text`),
     userId: text("userId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -91,7 +91,7 @@ export const adventureInterviewMessages = pgTable(
   {
     id: text("id")
       .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+      .default(sql`gen_random_uuid()::text`),
     adventureId: text("adventureId")
       .notNull()
       .references(() => adventures.id, { onDelete: "cascade" }),
