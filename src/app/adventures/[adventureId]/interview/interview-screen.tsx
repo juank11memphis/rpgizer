@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import type { AdventureInterview } from "@/modules/game-master-assistant/application/get-adventure-interview/output";
 import type { InterviewMessage } from "@/modules/game-master-assistant/domain/interview-message";
@@ -39,6 +39,17 @@ export function InterviewScreen({
   const [saveStatus, setSaveStatus] = useState<SaveStatus>(() =>
     initialSubmissionState.status === "recoverable_failure" ? "not_saved" : "saved",
   );
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
+  const answerTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const latestGameMasterMessageId = getLatestGameMasterMessageId(transcript);
+
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+
+    if (!isPending) {
+      answerTextareaRef.current?.focus();
+    }
+  }, [isPending, latestGameMasterMessageId]);
 
   const submitForm = (input: {
     answerText?: string;
@@ -97,13 +108,13 @@ export function InterviewScreen({
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#07030d] text-stone-100">
+    <main className="relative h-dvh overflow-hidden bg-[#07030d] text-stone-100">
       <div className="pointer-events-none fixed inset-0 -z-20 bg-[radial-gradient(circle_at_50%_-10%,rgba(127,29,29,0.58)_0%,rgba(49,18,12,0.52)_28%,rgba(7,3,13,0.98)_72%)]" />
       <div className="pointer-events-none fixed inset-0 -z-20 bg-[radial-gradient(circle_at_12%_20%,rgba(180,83,9,0.18),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(16,185,129,0.12),transparent_24%),linear-gradient(90deg,rgba(250,204,21,0.06)_1px,transparent_1px),linear-gradient(rgba(250,204,21,0.04)_1px,transparent_1px)] bg-[length:auto,auto,72px_72px,72px_72px]" />
       <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-56 bg-gradient-to-b from-amber-500/10 to-transparent" />
       <div className="pointer-events-none fixed inset-0 -z-10 shadow-[inset_0_0_180px_rgba(0,0,0,0.92)]" />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-5 sm:px-8 lg:px-10">
+      <div className="mx-auto flex h-full w-full max-w-6xl flex-col px-5 sm:px-8 lg:px-10">
         <header className="flex min-h-16 items-center justify-between border-b border-amber-400/15 py-4">
           <Link
             href="/dashboard"
@@ -119,20 +130,24 @@ export function InterviewScreen({
           </span>
         </header>
 
-        <div className="flex flex-1 justify-center py-8 sm:py-12 lg:py-14">
+        <div className="flex min-h-0 flex-1 justify-center py-5 sm:py-8 lg:py-10">
           <section
             aria-labelledby="adventure-interview-heading"
-            className="w-full max-w-2xl"
+            className="flex min-h-0 w-full max-w-2xl flex-col"
           >
-            <p className="text-base font-semibold leading-7 text-stone-200">
+            <p className="shrink-0 text-base font-semibold leading-7 text-stone-200">
               Draft: <span className="text-amber-100">{draftTitle}</span>
             </p>
             <h1 id="adventure-interview-heading" className="sr-only">
               Continue Adventure draft interview
             </h1>
-            <div className="mt-7 space-y-8">
+            <div className="mt-7 min-h-0 flex-1 overflow-y-auto pr-1">
               <InterviewTranscript transcript={transcript} />
+              <div ref={transcriptEndRef} aria-hidden="true" className="h-6" />
+            </div>
+            <div className="shrink-0 border-t border-amber-400/15 bg-[#07030d]/95 pt-4 shadow-[0_-24px_36px_rgba(7,3,13,0.88)] backdrop-blur sm:pt-5">
               <AnswerComposer
+                textareaRef={answerTextareaRef}
                 answerText={answerText}
                 fieldError={submissionState.fieldError}
                 formError={submissionState.formError}
@@ -160,4 +175,16 @@ function saveStatusLabel(status: SaveStatus): string {
   }
 
   return "Saved";
+}
+
+function getLatestGameMasterMessageId(transcript: InterviewMessage[]): string | null {
+  for (let index = transcript.length - 1; index >= 0; index -= 1) {
+    const message = transcript[index];
+
+    if (message?.role === "game_master") {
+      return message.id;
+    }
+  }
+
+  return null;
 }

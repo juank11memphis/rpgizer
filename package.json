@@ -5,12 +5,13 @@
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "dev": "next dev --port 3002",
-    "dev:clean": "set -a && . ./.env.local && set +a && pnpm run db:migrate && pnpm run dev",
+    "dev:clean": "set -a && . ./.env.local && set +a && pnpm run db:up && pnpm run db:migrate && pnpm run dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
+    "db:up": "docker compose up -d --wait postgres",
     "db:migrate": "tsx scripts/run-migrations.ts",
     "test": "vitest run",
     "eval:game-master": "tsx src/modules/game-master-assistant/evals/run-game-master-interview-evals.ts"

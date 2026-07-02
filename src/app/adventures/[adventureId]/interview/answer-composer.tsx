@@ -1,9 +1,12 @@
+import type { Ref } from "react";
+
 type AnswerComposerProps = {
   answerText: string;
   fieldError: string | null;
   formError: string | null;
   isPending: boolean;
   canRetry: boolean;
+  textareaRef?: Ref<HTMLTextAreaElement>;
   onAnswerTextChange: (answerText: string) => void;
   onSubmit: () => void;
   onRetry: () => void;
@@ -15,6 +18,7 @@ export function AnswerComposer({
   formError,
   isPending,
   canRetry,
+  textareaRef,
   onAnswerTextChange,
   onSubmit,
   onRetry,
@@ -42,6 +46,7 @@ export function AnswerComposer({
           Your answer
         </label>
         <textarea
+          ref={textareaRef}
           id="interview-answer"
           name="answerText"
           rows={4}
