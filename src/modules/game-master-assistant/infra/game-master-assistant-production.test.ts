@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { FakeAdventureDraftRepository } from "../application/test/fake-adventure-draft-repository";
 import { FakeGameMasterInterviewer } from "../application/test/fake-game-master-interviewer";
+import {
+  FakeInterviewOutputArtifactGenerator,
+  validInterviewOutputArtifact,
+} from "../application/test/fake-interview-output-artifact-generator";
 import { createGameMasterAssistantProduction } from "./game-master-assistant-production";
 
 describe("createGameMasterAssistantProduction", () => {
@@ -103,5 +107,35 @@ describe("createGameMasterAssistantProduction", () => {
     await expect(
       production.getAdventureInterview({ userId: "user-1", adventureId: "adventure-1" }),
     ).resolves.toMatchObject({ interview: { draft: { id: "adventure-1" } } });
+  });
+
+  it("wires interview output artifact generation through injectable production dependencies", async () => {
+    const repository = new FakeAdventureDraftRepository();
+    repository.seedDraft({
+      id: "adventure-1",
+      userId: "user-1",
+      goalText: "Become a chef",
+      readinessStatus: "ready_to_generate",
+      interviewStatus: "confirmed",
+    });
+    const generator = new FakeInterviewOutputArtifactGenerator();
+    generator.queueArtifact(validInterviewOutputArtifact());
+    const production = createGameMasterAssistantProduction({
+      adventureDraftRepository: repository,
+      gameMasterInterviewer: new FakeGameMasterInterviewer(),
+      interviewOutputArtifactGenerator: generator,
+    });
+
+    const result = await production.generateInterviewOutputArtifact({
+      userId: "user-1",
+      adventureId: "adventure-1",
+    });
+
+    expect(result).toMatchObject({
+      status: "ready",
+      reusedExistingArtifact: false,
+    });
+    expect(generator.requests).toHaveLength(1);
+    expect(repository.savedArtifacts).toHaveLength(1);
   });
 });

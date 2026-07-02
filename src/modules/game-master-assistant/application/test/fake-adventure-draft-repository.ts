@@ -2,10 +2,13 @@ import { ADVENTURE_DRAFT_STATE } from "../../domain/adventure-draft-state";
 import type { InterviewMessage, InterviewMessageRole } from "../../domain/interview-message";
 import type { InterviewReadinessStatus } from "../../domain/interview-readiness";
 import type { InterviewStatus } from "../../domain/interview-status";
+import type { InterviewOutputArtifact } from "../../domain/interview-output-artifact";
 import type { DashboardAdventureDraftRepository } from "../get-dashboard-adventure-draft/ports";
 import type { AdventureInterview } from "../get-adventure-interview/output";
 import type { AdventureInterviewRepository } from "../get-adventure-interview/ports";
 import type { AnswerInterviewQuestionRepository } from "../answer-interview-question/ports";
+import type { GenerateInterviewOutputArtifactRepository } from "../generate-interview-output-artifact/ports";
+import type { CurrentInterviewOutputArtifact } from "../interview-output-artifact/output";
 import type { StartAdventureInterviewRepository } from "../start-adventure-interview/ports";
 
 type StoredDraft = {
@@ -31,14 +34,18 @@ export class FakeAdventureDraftRepository
     DashboardAdventureDraftRepository,
     StartAdventureInterviewRepository,
     AdventureInterviewRepository,
-    AnswerInterviewQuestionRepository
+    AnswerInterviewQuestionRepository,
+    GenerateInterviewOutputArtifactRepository
 {
   readonly appendedMessages: InterviewMessage[] = [];
+  readonly savedArtifacts: CurrentInterviewOutputArtifact[] = [];
 
   private readonly drafts = new Map<string, StoredDraft>();
   private readonly messagesByDraft = new Map<string, InterviewMessage[]>();
+  private readonly artifactsByDraft = new Map<string, CurrentInterviewOutputArtifact>();
   private nextDraftNumber = 1;
   private nextMessageNumber = 1;
+  private nextArtifactNumber = 1;
 
   seedDraft(input: {
     id: string;
@@ -78,6 +85,24 @@ export class FakeAdventureDraftRepository
     messages.push(message);
     this.messagesByDraft.set(input.adventureId, messages);
     return message;
+  }
+
+  seedCurrentArtifact(input: {
+    adventureId: string;
+    artifact: InterviewOutputArtifact;
+    id?: string;
+  }): CurrentInterviewOutputArtifact {
+    const artifact: CurrentInterviewOutputArtifact = {
+      id: input.id ?? `artifact-${this.nextArtifactNumber}`,
+      adventureId: input.adventureId,
+      artifact: input.artifact,
+      createdAt: new Date("2026-01-01T00:01:00.000Z"),
+      updatedAt: new Date("2026-01-01T00:01:00.000Z"),
+    };
+    this.nextArtifactNumber += 1;
+    this.artifactsByDraft.set(input.adventureId, artifact);
+
+    return artifact;
   }
 
   getStoredDraftReadiness(adventureId: string): InterviewReadinessStatus | null {
@@ -192,6 +217,35 @@ export class FakeAdventureDraftRepository
       },
       transcript,
     };
+  }
+
+  async getCurrentArtifact(input: {
+    userId: string;
+    adventureId: string;
+  }): Promise<CurrentInterviewOutputArtifact | null> {
+    const draft = this.drafts.get(input.adventureId);
+
+    if (!draft || draft.userId !== input.userId) {
+      return null;
+    }
+
+    return this.artifactsByDraft.get(input.adventureId) ?? null;
+  }
+
+  async saveCurrentArtifact(input: {
+    userId: string;
+    adventureId: string;
+    artifact: InterviewOutputArtifact;
+  }): Promise<CurrentInterviewOutputArtifact> {
+    this.getAuthorizedDraft(input.userId, input.adventureId);
+
+    const artifact = this.seedCurrentArtifact({
+      adventureId: input.adventureId,
+      artifact: input.artifact,
+    });
+    this.savedArtifacts.push(artifact);
+
+    return artifact;
   }
 
   async updateReadiness(input: {
