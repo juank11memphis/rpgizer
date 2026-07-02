@@ -5,7 +5,22 @@ import { Writable } from "node:stream";
 
 import { afterEach, describe, expect, it } from "vitest";
 
+import {
+  DEFAULT_AI_PAYLOAD_LOG_MAX_CHARS,
+  DEFAULT_LOG_FILE_NAME,
+  type ServerLoggingConfig,
+} from "./config";
 import { createServerLogger } from "./logger";
+
+function createTestConfig(overrides: Partial<ServerLoggingConfig> = {}): ServerLoggingConfig {
+  return {
+    logToFile: false,
+    filePath: path.join(process.cwd(), DEFAULT_LOG_FILE_NAME),
+    aiPayloadLoggingEnabled: false,
+    aiPayloadLogMaxChars: DEFAULT_AI_PAYLOAD_LOG_MAX_CHARS,
+    ...overrides,
+  };
+}
 
 class MemoryLogStream extends Writable {
   private readonly chunks: string[] = [];
@@ -49,7 +64,7 @@ describe("createServerLogger", () => {
   it("writes parseable JSON log entries to a stdout-compatible stream by default", () => {
     const stdout = new MemoryLogStream();
     const logger = createServerLogger({
-      config: { logToFile: false, filePath: path.join(process.cwd(), "rpgizer.log") },
+      config: createTestConfig(),
       stdout,
     });
 
@@ -73,7 +88,7 @@ describe("createServerLogger", () => {
     const filePath = path.join(directory, "test-rpgizer.log");
     const stdout = new MemoryLogStream();
     const logger = createServerLogger({
-      config: { logToFile: true, filePath },
+      config: createTestConfig({ logToFile: true, filePath }),
       stdout,
     });
 
@@ -96,7 +111,10 @@ describe("createServerLogger", () => {
 
     expect(() =>
       createServerLogger({
-        config: { logToFile: true, filePath: path.join("/tmp", "missing-rpgizer-dir", "test.log") },
+        config: createTestConfig({
+          logToFile: true,
+          filePath: path.join("/tmp", "missing-rpgizer-dir", "test.log"),
+        }),
         stdout,
       }),
     ).toThrow();
