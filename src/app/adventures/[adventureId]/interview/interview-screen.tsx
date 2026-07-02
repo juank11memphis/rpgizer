@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 
-import type { AdventureInterview } from "@/modules/game-master-assistant/application/get-adventure-interview/output";
+import type { AdventureInterview, AdventureInterviewDraft } from "@/modules/game-master-assistant/application/get-adventure-interview/output";
 import type { InterviewMessage } from "@/modules/game-master-assistant/domain/interview-message";
 
 import { AnswerComposer } from "./answer-composer";
@@ -14,6 +14,7 @@ import {
 } from "./actions-core";
 import { submitInterviewAnswerAction } from "./actions";
 import { InterviewTranscript } from "./interview-transcript";
+import { ReadyToForgePanel } from "./ready-to-forge-panel";
 import { deriveInterviewDraftTitle } from "./interview-title";
 
 type InterviewScreenProps = {
@@ -33,6 +34,9 @@ export function InterviewScreen({
   const [isPending, startTransition] = useTransition();
   const [answerText, setAnswerText] = useState(initialSubmissionState.answerText);
   const [submissionState, setSubmissionState] = useState(initialSubmissionState);
+  const [currentDraft, setCurrentDraft] = useState<AdventureInterviewDraft>(
+    initialSubmissionState.draft ?? interview.draft,
+  );
   const [transcript, setTranscript] = useState<InterviewMessage[]>(
     initialSubmissionState.transcript ?? interview.transcript,
   );
@@ -42,18 +46,22 @@ export function InterviewScreen({
   const transcriptEndRef = useRef<HTMLDivElement>(null);
   const answerTextareaRef = useRef<HTMLTextAreaElement>(null);
   const latestGameMasterMessageId = getLatestGameMasterMessageId(transcript);
+  const isConfirmed = currentDraft.interviewStatus === "confirmed";
+  const isAwaitingConfirmation =
+    currentDraft.interviewStatus === "awaiting_confirmation";
 
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
 
-    if (!isPending) {
+    if (!isPending && !isConfirmed) {
       answerTextareaRef.current?.focus();
     }
-  }, [isPending, latestGameMasterMessageId]);
+  }, [isConfirmed, isPending, latestGameMasterMessageId]);
 
   const submitForm = (input: {
     answerText?: string;
     retryUserMessageId?: string;
+    submissionIntent?: "answer" | "confirm_readiness";
   }) => {
     if (isPending) {
       return;
@@ -70,10 +78,18 @@ export function InterviewScreen({
       formData.set("retryUserMessageId", input.retryUserMessageId);
     }
 
+    if (input.submissionIntent !== undefined) {
+      formData.set("submissionIntent", input.submissionIntent);
+    }
+
     setSaveStatus("saving");
     startTransition(async () => {
       const nextState = await submitAnswer(submissionState, formData);
       setSubmissionState(nextState);
+
+      if (nextState.draft) {
+        setCurrentDraft(nextState.draft);
+      }
 
       if (nextState.transcript) {
         setTranscript(nextState.transcript);
@@ -97,6 +113,10 @@ export function InterviewScreen({
 
   const handleSubmit = () => {
     submitForm({ answerText });
+  };
+
+  const handleConfirmReadiness = () => {
+    submitForm({ submissionIntent: "confirm_readiness" });
   };
 
   const handleRetry = () => {
@@ -146,17 +166,28 @@ export function InterviewScreen({
               <div ref={transcriptEndRef} aria-hidden="true" className="h-6" />
             </div>
             <div className="shrink-0 border-t border-amber-400/15 bg-[#07030d]/95 pt-4 shadow-[0_-24px_36px_rgba(7,3,13,0.88)] backdrop-blur sm:pt-5">
-              <AnswerComposer
-                textareaRef={answerTextareaRef}
-                answerText={answerText}
-                fieldError={submissionState.fieldError}
-                formError={submissionState.formError}
-                isPending={isPending}
-                canRetry={Boolean(submissionState.retryUserMessageId)}
-                onAnswerTextChange={setAnswerText}
-                onSubmit={handleSubmit}
-                onRetry={handleRetry}
-              />
+              {isConfirmed ? (
+                <ReadyToForgePanel adventureId={currentDraft.id} />
+              ) : (
+                <AnswerComposer
+                  textareaRef={answerTextareaRef}
+                  answerText={answerText}
+                  fieldError={submissionState.fieldError}
+                  formError={submissionState.formError}
+                  isPending={isPending}
+                  canRetry={Boolean(submissionState.retryUserMessageId)}
+                  canConfirmReadiness={isAwaitingConfirmation}
+                  placeholder={
+                    isAwaitingConfirmation
+                      ? "Add one last detail, or say you’re ready..."
+                      : "Type your answer..."
+                  }
+                  onAnswerTextChange={setAnswerText}
+                  onSubmit={handleSubmit}
+                  onRetry={handleRetry}
+                  onConfirmReadiness={handleConfirmReadiness}
+                />
+              )}
             </div>
           </section>
         </div>

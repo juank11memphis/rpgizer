@@ -6,10 +6,13 @@ type AnswerComposerProps = {
   formError: string | null;
   isPending: boolean;
   canRetry: boolean;
+  canConfirmReadiness?: boolean;
+  placeholder?: string;
   textareaRef?: Ref<HTMLTextAreaElement>;
   onAnswerTextChange: (answerText: string) => void;
   onSubmit: () => void;
   onRetry: () => void;
+  onConfirmReadiness?: () => void;
 };
 
 export function AnswerComposer({
@@ -18,10 +21,13 @@ export function AnswerComposer({
   formError,
   isPending,
   canRetry,
+  canConfirmReadiness = false,
+  placeholder = "Type your answer...",
   textareaRef,
   onAnswerTextChange,
   onSubmit,
   onRetry,
+  onConfirmReadiness,
 }: AnswerComposerProps) {
   const trimmedAnswer = answerText.trim();
   const sendDisabled = isPending || (!trimmedAnswer && !canRetry);
@@ -63,7 +69,7 @@ export function AnswerComposer({
             event.preventDefault();
             onSubmit();
           }}
-          placeholder="Type your answer..."
+          placeholder={placeholder}
           className="mt-3 min-h-32 w-full resize-y rounded-sm border border-amber-300/25 bg-black/35 p-4 text-base leading-7 text-stone-100 outline-none shadow-[inset_0_0_0_1px_rgba(120,53,15,0.22)] placeholder:text-stone-500 focus:border-amber-200 focus:ring-2 focus:ring-amber-200/70 focus:ring-offset-2 focus:ring-offset-[#07030d]"
         />
       </div>
@@ -97,6 +103,16 @@ export function AnswerComposer({
         >
           {isPending ? "Saving…" : "Send"}
         </button>
+        {canConfirmReadiness ? (
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={onConfirmReadiness}
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-sm border border-amber-300/45 bg-black/35 px-6 text-center font-bold uppercase tracking-[0.12em] text-amber-100 outline-none transition hover:border-amber-200 hover:bg-amber-950/30 focus-visible:ring-2 focus-visible:ring-amber-100 focus-visible:ring-offset-2 focus-visible:ring-offset-[#07030d] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            I’m Ready
+          </button>
+        ) : null}
       </div>
       <p className="text-sm leading-6 text-stone-400">
         Saved for later. Return from the dashboard whenever you need to pause.

@@ -235,6 +235,32 @@ export class DrizzleAdventureDraftRepository
       throw new Error("Adventure draft was not found.");
     }
   }
+
+  async confirmReadiness(input: {
+    userId: string;
+    adventureId: string;
+  }): Promise<void> {
+    const rows = await this.db
+      .update(adventures)
+      .set({
+        readinessStatus: "ready_to_generate",
+        interviewStatus: "confirmed",
+        updatedAt: sql`now()`,
+      })
+      .where(
+        and(
+          eq(adventures.id, input.adventureId),
+          eq(adventures.userId, input.userId),
+          eq(adventures.state, ADVENTURE_DRAFT_STATE),
+          eq(adventures.interviewStatus, "awaiting_confirmation"),
+        ),
+      )
+      .returning({ id: adventures.id });
+
+    if (!rows[0]) {
+      throw new Error("Adventure draft was not awaiting confirmation.");
+    }
+  }
 }
 
 function mapCreatedDraft(row: CreatedAdventureDraftRow): CreatedAdventureDraft {

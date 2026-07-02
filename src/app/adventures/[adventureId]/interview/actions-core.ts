@@ -10,7 +10,7 @@ export const INTERVIEW_SAVE_FAILURE_MESSAGE =
   INTERVIEW_PROVIDER_FAILURE_USER_MESSAGE;
 
 export type InterviewAnswerFormState = {
-  status: "idle" | "field_error" | "success" | "recoverable_failure";
+  status: "idle" | "field_error" | "form_error" | "success" | "recoverable_failure";
   answerText: string;
   fieldError: string | null;
   formError: string | null;
@@ -54,12 +54,17 @@ export function createSubmitInterviewAnswerAction(
     const adventureId = readRequiredString(formData, "adventureId");
     const answerText = readString(formData, "answerText").trim();
     const retryUserMessageId = readString(formData, "retryUserMessageId").trim();
+    const submissionIntent = readSubmissionIntent(formData);
 
     if (!adventureId) {
       throw new Error("Adventure id is required.");
     }
 
-    if (!answerText && !retryUserMessageId) {
+    if (submissionIntent === "confirm_readiness" && retryUserMessageId) {
+      throw new Error("Retry and confirmation cannot be submitted together.");
+    }
+
+    if (submissionIntent === "answer" && !answerText && !retryUserMessageId) {
       return {
         ...previousState,
         status: "field_error",
@@ -78,18 +83,38 @@ export function createSubmitInterviewAnswerAction(
     }
 
     const result = await dependencies.answerInterviewQuestion(
-      retryUserMessageId
+      submissionIntent === "confirm_readiness"
         ? {
             userId: currentUser.user.id,
             adventureId,
-            retryUserMessageId,
+            submissionIntent,
           }
-        : {
-            userId: currentUser.user.id,
-            adventureId,
-            answerText,
-          },
+        : retryUserMessageId
+          ? {
+              userId: currentUser.user.id,
+              adventureId,
+              retryUserMessageId,
+              submissionIntent,
+            }
+          : {
+              userId: currentUser.user.id,
+              adventureId,
+              answerText,
+              submissionIntent,
+            },
     );
+
+    if (result.status === "expected_error") {
+      return {
+        status: "form_error",
+        answerText,
+        fieldError: null,
+        formError: result.message,
+        draft: result.draft,
+        transcript: result.transcript,
+        retryUserMessageId: null,
+      };
+    }
 
     if (result.status === "recoverable_failure") {
       return {
@@ -125,4 +150,10 @@ function readString(formData: FormData, name: string): string {
   const value = formData.get(name);
 
   return typeof value === "string" ? value : "";
+}
+
+function readSubmissionIntent(formData: FormData): "answer" | "confirm_readiness" {
+  const value = readString(formData, "submissionIntent").trim();
+
+  return value === "confirm_readiness" ? "confirm_readiness" : "answer";
 }

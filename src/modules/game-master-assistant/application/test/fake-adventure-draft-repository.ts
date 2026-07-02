@@ -200,13 +200,33 @@ export class FakeAdventureDraftRepository
     readinessStatus: InterviewReadinessStatus;
     interviewStatus: InterviewStatus;
   }): Promise<void> {
-    const draft = this.drafts.get(input.adventureId);
-
-    if (!draft || draft.userId !== input.userId) {
-      throw new Error("Adventure draft was not found.");
-    }
+    const draft = this.getAuthorizedDraft(input.userId, input.adventureId);
 
     draft.readinessStatus = input.readinessStatus;
     draft.interviewStatus = input.interviewStatus;
+  }
+
+  async confirmReadiness(input: {
+    userId: string;
+    adventureId: string;
+  }): Promise<void> {
+    const draft = this.getAuthorizedDraft(input.userId, input.adventureId);
+
+    if (draft.interviewStatus !== "awaiting_confirmation") {
+      throw new Error("Adventure draft was not awaiting confirmation.");
+    }
+
+    draft.readinessStatus = "ready_to_generate";
+    draft.interviewStatus = "confirmed";
+  }
+
+  private getAuthorizedDraft(userId: string, adventureId: string): StoredDraft {
+    const draft = this.drafts.get(adventureId);
+
+    if (!draft || draft.userId !== userId) {
+      throw new Error("Adventure draft was not found.");
+    }
+
+    return draft;
   }
 }

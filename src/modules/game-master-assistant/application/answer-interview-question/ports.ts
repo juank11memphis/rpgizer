@@ -23,6 +23,10 @@ export type AnswerInterviewQuestionRepository = {
     readinessStatus: InterviewReadinessStatus;
     interviewStatus: InterviewStatus;
   }): Promise<void>;
+  confirmReadiness(input: {
+    userId: string;
+    adventureId: string;
+  }): Promise<void>;
 };
 
 export type { GameMasterInterviewer, InterviewTurnRequest, InterviewTurnResult };

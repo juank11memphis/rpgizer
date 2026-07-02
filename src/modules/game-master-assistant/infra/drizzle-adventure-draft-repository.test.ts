@@ -183,6 +183,7 @@ describe("DrizzleAdventureDraftRepository", () => {
       [{ ...gameMasterMessageRow, sequenceNumber: 3 }],
       [],
       [{ id: "adventure-1" }],
+      [{ id: "adventure-1" }],
     ]);
     const repository = new DrizzleAdventureDraftRepository(db.asRepositoryDb());
 
@@ -223,6 +224,13 @@ describe("DrizzleAdventureDraftRepository", () => {
         interviewStatus: "awaiting_confirmation",
       }),
     ).resolves.toBeUndefined();
+
+    await expect(
+      repository.confirmReadiness({
+        userId: "user-1",
+        adventureId: "adventure-1",
+      }),
+    ).resolves.toBeUndefined();
     expect(db.operations).toEqual([
       "insert",
       "transaction",
@@ -231,11 +239,12 @@ describe("DrizzleAdventureDraftRepository", () => {
       "insert",
       "update",
       "update",
+      "update",
     ]);
   });
 
   it("rejects unauthorized scoped writes", async () => {
-    const db = new QueuedDrizzleDb([[], []]);
+    const db = new QueuedDrizzleDb([[], [], []]);
     const repository = new DrizzleAdventureDraftRepository(db.asRepositoryDb());
 
     await expect(
@@ -255,5 +264,12 @@ describe("DrizzleAdventureDraftRepository", () => {
         interviewStatus: "awaiting_confirmation",
       }),
     ).rejects.toThrow("Adventure draft was not found.");
+
+    await expect(
+      repository.confirmReadiness({
+        userId: "other-user",
+        adventureId: "adventure-1",
+      }),
+    ).rejects.toThrow("Adventure draft was not awaiting confirmation.");
   });
 });

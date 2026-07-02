@@ -162,6 +162,68 @@ describe("InterviewScreen", () => {
   });
 
 
+
+  it("renders final-context composer and explicit confirmation control while awaiting confirmation", () => {
+    const markup = renderInterviewMarkup({
+      draft: {
+        id: "adventure-1",
+        goalText: "Become a chef",
+        state: "drafting",
+        readinessStatus: "ready_to_generate",
+        interviewStatus: "awaiting_confirmation",
+        updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      },
+      transcript: [
+        message(
+          "message-1",
+          "game_master",
+          "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+          1,
+        ),
+      ],
+    });
+
+    expect(markup).toContain("Add one last detail, or say you’re ready...");
+    expect(markup).toContain("I’m Ready");
+    expect(markup).toContain('aria-label="Answer the Game Master"');
+    expect(markup).toContain('name="answerText"');
+    expect(markup).toContain("Send");
+  });
+
+  it("renders confirmed ready-to-forge panel and hides the composer controls", () => {
+    const markup = renderInterviewMarkup({
+      draft: {
+        id: "adventure-1",
+        goalText: "Become a chef",
+        state: "drafting",
+        readinessStatus: "ready_to_generate",
+        interviewStatus: "confirmed",
+        updatedAt: new Date("2026-01-02T00:00:00.000Z"),
+      },
+      transcript: [
+        message(
+          "message-1",
+          "game_master",
+          "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+          1,
+        ),
+        message("message-2", "user", "No, forge it.", 2),
+      ],
+    });
+
+    expect(markup).toContain("Ready to forge");
+    expect(markup).toContain("The Game Master has what they need.");
+    expect(markup).toContain(
+      "Your answers are locked in for the next step. Time to shape them into the foundation of your Adventure.",
+    );
+    expect(markup).toContain("Forge My Adventure");
+    expect(markup).toContain('href="/adventures/adventure-1/forge"');
+    expect(markup).toContain("No, forge it.");
+    expect(markup).not.toContain('aria-label="Answer the Game Master"');
+    expect(markup).not.toContain('name="answerText"');
+    expect(markup).not.toContain("Retry Save");
+  });
+
   it("submits textarea answers with Enter while preserving Shift+Enter for new lines", () => {
     expect(
       shouldSubmitAnswerFromKeyDown({
