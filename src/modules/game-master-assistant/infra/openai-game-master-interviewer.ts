@@ -2,6 +2,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import OpenAI from "openai";
+
+import { loadServerLoggingConfig } from "../../../server/logging/config";
+import { APPLICATION_LOG_EVENTS } from "../../../server/logging/events";
+import { serverLogger } from "../../../server/logging/logger";
+import { serializeAiPayloadForLog, serializeErrorForLog } from "../../../server/logging/redaction";
 import type {
   Response,
   ResponseCreateParamsNonStreaming,
@@ -68,9 +73,11 @@ export class OpenAIGameMasterInterviewer implements GameMasterInterviewer {
   }
 
   async askNextQuestion(input: InterviewTurnRequest): Promise<InterviewTurnResult> {
+    const startedAt = Date.now();
+
     try {
       const instructions = await this.loadInstructions();
-      const response = await this.client.responses.create({
+      const request = {
         model: this.config.model,
         instructions,
         input: buildResponseInput(input),
@@ -78,13 +85,58 @@ export class OpenAIGameMasterInterviewer implements GameMasterInterviewer {
         max_output_tokens: 800,
         store: false,
         safety_identifier: input.userId.slice(0, 64),
+      } satisfies ResponseCreateParamsNonStreaming;
+
+      logAiPayloadDebug("game_master_interviewer.ask_next_question", input, {
+        direction: "request",
+        payload: request,
       });
 
-      return parseInterviewTurnResponse(response);
+      const response = await this.client.responses.create(request);
+
+      logAiPayloadDebug("game_master_interviewer.ask_next_question", input, {
+        direction: "response",
+        payload: response,
+      });
+
+      const result = parseInterviewTurnResponse(response);
+
+      serverLogger.info(
+        {
+          event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_COMPLETED,
+          flow: "ai_provider",
+          operation: "game_master_interviewer.ask_next_question",
+          result: "success",
+          userId: input.userId,
+          adventureId: input.adventureId,
+          model: this.config.model,
+          durationMs: Date.now() - startedAt,
+        },
+        "OpenAI Game Master interviewer request completed.",
+      );
+
+      return result;
     } catch (error) {
       if (error instanceof GameMasterInterviewerError) {
+        logProviderError(error, input, this.config.model, startedAt);
         throw error;
       }
+
+      serverLogger.error(
+        {
+          event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_FAILED,
+          flow: "ai_provider",
+          operation: "game_master_interviewer.ask_next_question",
+          result: "failure",
+          userId: input.userId,
+          adventureId: input.adventureId,
+          model: this.config.model,
+          providerErrorCategory: "request_failed",
+          error: serializeProviderRequestErrorForLog(error),
+          durationMs: Date.now() - startedAt,
+        },
+        "OpenAI Game Master interviewer request failed.",
+      );
 
       throw new GameMasterInterviewerError(
         "provider_request_failed",
@@ -101,6 +153,87 @@ export class OpenAIGameMasterInterviewer implements GameMasterInterviewer {
 
     return readFile(this.promptPath, "utf8");
   }
+}
+
+function logAiPayloadDebug(
+  operation: string,
+  input: Pick<InterviewTurnRequest, "userId" | "adventureId">,
+  payloadInfo: Readonly<{ direction: "request" | "response"; payload: unknown }>,
+): void {
+  const payloadPreview = serializeAiPayloadForLog(
+    payloadInfo.payload,
+    loadServerLoggingConfig(),
+  );
+
+  if (!payloadPreview.enabled) {
+    return;
+  }
+
+  serverLogger.debug(
+    {
+      event: APPLICATION_LOG_EVENTS.AI_OPENAI_PAYLOAD_DEBUG,
+      flow: "ai_provider",
+      operation,
+      result: "success",
+      userId: input.userId,
+      adventureId: input.adventureId,
+      direction: payloadInfo.direction,
+      payload: payloadPreview.payload,
+    },
+    "OpenAI Game Master interviewer payload preview.",
+  );
+}
+
+function serializeProviderRequestErrorForLog(error: unknown) {
+  return {
+    ...serializeErrorForLog(error),
+    message: "Provider request failed.",
+  };
+}
+
+function logProviderError(
+  error: GameMasterInterviewerError,
+  input: Pick<InterviewTurnRequest, "userId" | "adventureId">,
+  model: string,
+  startedAt: number,
+): void {
+  if (error.code === "provider_output_invalid") {
+    serverLogger.warn(
+      {
+        event: APPLICATION_LOG_EVENTS.AI_OPENAI_OUTPUT_INVALID,
+        flow: "ai_provider",
+        operation: "game_master_interviewer.ask_next_question",
+        result: "failure",
+        userId: input.userId,
+        adventureId: input.adventureId,
+        model,
+        providerErrorCode: error.code,
+        providerErrorCategory: "invalid_output",
+        error: serializeErrorForLog(error),
+        durationMs: Date.now() - startedAt,
+      },
+      "OpenAI Game Master interviewer returned invalid output.",
+    );
+
+    return;
+  }
+
+  serverLogger.error(
+    {
+      event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_FAILED,
+      flow: "ai_provider",
+      operation: "game_master_interviewer.ask_next_question",
+      result: "failure",
+      userId: input.userId,
+      adventureId: input.adventureId,
+      model,
+      providerErrorCode: error.code,
+      providerErrorCategory: "request_failed",
+      error: serializeProviderRequestErrorForLog(error),
+      durationMs: Date.now() - startedAt,
+    },
+    "OpenAI Game Master interviewer request failed.",
+  );
 }
 
 const INTERVIEW_TURN_RESULT_FORMAT = {

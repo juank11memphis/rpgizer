@@ -1,8 +1,10 @@
-import { describe, expect, it, vi, type Mock } from "vitest";
+import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import type { Response, ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { APPLICATION_LOG_EVENTS } from "../../../server/logging/events";
+import { REDACTED_LOG_VALUE } from "../../../server/logging/redaction";
 import { GameMasterInterviewerError } from "../application/start-adventure-interview/provider-error";
 import type { InterviewTurnRequest } from "../application/start-adventure-interview/ports";
 import { OpenAIGameMasterInterviewer } from "./openai-game-master-interviewer";
@@ -14,6 +16,22 @@ type MockOpenAIClient = {
     create: CreateResponseMock;
   };
 };
+
+const loggerMock = vi.hoisted(() => ({
+  debug: vi.fn(),
+  error: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+}));
+
+vi.mock("../../../server/logging/logger", () => ({
+  serverLogger: {
+    debug: loggerMock.debug,
+    error: loggerMock.error,
+    info: loggerMock.info,
+    warn: loggerMock.warn,
+  },
+}));
 
 const validStructuredOutput = {
   messageToUser: "A fine quest. What does success look like in the real world?",
@@ -33,6 +51,15 @@ const validStructuredOutput = {
 };
 
 describe("OpenAIGameMasterInterviewer", () => {
+  beforeEach(() => {
+    loggerMock.debug.mockClear();
+    loggerMock.error.mockClear();
+    loggerMock.info.mockClear();
+    loggerMock.warn.mockClear();
+    delete process.env.AI_PAYLOAD_LOGGING_ENABLED;
+    delete process.env.AI_PAYLOAD_LOG_MAX_CHARS;
+  });
+
   it("instructs ready output to ask for final confirmation instead of completion", () => {
     const prompt = readFileSync(
       join(process.cwd(), "src/modules/game-master-assistant/infra/prompts/game-master-interview.md"),
@@ -97,6 +124,19 @@ describe("OpenAIGameMasterInterviewer", () => {
       { role: "assistant", content: "What is your current cooking level?" },
       { role: "user", content: "I can cook eggs and pasta." },
     ]);
+    expect(infoPayloadsFor(APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_COMPLETED)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_COMPLETED,
+        flow: "ai_provider",
+        operation: "game_master_interviewer.ask_next_question",
+        result: "success",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        model: "gpt-5.5",
+        durationMs: expect.any(Number),
+      }),
+    ]);
+    expect(debugPayloadsFor(APPLICATION_LOG_EVENTS.AI_OPENAI_PAYLOAD_DEBUG)).toEqual([]);
   });
 
   it("normalizes a blank summary delta to null", async () => {
@@ -129,6 +169,20 @@ describe("OpenAIGameMasterInterviewer", () => {
       code: "provider_request_failed",
     });
     expect(client.responses.create).not.toHaveBeenCalled();
+    expect(errorPayloadsFor(APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_FAILED)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_FAILED,
+        flow: "ai_provider",
+        operation: "game_master_interviewer.ask_next_question",
+        result: "failure",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        model: "gpt-5.5",
+        providerErrorCategory: "request_failed",
+        error: expect.objectContaining({ name: expect.any(String) }),
+        durationMs: expect.any(Number),
+      }),
+    ]);
   });
 
   it("translates API rejection into a stable provider request failure", async () => {
@@ -139,6 +193,8 @@ describe("OpenAIGameMasterInterviewer", () => {
       code: "provider_request_failed",
       message: "OpenAI Game Master interviewer request failed.",
     });
+    expect(errorPayloadsFor(APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_FAILED)).toHaveLength(1);
+    expect(serializedLogPayloads()).not.toContain("sk-test");
   });
 
   it("rejects missing messageToUser before trusting provider output", async () => {
@@ -155,6 +211,20 @@ describe("OpenAIGameMasterInterviewer", () => {
     await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
       code: "provider_output_invalid",
     });
+    expect(warnPayloadsFor(APPLICATION_LOG_EVENTS.AI_OPENAI_OUTPUT_INVALID)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.AI_OPENAI_OUTPUT_INVALID,
+        flow: "ai_provider",
+        operation: "game_master_interviewer.ask_next_question",
+        result: "failure",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        model: "gpt-5.5",
+        providerErrorCode: "provider_output_invalid",
+        providerErrorCategory: "invalid_output",
+        durationMs: expect.any(Number),
+      }),
+    ]);
   });
 
   it("rejects invalid readiness status", async () => {
@@ -264,6 +334,45 @@ describe("OpenAIGameMasterInterviewer", () => {
     });
   });
 
+
+  it("emits redacted and truncated payload debug logs only when enabled", async () => {
+    process.env.AI_PAYLOAD_LOGGING_ENABLED = "1";
+    process.env.AI_PAYLOAD_LOG_MAX_CHARS = "6";
+    const client = createMockClient({
+      ...responseWithOutput(JSON.stringify(validStructuredOutput)),
+      apiKey: "sk-secret-provider-key",
+    } as unknown as Response);
+    const interviewer = createInterviewer(client);
+
+    await interviewer.askNextQuestion(baseRequest());
+
+    const debugPayloads = debugPayloadsFor(APPLICATION_LOG_EVENTS.AI_OPENAI_PAYLOAD_DEBUG);
+    expect(debugPayloads).toHaveLength(2);
+    expect(debugPayloads).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.AI_OPENAI_PAYLOAD_DEBUG,
+        flow: "ai_provider",
+        operation: "game_master_interviewer.ask_next_question",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        direction: "request",
+      }),
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.AI_OPENAI_PAYLOAD_DEBUG,
+        flow: "ai_provider",
+        operation: "game_master_interviewer.ask_next_question",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        direction: "response",
+      }),
+    ]);
+    expect(debugPayloads[1]?.payload).toMatchObject({ apiKey: REDACTED_LOG_VALUE });
+    expect(serializedLogPayloads()).toContain('"maxChars":6');
+    expect(serializedLogPayloads()).not.toContain("sk-secret-provider-key");
+    expect(serializedLogPayloads()).not.toContain("Become a chef");
+    expect(serializedLogPayloads()).not.toContain("Prompt instructions");
+  });
+
   it("surfaces missing configuration as a stable configuration error", () => {
     expect(() => new OpenAIGameMasterInterviewer()).toThrow(GameMasterInterviewerError);
   });
@@ -293,6 +402,47 @@ function responseWithOutput(outputText: string): Response {
     output_text: outputText,
     output: [],
   } as unknown as Response;
+}
+
+function infoPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
+  return loggerMock.info.mock.calls
+    .map(([payload]) => payload)
+    .filter(isPayloadFor(event));
+}
+
+function warnPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
+  return loggerMock.warn.mock.calls
+    .map(([payload]) => payload)
+    .filter(isPayloadFor(event));
+}
+
+function errorPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
+  return loggerMock.error.mock.calls
+    .map(([payload]) => payload)
+    .filter(isPayloadFor(event));
+}
+
+function debugPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
+  return loggerMock.debug.mock.calls
+    .map(([payload]) => payload)
+    .filter(isPayloadFor(event));
+}
+
+function isPayloadFor(event: string) {
+  return (payload: unknown): payload is Record<string, unknown> =>
+    typeof payload === "object" &&
+    payload !== null &&
+    "event" in payload &&
+    payload.event === event;
+}
+
+function serializedLogPayloads(): string {
+  return JSON.stringify([
+    ...loggerMock.debug.mock.calls.map(([payload]) => payload),
+    ...loggerMock.error.mock.calls.map(([payload]) => payload),
+    ...loggerMock.info.mock.calls.map(([payload]) => payload),
+    ...loggerMock.warn.mock.calls.map(([payload]) => payload),
+  ]);
 }
 
 function baseRequest(): InterviewTurnRequest {

@@ -2,6 +2,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import OpenAI from "openai";
+
+import { loadServerLoggingConfig } from "../../../server/logging/config";
+import { APPLICATION_LOG_EVENTS } from "../../../server/logging/events";
+import { serverLogger } from "../../../server/logging/logger";
+import { serializeAiPayloadForLog, serializeErrorForLog } from "../../../server/logging/redaction";
 import type {
   Response,
   ResponseCreateParamsNonStreaming,
@@ -73,9 +78,11 @@ export class OpenAIInterviewOutputArtifactGenerator implements InterviewOutputAr
   async generateArtifact(
     input: InterviewOutputArtifactGenerationRequest,
   ): Promise<InterviewOutputArtifact> {
+    const startedAt = Date.now();
+
     try {
       const instructions = await this.loadInstructions();
-      const response = await this.client.responses.create({
+      const request = {
         model: this.config.model,
         instructions,
         input: buildResponseInput(input),
@@ -83,13 +90,58 @@ export class OpenAIInterviewOutputArtifactGenerator implements InterviewOutputAr
         max_output_tokens: 1200,
         store: false,
         safety_identifier: input.userId.slice(0, 64),
+      } satisfies ResponseCreateParamsNonStreaming;
+
+      logAiPayloadDebug("interview_output_artifact.generate", input, {
+        direction: "request",
+        payload: request,
       });
 
-      return parseInterviewOutputArtifactResponse(response);
+      const response = await this.client.responses.create(request);
+
+      logAiPayloadDebug("interview_output_artifact.generate", input, {
+        direction: "response",
+        payload: response,
+      });
+
+      const artifact = parseInterviewOutputArtifactResponse(response);
+
+      serverLogger.info(
+        {
+          event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_COMPLETED,
+          flow: "ai_provider",
+          operation: "interview_output_artifact.generate",
+          result: "success",
+          userId: input.userId,
+          adventureId: input.adventureId,
+          model: this.config.model,
+          durationMs: Date.now() - startedAt,
+        },
+        "OpenAI interview output artifact request completed.",
+      );
+
+      return artifact;
     } catch (error) {
       if (error instanceof GameMasterInterviewerError) {
+        logProviderError(error, input, this.config.model, startedAt);
         throw error;
       }
+
+      serverLogger.error(
+        {
+          event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_FAILED,
+          flow: "ai_provider",
+          operation: "interview_output_artifact.generate",
+          result: "failure",
+          userId: input.userId,
+          adventureId: input.adventureId,
+          model: this.config.model,
+          providerErrorCategory: "request_failed",
+          error: serializeProviderRequestErrorForLog(error),
+          durationMs: Date.now() - startedAt,
+        },
+        "OpenAI interview output artifact request failed.",
+      );
 
       throw new GameMasterInterviewerError(
         "provider_request_failed",
@@ -106,6 +158,87 @@ export class OpenAIInterviewOutputArtifactGenerator implements InterviewOutputAr
 
     return readFile(this.promptPath, "utf8");
   }
+}
+
+function logAiPayloadDebug(
+  operation: string,
+  input: Pick<InterviewOutputArtifactGenerationRequest, "userId" | "adventureId">,
+  payloadInfo: Readonly<{ direction: "request" | "response"; payload: unknown }>,
+): void {
+  const payloadPreview = serializeAiPayloadForLog(
+    payloadInfo.payload,
+    loadServerLoggingConfig(),
+  );
+
+  if (!payloadPreview.enabled) {
+    return;
+  }
+
+  serverLogger.debug(
+    {
+      event: APPLICATION_LOG_EVENTS.AI_OPENAI_PAYLOAD_DEBUG,
+      flow: "ai_provider",
+      operation,
+      result: "success",
+      userId: input.userId,
+      adventureId: input.adventureId,
+      direction: payloadInfo.direction,
+      payload: payloadPreview.payload,
+    },
+    "OpenAI interview output artifact payload preview.",
+  );
+}
+
+function serializeProviderRequestErrorForLog(error: unknown) {
+  return {
+    ...serializeErrorForLog(error),
+    message: "Provider request failed.",
+  };
+}
+
+function logProviderError(
+  error: GameMasterInterviewerError,
+  input: Pick<InterviewOutputArtifactGenerationRequest, "userId" | "adventureId">,
+  model: string,
+  startedAt: number,
+): void {
+  if (error.code === "provider_output_invalid") {
+    serverLogger.warn(
+      {
+        event: APPLICATION_LOG_EVENTS.AI_OPENAI_OUTPUT_INVALID,
+        flow: "ai_provider",
+        operation: "interview_output_artifact.generate",
+        result: "failure",
+        userId: input.userId,
+        adventureId: input.adventureId,
+        model,
+        providerErrorCode: error.code,
+        providerErrorCategory: "invalid_output",
+        error: serializeErrorForLog(error),
+        durationMs: Date.now() - startedAt,
+      },
+      "OpenAI interview output artifact returned invalid output.",
+    );
+
+    return;
+  }
+
+  serverLogger.error(
+    {
+      event: APPLICATION_LOG_EVENTS.AI_OPENAI_REQUEST_FAILED,
+      flow: "ai_provider",
+      operation: "interview_output_artifact.generate",
+      result: "failure",
+      userId: input.userId,
+      adventureId: input.adventureId,
+      model,
+      providerErrorCode: error.code,
+      providerErrorCategory: "request_failed",
+      error: serializeProviderRequestErrorForLog(error),
+      durationMs: Date.now() - startedAt,
+    },
+    "OpenAI interview output artifact request failed.",
+  );
 }
 
 const INTERVIEW_OUTPUT_ARTIFACT_FORMAT = {
