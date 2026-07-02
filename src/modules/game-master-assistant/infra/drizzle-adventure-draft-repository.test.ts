@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import type { InterviewOutputArtifact } from "../domain/interview-output-artifact";
+
 import { DrizzleAdventureDraftRepository, type GameMasterAssistantDb } from "./drizzle-adventure-draft-repository";
 
 type Row = Record<string, unknown>;
@@ -89,6 +91,10 @@ class MutationBuilder implements PromiseLike<Row[]> {
     return this;
   }
 
+  onConflictDoUpdate(): this {
+    return this;
+  }
+
   returning(): QueryBuilder {
     return new QueryBuilder(this.executeMutation);
   }
@@ -116,6 +122,28 @@ const userMessageRow = {
   content: "Become a chef",
   sequenceNumber: 1,
   createdAt: new Date("2026-01-01T00:00:01.000Z"),
+};
+
+const validArtifact: InterviewOutputArtifact = {
+  goalSummary: "Become a confident home chef.",
+  coreWhy: "Cook healthier meals for family.",
+  successDefinition: "Prepare three reliable dinners without stress.",
+  currentStage: "Can cook basic pasta and eggs.",
+  blockers: ["Limited weeknight time"],
+  constraints: ["Vegetarian-friendly meals"],
+  existingResources: ["Basic cookware"],
+  likelyMissingResources: ["Meal planning routine"],
+  safetyBoundaries: ["No medical nutrition advice"],
+  preferences: ["Practical and encouraging tone"],
+  compactSourceSummary: "The user wants a practical cooking adventure for weeknight meals.",
+};
+
+const artifactRow = {
+  id: "artifact-1",
+  adventureId: "adventure-1",
+  payload: validArtifact,
+  createdAt: new Date("2026-01-01T00:00:03.000Z"),
+  updatedAt: new Date("2026-01-01T00:00:04.000Z"),
 };
 
 const gameMasterMessageRow = {
@@ -241,6 +269,92 @@ describe("DrizzleAdventureDraftRepository", () => {
       "update",
       "update",
     ]);
+  });
+
+
+  it("gets the current artifact only after verifying Adventure ownership", async () => {
+    const db = new QueuedDrizzleDb([[{ id: "adventure-1" }], [artifactRow]]);
+    const repository = new DrizzleAdventureDraftRepository(db.asRepositoryDb());
+
+    await expect(
+      repository.getCurrentArtifact({ userId: "user-1", adventureId: "adventure-1" }),
+    ).resolves.toEqual({
+      id: "artifact-1",
+      adventureId: "adventure-1",
+      artifact: validArtifact,
+      createdAt: new Date("2026-01-01T00:00:03.000Z"),
+      updatedAt: new Date("2026-01-01T00:00:04.000Z"),
+    });
+    expect(db.operations).toEqual(["select", "select"]);
+  });
+
+  it("returns null for missing or unauthorized current artifact reads", async () => {
+    const unauthorizedDb = new QueuedDrizzleDb([[]]);
+    const unauthorizedRepository = new DrizzleAdventureDraftRepository(
+      unauthorizedDb.asRepositoryDb(),
+    );
+
+    await expect(
+      unauthorizedRepository.getCurrentArtifact({
+        userId: "other-user",
+        adventureId: "adventure-1",
+      }),
+    ).resolves.toBeNull();
+    expect(unauthorizedDb.operations).toEqual(["select"]);
+
+    const missingArtifactDb = new QueuedDrizzleDb([[{ id: "adventure-1" }], []]);
+    const missingArtifactRepository = new DrizzleAdventureDraftRepository(
+      missingArtifactDb.asRepositoryDb(),
+    );
+
+    await expect(
+      missingArtifactRepository.getCurrentArtifact({ userId: "user-1", adventureId: "adventure-1" }),
+    ).resolves.toBeNull();
+    expect(missingArtifactDb.operations).toEqual(["select", "select"]);
+  });
+
+  it("saves the current artifact through scoped upsert behavior", async () => {
+    const db = new QueuedDrizzleDb([[{ id: "adventure-1" }], [artifactRow], []]);
+    const repository = new DrizzleAdventureDraftRepository(db.asRepositoryDb());
+
+    await expect(
+      repository.saveCurrentArtifact({
+        userId: "user-1",
+        adventureId: "adventure-1",
+        artifact: validArtifact,
+      }),
+    ).resolves.toMatchObject({
+      id: "artifact-1",
+      adventureId: "adventure-1",
+      artifact: validArtifact,
+    });
+    expect(db.operations).toEqual(["transaction", "select", "insert", "update"]);
+  });
+
+  it("rejects unauthorized current artifact writes", async () => {
+    const db = new QueuedDrizzleDb([[]]);
+    const repository = new DrizzleAdventureDraftRepository(db.asRepositoryDb());
+
+    await expect(
+      repository.saveCurrentArtifact({
+        userId: "other-user",
+        adventureId: "adventure-1",
+        artifact: validArtifact,
+      }),
+    ).rejects.toThrow("Adventure draft was not found.");
+    expect(db.operations).toEqual(["transaction", "select"]);
+  });
+
+  it("rejects malformed persisted artifact payloads before returning trusted data", async () => {
+    const db = new QueuedDrizzleDb([
+      [{ id: "adventure-1" }],
+      [{ ...artifactRow, payload: { goalSummary: "Too little" } }],
+    ]);
+    const repository = new DrizzleAdventureDraftRepository(db.asRepositoryDb());
+
+    await expect(
+      repository.getCurrentArtifact({ userId: "user-1", adventureId: "adventure-1" }),
+    ).rejects.toThrow("coreWhy");
   });
 
   it("rejects unauthorized scoped writes", async () => {

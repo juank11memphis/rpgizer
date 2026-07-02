@@ -29,6 +29,13 @@
       "when": 1783012201043,
       "tag": "0003_charming_spacker_dave",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1783014662909,
+      "tag": "0004_daily_victor_mancha",
+      "breakpoints": true
     }
   ]
 }

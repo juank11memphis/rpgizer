@@ -5,9 +5,11 @@ import * as schema from "@/db/schema";
 import {
   adventureInterviewMessages,
   adventures,
+  interviewOutputArtifacts,
 } from "@/db/schema";
 
 import { ADVENTURE_DRAFT_STATE } from "../domain/adventure-draft-state";
+import { parseInterviewOutputArtifact } from "../domain/interview-output-artifact";
 import type { InterviewMessage, InterviewMessageRole } from "../domain/interview-message";
 import { normalizeRequiredInterviewText } from "../domain/interview-message";
 import type { InterviewReadinessStatus } from "../domain/interview-readiness";
@@ -19,6 +21,8 @@ import type { DashboardAdventureDraft } from "../application/get-dashboard-adven
 import type { AdventureInterview } from "../application/get-adventure-interview/output";
 import type { AdventureInterviewRepository } from "../application/get-adventure-interview/ports";
 import type { AnswerInterviewQuestionRepository } from "../application/answer-interview-question/ports";
+import type { InterviewOutputArtifactRepository } from "../application/interview-output-artifact/ports";
+import type { CurrentInterviewOutputArtifact } from "../application/interview-output-artifact/output";
 import type {
   CreatedAdventureDraft,
   CreateAdventureDraftInput,
@@ -42,12 +46,18 @@ type InterviewMessageRow = Pick<
   "id" | "role" | "content" | "sequenceNumber" | "createdAt"
 >;
 
+type InterviewOutputArtifactRow = Pick<
+  typeof interviewOutputArtifacts.$inferSelect,
+  "id" | "adventureId" | "payload" | "createdAt" | "updatedAt"
+>;
+
 export class DrizzleAdventureDraftRepository
   implements
     DashboardAdventureDraftRepository,
     StartAdventureInterviewRepository,
     AdventureInterviewRepository,
-    AnswerInterviewQuestionRepository
+    AnswerInterviewQuestionRepository,
+    InterviewOutputArtifactRepository
 {
   constructor(private readonly db: GameMasterAssistantDb) {}
 
@@ -209,6 +219,101 @@ export class DrizzleAdventureDraftRepository
     };
   }
 
+
+  async getCurrentArtifact(input: {
+    userId: string;
+    adventureId: string;
+  }): Promise<CurrentInterviewOutputArtifact | null> {
+    const authorizedDrafts = await this.db
+      .select({ id: adventures.id })
+      .from(adventures)
+      .where(
+        and(
+          eq(adventures.id, input.adventureId),
+          eq(adventures.userId, input.userId),
+          eq(adventures.state, ADVENTURE_DRAFT_STATE),
+        ),
+      )
+      .limit(1);
+
+    if (!authorizedDrafts[0]) {
+      return null;
+    }
+
+    const artifactRows = await this.db
+      .select({
+        id: interviewOutputArtifacts.id,
+        adventureId: interviewOutputArtifacts.adventureId,
+        payload: interviewOutputArtifacts.payload,
+        createdAt: interviewOutputArtifacts.createdAt,
+        updatedAt: interviewOutputArtifacts.updatedAt,
+      })
+      .from(interviewOutputArtifacts)
+      .where(eq(interviewOutputArtifacts.adventureId, input.adventureId))
+      .limit(1);
+
+    const artifactRow = artifactRows[0];
+    return artifactRow ? mapInterviewOutputArtifact(artifactRow) : null;
+  }
+
+  async saveCurrentArtifact(input: {
+    userId: string;
+    adventureId: string;
+    artifact: CurrentInterviewOutputArtifact["artifact"];
+  }): Promise<CurrentInterviewOutputArtifact> {
+    return this.db.transaction(async (tx) => {
+      const authorizedDrafts = await tx
+        .select({ id: adventures.id })
+        .from(adventures)
+        .where(
+          and(
+            eq(adventures.id, input.adventureId),
+            eq(adventures.userId, input.userId),
+            eq(adventures.state, ADVENTURE_DRAFT_STATE),
+          ),
+        )
+        .limit(1);
+
+      const authorizedDraft = authorizedDrafts[0];
+      if (!authorizedDraft) {
+        throw new Error("Adventure draft was not found.");
+      }
+
+      const rows = await tx
+        .insert(interviewOutputArtifacts)
+        .values({
+          adventureId: authorizedDraft.id,
+          payload: input.artifact,
+        })
+        .onConflictDoUpdate({
+          target: interviewOutputArtifacts.adventureId,
+          set: {
+            payload: input.artifact,
+            updatedAt: sql`now()`,
+          },
+        })
+        .returning({
+          id: interviewOutputArtifacts.id,
+          adventureId: interviewOutputArtifacts.adventureId,
+          payload: interviewOutputArtifacts.payload,
+          createdAt: interviewOutputArtifacts.createdAt,
+          updatedAt: interviewOutputArtifacts.updatedAt,
+        });
+
+      const row = rows[0];
+      if (!row) {
+        throw new Error("Interview output artifact could not be saved.");
+      }
+
+      await tx
+        .update(adventures)
+        .set({ updatedAt: row.updatedAt })
+        .where(eq(adventures.id, authorizedDraft.id));
+
+      return mapInterviewOutputArtifact(row);
+    });
+  }
+
   async updateReadiness(input: {
     userId: string;
     adventureId: string;
@@ -288,6 +393,16 @@ function mapInterviewDraft(row: AdventureDraftRow): AdventureInterview["draft"] 
   return mapDashboardDraft(row);
 }
 
+function mapInterviewOutputArtifact(row: InterviewOutputArtifactRow): CurrentInterviewOutputArtifact {
+  return {
+    id: row.id,
+    adventureId: row.adventureId,
+    artifact: parseInterviewOutputArtifact(row.payload),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 function mapInterviewMessage(row: InterviewMessageRow): InterviewMessage {
   const role = row.role;
   if (role !== "user" && role !== "game_master") {
@@ -326,3 +441,4 @@ function readInterviewStatus(value: string): InterviewStatus {
 
   return value;
 }
+

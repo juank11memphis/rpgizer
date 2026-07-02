@@ -1,6 +1,7 @@
 import {
   check,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -88,6 +89,24 @@ export const adventures = pgTable(
       "adventures_interview_status_check",
       sql`${adventure.interviewStatus} in ('interviewing', 'awaiting_confirmation', 'confirmed')`,
     ),
+  ],
+);
+
+export const interviewOutputArtifacts = pgTable(
+  "interviewOutputArtifacts",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    payload: jsonb("payload").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (artifact) => [
+    unique("interview_output_artifacts_adventure_unique").on(artifact.adventureId),
   ],
 );
 
