@@ -34,5 +34,9 @@ export default async function InterviewPage({ params }: InterviewPageProps) {
     notFound();
   }
 
+  if (interview.draft.readinessStatus === "ready_to_generate") {
+    redirect(`/adventures/${adventureId}/forge`);
+  }
+
   return <InterviewScreen interview={interview} />;
 }

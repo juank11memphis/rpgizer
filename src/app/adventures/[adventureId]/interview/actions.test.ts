@@ -106,6 +106,29 @@ describe("submitInterviewAnswerAction", () => {
     });
   });
 
+  it("redirects to the forge step when the interview is ready to generate", async () => {
+    const action = createSubmitInterviewAnswerAction({
+      requireCurrentUser: async () => authenticatedUser(),
+      answerInterviewQuestion: vi.fn().mockResolvedValue(
+        successOutput({
+          readinessStatus: "ready_to_generate",
+          gameMasterMessage: "I’ve got enough to forge your Adventure.",
+        }),
+      ),
+      redirectTo,
+    });
+
+    await expect(
+      action(
+        initialInterviewAnswerFormState,
+        buildFormData({
+          adventureId: "adventure-1",
+          answerText: "No safety concerns.",
+        }),
+      ),
+    ).rejects.toThrow("NEXT_REDIRECT:/adventures/adventure-1/forge");
+  });
+
   it("returns safe recoverable failure copy and retry metadata", async () => {
     const action = createSubmitInterviewAnswerAction({
       requireCurrentUser: async () => authenticatedUser(),
@@ -167,19 +190,26 @@ function authenticatedUser(): RequireCurrentUserResult {
   };
 }
 
-function successOutput(): AnswerInterviewQuestionOutput {
+function successOutput(input: {
+  readinessStatus?: "not_ready" | "ready_to_generate";
+  gameMasterMessage?: string;
+} = {}): AnswerInterviewQuestionOutput {
+  const readinessStatus = input.readinessStatus ?? "not_ready";
+  const gameMasterMessage =
+    input.gameMasterMessage ?? "What tools do you already have?";
+
   return {
     status: "success",
-    draft: draft(),
+    draft: draft({ readinessStatus }),
     transcript: [
       message("message-3", "user", "I can cook eggs and pasta.", 3),
-      message("message-4", "game_master", "What tools do you already have?", 4),
+      message("message-4", "game_master", gameMasterMessage, 4),
     ],
     userMessage: message("message-3", "user", "I can cook eggs and pasta.", 3),
     gameMasterMessage: message(
       "message-4",
       "game_master",
-      "What tools do you already have?",
+      gameMasterMessage,
       4,
     ),
   };
@@ -203,12 +233,14 @@ function recoverableFailureOutput(): AnswerInterviewQuestionOutput {
   };
 }
 
-function draft() {
+function draft(input: {
+  readinessStatus?: "not_ready" | "ready_to_generate";
+} = {}) {
   return {
     id: "adventure-1",
     goalText: "Become a chef",
     state: "drafting" as const,
-    readinessStatus: "not_ready" as const,
+    readinessStatus: input.readinessStatus ?? "not_ready",
     updatedAt: new Date("2026-01-02T00:00:00.000Z"),
   };
 }
