@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { AnswerInterviewQuestionOutput } from "@/modules/game-master-assistant/application/answer-interview-question/output";
 import type { RequireCurrentUserResult } from "@/modules/user-identity/application/require-current-user/output";
+import { APPLICATION_LOG_EVENTS } from "@/server/logging/events";
 
 import {
   createSubmitInterviewAnswerAction,
@@ -29,7 +30,6 @@ function buildFormData(input: {
     formData.set("retryUserMessageId", input.retryUserMessageId);
   }
 
-
   return formData;
 }
 
@@ -40,10 +40,12 @@ function redirectTo(destination: string): never {
 describe("submitInterviewAnswerAction", () => {
   it("returns empty validation without calling the use case", async () => {
     const answerInterviewQuestion = vi.fn();
+    const logger = createLoggerMock();
     const action = createSubmitInterviewAnswerAction({
       requireCurrentUser: async () => authenticatedUser(),
       answerInterviewQuestion,
       redirectTo,
+      logger,
     });
 
     await expect(
@@ -56,13 +58,24 @@ describe("submitInterviewAnswerAction", () => {
       fieldError: EMPTY_ANSWER_MESSAGE,
     });
     expect(answerInterviewQuestion).not.toHaveBeenCalled();
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event:
+          APPLICATION_LOG_EVENTS.SERVER_ACTION_INTERVIEW_ANSWER_VALIDATION_FAILED,
+        adventureId: "adventure-1",
+        validationField: "answerText",
+        validationCategory: "empty",
+      }),
+    );
   });
 
   it("redirects unauthenticated Users through login", async () => {
+    const logger = createLoggerMock();
     const action = createSubmitInterviewAnswerAction({
       requireCurrentUser: async () => ({ status: "unauthenticated" }),
       answerInterviewQuestion: vi.fn(),
       redirectTo,
+      logger,
     });
 
     await expect(
@@ -73,14 +86,25 @@ describe("submitInterviewAnswerAction", () => {
     ).rejects.toThrow(
       "NEXT_REDIRECT:/login?next=%2Fadventures%2Fadventure-1%2Finterview",
     );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event:
+          APPLICATION_LOG_EVENTS.SERVER_ACTION_INTERVIEW_ANSWER_UNAUTHENTICATED_REDIRECT,
+        adventureId: "adventure-1",
+        redirectDestination:
+          "/login?next=%2Fadventures%2Fadventure-1%2Finterview",
+      }),
+    );
   });
 
   it("submits a trimmed answer and returns the updated transcript", async () => {
+    const logger = createLoggerMock();
     const answerInterviewQuestion = vi.fn().mockResolvedValue(successOutput());
     const action = createSubmitInterviewAnswerAction({
       requireCurrentUser: async () => authenticatedUser(),
       answerInterviewQuestion,
       redirectTo,
+      logger,
     });
 
     await expect(
@@ -105,9 +129,20 @@ describe("submitInterviewAnswerAction", () => {
       adventureId: "adventure-1",
       answerText: "I can cook eggs and pasta.",
     });
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.SERVER_ACTION_INTERVIEW_ANSWER_SUCCESS,
+        userId: "user-1",
+        adventureId: "adventure-1",
+        mode: "answer",
+        draftReadinessStatus: "not_ready",
+        draftInterviewStatus: "interviewing",
+      }),
+    );
   });
 
   it("returns success without redirecting when the interview is provisionally ready", async () => {
+    const logger = createLoggerMock();
     const answerInterviewQuestion = vi.fn().mockResolvedValue(
       successOutput({
         readinessStatus: "ready_to_generate",
@@ -120,6 +155,7 @@ describe("submitInterviewAnswerAction", () => {
       requireCurrentUser: async () => authenticatedUser(),
       answerInterviewQuestion,
       redirectTo,
+      logger,
     });
 
     await expect(
@@ -152,10 +188,12 @@ describe("submitInterviewAnswerAction", () => {
   });
 
   it("returns safe recoverable failure copy and retry metadata", async () => {
+    const logger = createLoggerMock();
     const action = createSubmitInterviewAnswerAction({
       requireCurrentUser: async () => authenticatedUser(),
       answerInterviewQuestion: vi.fn().mockResolvedValue(recoverableFailureOutput()),
       redirectTo,
+      logger,
     });
 
     await expect(
@@ -174,14 +212,64 @@ describe("submitInterviewAnswerAction", () => {
         expect.objectContaining({ content: "I can cook eggs and pasta." }),
       ],
     });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event:
+          APPLICATION_LOG_EVENTS.SERVER_ACTION_INTERVIEW_ANSWER_RECOVERABLE_FAILURE,
+        userId: "user-1",
+        adventureId: "adventure-1",
+        mode: "answer",
+        retryUserMessageId: "message-3",
+      }),
+    );
+  });
+
+  it("logs expected errors without private answer text", async () => {
+    const logger = createLoggerMock();
+    const action = createSubmitInterviewAnswerAction({
+      requireCurrentUser: async () => authenticatedUser(),
+      answerInterviewQuestion: vi.fn().mockResolvedValue(expectedErrorOutput()),
+      redirectTo,
+      logger,
+    });
+
+    await expect(
+      action(
+        initialInterviewAnswerFormState,
+        buildFormData({
+          adventureId: "adventure-1",
+          answerText: "I can cook eggs and pasta.",
+        }),
+      ),
+    ).resolves.toMatchObject({
+      status: "form_error",
+      formError: "The Interview is not ready to confirm yet.",
+    });
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.not.objectContaining({
+        answerText: expect.any(String),
+        transcript: expect.anything(),
+      }),
+    );
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event:
+          APPLICATION_LOG_EVENTS.SERVER_ACTION_INTERVIEW_ANSWER_EXPECTED_ERROR,
+        userId: "user-1",
+        adventureId: "adventure-1",
+        mode: "answer",
+      }),
+    );
   });
 
   it("maps retry metadata without sending another answer text", async () => {
+    const logger = createLoggerMock();
     const answerInterviewQuestion = vi.fn().mockResolvedValue(successOutput());
     const action = createSubmitInterviewAnswerAction({
       requireCurrentUser: async () => authenticatedUser(),
       answerInterviewQuestion,
       redirectTo,
+      logger,
     });
 
     await action(
@@ -197,8 +285,22 @@ describe("submitInterviewAnswerAction", () => {
       adventureId: "adventure-1",
       retryUserMessageId: "message-3",
     });
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.SERVER_ACTION_INTERVIEW_ANSWER_SUCCESS,
+        mode: "retry",
+        adventureId: "adventure-1",
+      }),
+    );
   });
 });
+
+function createLoggerMock() {
+  return {
+    info: vi.fn(),
+    warn: vi.fn(),
+  };
+}
 
 function authenticatedUser(): RequireCurrentUserResult {
   return {
@@ -256,6 +358,17 @@ function recoverableFailureOutput(): AnswerInterviewQuestionOutput {
     preservedUserMessage,
     retryUserMessageId: preservedUserMessage.id,
     message: INTERVIEW_SAVE_FAILURE_MESSAGE,
+  };
+}
+
+function expectedErrorOutput(): AnswerInterviewQuestionOutput {
+  return {
+    status: "expected_error",
+    draft: draft(),
+    transcript: [
+      message("message-3", "user", "I can cook eggs and pasta.", 3),
+    ],
+    message: "The Interview is not ready to confirm yet.",
   };
 }
 

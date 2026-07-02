@@ -10,6 +10,8 @@ import {
   verificationTokens,
 } from "@/db/schema";
 import { getUserIdentityDb } from "@/modules/user-identity/infra/db/client";
+import { APPLICATION_LOG_EVENTS } from "@/server/logging/events";
+import { serverLogger } from "@/server/logging/logger";
 
 function readRequiredEnvironmentValue(name: string): string {
   const value = process.env[name];
@@ -45,6 +47,19 @@ export function buildAuthOptions(): NextAuthOptions {
         }
 
         return session;
+      },
+    },
+    events: {
+      signIn({ user, account, isNewUser }) {
+        serverLogger.info({
+          event: APPLICATION_LOG_EVENTS.AUTH_SIGN_IN_SUCCESS,
+          flow: "auth",
+          result: "success",
+          userId: user.id,
+          provider: account?.provider ?? null,
+          providerType: account?.type ?? null,
+          isNewUser: isNewUser ?? false,
+        });
       },
     },
     secret: readRequiredEnvironmentValue("AUTH_SECRET"),
