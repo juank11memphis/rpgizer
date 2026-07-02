@@ -71,6 +71,101 @@ describe("answerInterviewQuestion", () => {
     expect(result.transcript.map((message) => message.sequenceNumber)).toEqual([1, 2, 3, 4]);
   });
 
+  it("accepts final context while awaiting confirmation and can continue interviewing", async () => {
+    const repository = new FakeAdventureDraftRepository();
+    repository.seedDraft({
+      id: "adventure-1",
+      userId: "user-1",
+      goalText: "Become a chef",
+      readinessStatus: "ready_to_generate",
+      interviewStatus: "awaiting_confirmation",
+    });
+    repository.seedMessage({
+      adventureId: "adventure-1",
+      role: "game_master",
+      content:
+        "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      sequenceNumber: 1,
+    });
+    const interviewer = new FakeGameMasterInterviewer();
+    interviewer.queueResult({
+      messageToUser: "That changes the route. What budget should we plan around?",
+      readinessStatus: "not_ready",
+    });
+
+    const result = await answerInterviewQuestion(
+      {
+        userId: "user-1",
+        adventureId: "adventure-1",
+        answerText: "I forgot to mention my budget is very limited.",
+      },
+      { adventureDraftRepository: repository, gameMasterInterviewer: interviewer },
+    );
+
+    expect(result.status).toBe("success");
+    expect(result.draft.readinessStatus).toBe("not_ready");
+    expect(result.draft.interviewStatus).toBe("interviewing");
+    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("interviewing");
+    expect(interviewer.requests[0]).toMatchObject({
+      readinessStatus: "ready_to_generate",
+    });
+    expect(interviewer.requests[0]?.transcript.map((message) => [message.role, message.content])).toEqual([
+      [
+        "game_master",
+        "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      ],
+      ["user", "I forgot to mention my budget is very limited."],
+    ]);
+  });
+
+  it("accepts final context while awaiting confirmation and can ask for confirmation again", async () => {
+    const repository = new FakeAdventureDraftRepository();
+    repository.seedDraft({
+      id: "adventure-1",
+      userId: "user-1",
+      goalText: "Become a chef",
+      readinessStatus: "ready_to_generate",
+      interviewStatus: "awaiting_confirmation",
+    });
+    repository.seedMessage({
+      adventureId: "adventure-1",
+      role: "game_master",
+      content:
+        "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      sequenceNumber: 1,
+    });
+    const interviewer = new FakeGameMasterInterviewer();
+    interviewer.queueResult({
+      messageToUser:
+        "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      readinessStatus: "ready_to_generate",
+    });
+
+    const result = await answerInterviewQuestion(
+      {
+        userId: "user-1",
+        adventureId: "adventure-1",
+        answerText: "I prefer vegetarian recipes.",
+      },
+      { adventureDraftRepository: repository, gameMasterInterviewer: interviewer },
+    );
+
+    expect(result.status).toBe("success");
+    expect(result.draft.readinessStatus).toBe("ready_to_generate");
+    expect(result.draft.interviewStatus).toBe("awaiting_confirmation");
+    expect(repository.getStoredTranscript("adventure-1").map((message) => [message.role, message.content])).toEqual([
+      [
+        "game_master",
+        "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      ],
+      ["user", "I prefer vegetarian recipes."],
+      [
+        "game_master",
+        "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      ],
+    ]);
+  });
+
   it("rejects a missing draft with a generic not-found error", async () => {
     const repository = new FakeAdventureDraftRepository();
     const interviewer = new FakeGameMasterInterviewer();

@@ -106,15 +106,18 @@ describe("submitInterviewAnswerAction", () => {
     });
   });
 
-  it("redirects to the forge step when the interview is ready to generate", async () => {
+  it("returns success without redirecting when the interview is provisionally ready", async () => {
+    const answerInterviewQuestion = vi.fn().mockResolvedValue(
+      successOutput({
+        readinessStatus: "ready_to_generate",
+        interviewStatus: "awaiting_confirmation",
+        gameMasterMessage:
+          "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      }),
+    );
     const action = createSubmitInterviewAnswerAction({
       requireCurrentUser: async () => authenticatedUser(),
-      answerInterviewQuestion: vi.fn().mockResolvedValue(
-        successOutput({
-          readinessStatus: "ready_to_generate",
-          gameMasterMessage: "I’ve got enough to forge your Adventure.",
-        }),
-      ),
+      answerInterviewQuestion,
       redirectTo,
     });
 
@@ -126,7 +129,25 @@ describe("submitInterviewAnswerAction", () => {
           answerText: "No safety concerns.",
         }),
       ),
-    ).rejects.toThrow("NEXT_REDIRECT:/adventures/adventure-1/forge");
+    ).resolves.toMatchObject({
+      status: "success",
+      draft: {
+        readinessStatus: "ready_to_generate",
+        interviewStatus: "awaiting_confirmation",
+      },
+      transcript: [
+        expect.objectContaining({ content: "I can cook eggs and pasta." }),
+        expect.objectContaining({
+          content:
+            "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+        }),
+      ],
+    });
+    expect(answerInterviewQuestion).toHaveBeenCalledWith({
+      userId: "user-1",
+      adventureId: "adventure-1",
+      answerText: "No safety concerns.",
+    });
   });
 
   it("returns safe recoverable failure copy and retry metadata", async () => {
@@ -192,6 +213,7 @@ function authenticatedUser(): RequireCurrentUserResult {
 
 function successOutput(input: {
   readinessStatus?: "not_ready" | "ready_to_generate";
+  interviewStatus?: "interviewing" | "awaiting_confirmation" | "confirmed";
   gameMasterMessage?: string;
 } = {}): AnswerInterviewQuestionOutput {
   const readinessStatus = input.readinessStatus ?? "not_ready";
@@ -200,7 +222,10 @@ function successOutput(input: {
 
   return {
     status: "success",
-    draft: draft({ readinessStatus }),
+    draft: draft({
+      readinessStatus,
+      interviewStatus: input.interviewStatus,
+    }),
     transcript: [
       message("message-3", "user", "I can cook eggs and pasta.", 3),
       message("message-4", "game_master", gameMasterMessage, 4),

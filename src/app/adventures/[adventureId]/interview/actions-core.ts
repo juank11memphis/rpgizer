@@ -103,10 +103,6 @@ export function createSubmitInterviewAnswerAction(
       };
     }
 
-    if (result.draft.readinessStatus === "ready_to_generate") {
-      dependencies.redirectTo(`/adventures/${adventureId}/forge`);
-    }
-
     return {
       status: "success",
       answerText: "",

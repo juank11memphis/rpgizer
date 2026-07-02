@@ -1,5 +1,7 @@
 import { describe, expect, it, vi, type Mock } from "vitest";
 import type { Response, ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { GameMasterInterviewerError } from "../application/start-adventure-interview/provider-error";
 import type { InterviewTurnRequest } from "../application/start-adventure-interview/ports";
@@ -30,6 +32,23 @@ const validStructuredOutput = {
 };
 
 describe("OpenAIGameMasterInterviewer", () => {
+  it("instructs ready output to ask for final confirmation instead of completion", () => {
+    const prompt = readFileSync(
+      join(process.cwd(), "src/modules/game-master-assistant/infra/prompts/game-master-interview.md"),
+      "utf8",
+    );
+
+    expect(prompt).toContain(
+      'If `readinessStatus` is `ready_to_generate`, `messageToUser` must ask a final confirmation question',
+    );
+    expect(prompt).toContain(
+      "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+    );
+    expect(prompt).not.toContain(
+      "`messageToUser` should briefly say the Game Master has enough to forge the Adventure and must not include a new question.",
+    );
+  });
+
   it("calls OpenAI Responses with the Markdown prompt as instructions and returns RPGizer-owned data", async () => {
     const client = createMockClient(
       responseWithOutput(JSON.stringify(validStructuredOutput)),

@@ -65,5 +65,6 @@ Rules:
 - `messageToUser` is the exact next Game Master message shown to the User.
 - `coveredSignals` marks whether each signal is sufficiently covered by the transcript after considering the latest turn.
 - If `readinessStatus` is `not_ready`, `messageToUser` must ask the single next best question.
-- If `readinessStatus` is `ready_to_generate`, `messageToUser` should briefly say the Game Master has enough to forge the Adventure and must not include a new question.
+- If `readinessStatus` is `ready_to_generate`, `messageToUser` must ask a final confirmation question instead of a new interview question. Use copy like: “I have what I need to forge this Adventure. Anything else you want me to know before I begin?”
+- For `ready_to_generate`, do not say the flow is complete, do not mention readiness, artifacts, schemas, or internal status, and do not generate any Adventure content.
 - `summaryDelta` is a compact update to remembered context, or `null` if nothing useful changed.
