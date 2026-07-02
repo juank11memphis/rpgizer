@@ -1,6 +1,8 @@
 import { normalizeRequiredInterviewText } from "../../domain/interview-message";
 import { deriveInterviewStatusFromReadiness } from "../../domain/interview-status";
 import type { InterviewMessage } from "../../domain/interview-message";
+import { APPLICATION_LOG_EVENTS } from "../../../../server/logging/events";
+import { serverLogger } from "../../../../server/logging/logger";
 import {
   InterviewProviderFailure,
   normalizeInterviewProviderFailure,
@@ -21,6 +23,7 @@ export async function answerInterviewQuestion(
   input: AnswerInterviewQuestionInput,
   dependencies: AnswerInterviewQuestionDependencies,
 ): Promise<AnswerInterviewQuestionOutput> {
+  const startedAt = Date.now();
   const retryUserMessageId = readRetryUserMessageId(input);
   const answerText = retryUserMessageId
     ? null
@@ -46,6 +49,23 @@ export async function answerInterviewQuestion(
           role: "user",
           content: answerText ?? "",
         });
+
+  if (!retryUserMessageId) {
+    serverLogger.info(
+      {
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_ANSWER_PERSISTED,
+        flow: "interview",
+        result: "success",
+        userId: input.userId,
+        adventureId: input.adventureId,
+        userMessageId: userMessage.id,
+        readinessStatus: existingInterview.draft.readinessStatus,
+        interviewStatus: existingInterview.draft.interviewStatus,
+      },
+      "Interview answer persisted.",
+    );
+  }
+
   const transcriptWithAnswer =
     retryUserMessageId
       ? existingInterview.transcript
@@ -63,6 +83,20 @@ export async function answerInterviewQuestion(
   );
 
   if (interviewerResult instanceof InterviewProviderFailure) {
+    serverLogger.warn(
+      {
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_TURN_RECOVERABLE_FAILURE,
+        flow: "interview",
+        result: "recoverable_failure",
+        userId: input.userId,
+        adventureId: input.adventureId,
+        retryUserMessageId: userMessage.id,
+        providerFailureCode: interviewerResult.code,
+        durationMs: Date.now() - startedAt,
+      },
+      "Interview turn hit a recoverable provider failure.",
+    );
+
     return {
       status: "recoverable_failure",
       draft: existingInterview.draft,
@@ -81,6 +115,22 @@ export async function answerInterviewQuestion(
       userId: input.userId,
       adventureId: input.adventureId,
     });
+
+    serverLogger.info(
+      {
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_CONFIRMED,
+        flow: "interview",
+        result: "success",
+        userId: input.userId,
+        adventureId: input.adventureId,
+        previousReadinessStatus: existingInterview.draft.readinessStatus,
+        nextReadinessStatus: "ready_to_generate",
+        previousInterviewStatus: existingInterview.draft.interviewStatus,
+        nextInterviewStatus: "confirmed",
+        durationMs: Date.now() - startedAt,
+      },
+      "Interview readiness confirmed.",
+    );
 
     return {
       status: "success",
@@ -116,6 +166,41 @@ export async function answerInterviewQuestion(
     readinessStatus: interviewerResult.readinessStatus,
     interviewStatus,
   });
+
+  if (
+    interviewerResult.readinessStatus !== existingInterview.draft.readinessStatus ||
+    interviewStatus !== existingInterview.draft.interviewStatus
+  ) {
+    serverLogger.info(
+      {
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_READINESS_CHANGED,
+        flow: "interview",
+        result: "success",
+        userId: input.userId,
+        adventureId: input.adventureId,
+        previousReadinessStatus: existingInterview.draft.readinessStatus,
+        nextReadinessStatus: interviewerResult.readinessStatus,
+        previousInterviewStatus: existingInterview.draft.interviewStatus,
+        nextInterviewStatus: interviewStatus,
+      },
+      "Interview readiness changed.",
+    );
+  }
+
+  serverLogger.info(
+    {
+      event: APPLICATION_LOG_EVENTS.INTERVIEW_TURN_COMPLETED,
+      flow: "interview",
+      result: "success",
+      userId: input.userId,
+      adventureId: input.adventureId,
+      retryUserMessageId,
+      readinessStatus: interviewerResult.readinessStatus,
+      interviewStatus,
+      durationMs: Date.now() - startedAt,
+    },
+    "Interview turn completed.",
+  );
 
   return {
     status: "success",

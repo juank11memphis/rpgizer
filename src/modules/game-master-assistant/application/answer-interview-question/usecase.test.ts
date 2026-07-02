@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { APPLICATION_LOG_EVENTS } from "../../../../server/logging/events";
 import { answerInterviewQuestion } from "./usecase";
 import {
   GameMasterInterviewerError,
@@ -8,7 +9,24 @@ import {
 import { FakeAdventureDraftRepository } from "../test/fake-adventure-draft-repository";
 import { FakeGameMasterInterviewer } from "../test/fake-game-master-interviewer";
 
+const loggerMock = vi.hoisted(() => ({
+  info: vi.fn(),
+  warn: vi.fn(),
+}));
+
+vi.mock("../../../../server/logging/logger", () => ({
+  serverLogger: {
+    info: loggerMock.info,
+    warn: loggerMock.warn,
+  },
+}));
+
 describe("answerInterviewQuestion", () => {
+  beforeEach(() => {
+    loggerMock.info.mockClear();
+    loggerMock.warn.mockClear();
+  });
+
   it("rejects a blank answer", async () => {
     const repository = new FakeAdventureDraftRepository();
     const interviewer = new FakeGameMasterInterviewer();
@@ -70,6 +88,47 @@ describe("answerInterviewQuestion", () => {
     expect(result.draft.interviewStatus).toBe("awaiting_confirmation");
     expect(repository.getStoredInterviewStatus("adventure-1")).toBe("awaiting_confirmation");
     expect(result.transcript.map((message) => message.sequenceNumber)).toEqual([1, 2, 3, 4]);
+    expect(logPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_ANSWER_PERSISTED)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_ANSWER_PERSISTED,
+        flow: "interview",
+        result: "success",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        userMessageId: expect.any(String),
+        readinessStatus: "not_ready",
+        interviewStatus: "interviewing",
+      }),
+    ]);
+    expect(logPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_READINESS_CHANGED)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_READINESS_CHANGED,
+        flow: "interview",
+        result: "success",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        previousReadinessStatus: "not_ready",
+        nextReadinessStatus: "ready_to_generate",
+        previousInterviewStatus: "interviewing",
+        nextInterviewStatus: "awaiting_confirmation",
+      }),
+    ]);
+    expect(logPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_TURN_COMPLETED)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_TURN_COMPLETED,
+        flow: "interview",
+        result: "success",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        readinessStatus: "ready_to_generate",
+        interviewStatus: "awaiting_confirmation",
+        durationMs: expect.any(Number),
+      }),
+    ]);
+    expect(serializedLogPayloads()).not.toContain("I can cook eggs and pasta.");
+    expect(serializedLogPayloads()).not.toContain(
+      "Great. What tools and time do you already have?",
+    );
   });
 
   it("accepts final context while awaiting confirmation and can continue interviewing", async () => {
@@ -219,6 +278,22 @@ describe("answerInterviewQuestion", () => {
       readinessStatus: "ready_to_generate",
       interviewStatus: "awaiting_confirmation",
     });
+    expect(logPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_CONFIRMED)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_CONFIRMED,
+        flow: "interview",
+        result: "success",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        previousReadinessStatus: "ready_to_generate",
+        nextReadinessStatus: "ready_to_generate",
+        previousInterviewStatus: "awaiting_confirmation",
+        nextInterviewStatus: "confirmed",
+        durationMs: expect.any(Number),
+      }),
+    ]);
+    expect(logPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_TURN_COMPLETED)).toEqual([]);
+    expect(serializedLogPayloads()).not.toContain("I am good");
   });
 
   it("rejects a missing draft with a generic not-found error", async () => {
@@ -339,6 +414,20 @@ describe("answerInterviewQuestion", () => {
     });
     expect(repository.getStoredDraftReadiness("adventure-1")).toBe("not_ready");
     expect(repository.getStoredInterviewStatus("adventure-1")).toBe("interviewing");
+    expect(warnPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_TURN_RECOVERABLE_FAILURE)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_TURN_RECOVERABLE_FAILURE,
+        flow: "interview",
+        result: "recoverable_failure",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        retryUserMessageId: expect.any(String),
+        providerFailureCode: "provider_output_invalid",
+        durationMs: expect.any(Number),
+      }),
+    ]);
+    expect(serializedLogPayloads()).not.toContain("raw invalid structured output detail");
+    expect(serializedLogPayloads()).not.toContain("I can cook eggs and pasta.");
   });
 
   it("retries a preserved User answer without appending a duplicate User message", async () => {
@@ -400,6 +489,20 @@ describe("answerInterviewQuestion", () => {
       ["user", "I can cook eggs and pasta."],
       ["game_master", "Great. What tools and time do you already have?"],
     ]);
+    expect(logPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_ANSWER_PERSISTED)).toEqual([]);
+    expect(logPayloadsFor(APPLICATION_LOG_EVENTS.INTERVIEW_TURN_COMPLETED)).toEqual([
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_TURN_COMPLETED,
+        flow: "interview",
+        result: "success",
+        userId: "user-1",
+        adventureId: "adventure-1",
+        retryUserMessageId: preservedUserMessage.id,
+        readinessStatus: "not_ready",
+        interviewStatus: "interviewing",
+        durationMs: expect.any(Number),
+      }),
+    ]);
   });
 
   it("rejects invalid retry metadata before appending or calling the interviewer", async () => {
@@ -432,3 +535,34 @@ describe("answerInterviewQuestion", () => {
     expect(interviewer.requests).toEqual([]);
   });
 });
+
+function logPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
+  return loggerMock.info.mock.calls
+    .map(([payload]) => payload)
+    .filter(
+      (payload): payload is Record<string, unknown> =>
+        typeof payload === "object" &&
+        payload !== null &&
+        "event" in payload &&
+        payload.event === event,
+    );
+}
+
+function warnPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
+  return loggerMock.warn.mock.calls
+    .map(([payload]) => payload)
+    .filter(
+      (payload): payload is Record<string, unknown> =>
+        typeof payload === "object" &&
+        payload !== null &&
+        "event" in payload &&
+        payload.event === event,
+    );
+}
+
+function serializedLogPayloads(): string {
+  return JSON.stringify([
+    ...loggerMock.info.mock.calls.map(([payload]) => payload),
+    ...loggerMock.warn.mock.calls.map(([payload]) => payload),
+  ]);
+}

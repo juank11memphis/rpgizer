@@ -1,6 +1,8 @@
 import { ADVENTURE_DRAFT_STATE } from "../../domain/adventure-draft-state";
 import { normalizeRequiredInterviewText } from "../../domain/interview-message";
 import { deriveInterviewStatusFromReadiness } from "../../domain/interview-status";
+import { APPLICATION_LOG_EVENTS } from "../../../../server/logging/events";
+import { serverLogger } from "../../../../server/logging/logger";
 import { normalizeInterviewProviderFailure } from "../start-adventure-interview/provider-error";
 import type { StartAdventureInterviewInput } from "./input";
 import type { StartAdventureInterviewOutput } from "./output";
@@ -21,6 +23,7 @@ export async function startAdventureInterview(
   input: StartAdventureInterviewInput,
   dependencies: StartAdventureInterviewDependencies,
 ): Promise<StartAdventureInterviewOutput> {
+  const startedAt = Date.now();
   const goalText = normalizeRequiredInterviewText("Goal", input.goalText);
   const repository = dependencies.adventureDraftRepository;
 
@@ -31,6 +34,19 @@ export async function startAdventureInterview(
     readinessStatus: INITIAL_READINESS_STATUS,
     interviewStatus: INITIAL_INTERVIEW_STATUS,
   });
+
+  serverLogger.info(
+    {
+      event: APPLICATION_LOG_EVENTS.ADVENTURE_DRAFT_CREATE_SUCCESS,
+      flow: "adventure_creation",
+      result: "success",
+      userId: input.userId,
+      adventureId: draft.id,
+      readinessStatus: draft.readinessStatus,
+      interviewStatus: draft.interviewStatus,
+    },
+    "Adventure draft created.",
+  );
 
   const initialGoalMessage = await repository.appendInterviewMessage({
     userId: input.userId,
@@ -66,17 +82,47 @@ export async function startAdventureInterview(
     interviewerResult.readinessStatus,
   );
 
-  if (
+  const readinessChanged =
     interviewerResult.readinessStatus !== draft.readinessStatus ||
-    interviewStatus !== draft.interviewStatus
-  ) {
+    interviewStatus !== draft.interviewStatus;
+
+  if (readinessChanged) {
     await repository.updateReadiness({
       userId: input.userId,
       adventureId: draft.id,
       readinessStatus: interviewerResult.readinessStatus,
       interviewStatus,
     });
+
+    serverLogger.info(
+      {
+        event: APPLICATION_LOG_EVENTS.INTERVIEW_READINESS_CHANGED,
+        flow: "interview",
+        result: "success",
+        userId: input.userId,
+        adventureId: draft.id,
+        previousReadinessStatus: draft.readinessStatus,
+        nextReadinessStatus: interviewerResult.readinessStatus,
+        previousInterviewStatus: draft.interviewStatus,
+        nextInterviewStatus: interviewStatus,
+      },
+      "Interview readiness changed.",
+    );
   }
+
+  serverLogger.info(
+    {
+      event: APPLICATION_LOG_EVENTS.INTERVIEW_TURN_COMPLETED,
+      flow: "interview",
+      result: "success",
+      userId: input.userId,
+      adventureId: draft.id,
+      readinessStatus: interviewerResult.readinessStatus,
+      interviewStatus,
+      durationMs: Date.now() - startedAt,
+    },
+    "Initial interview turn completed.",
+  );
 
   return {
     draft: {
