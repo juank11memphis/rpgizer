@@ -43,6 +43,9 @@ describe("OpenAIGameMasterInterviewer", () => {
       'If `readinessStatus` is `ready_to_generate` and `readinessConfirmation` is `not_confirmed`, `messageToUser` must ask a final confirmation question',
     );
     expect(prompt).toContain(
+      "Do not combine “what have you tried?” with “what got in the way?”",
+    );
+    expect(prompt).toContain(
       "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
     );
     expect(prompt).toContain("metadata `interviewStatus` is `awaiting_confirmation`");
