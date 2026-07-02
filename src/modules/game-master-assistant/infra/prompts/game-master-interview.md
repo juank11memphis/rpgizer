@@ -46,6 +46,7 @@ Schema:
 {
   "messageToUser": "string",
   "readinessStatus": "not_ready | ready_to_generate",
+  "readinessConfirmation": "confirmed | not_confirmed",
   "coveredSignals": {
     "motivation": "boolean",
     "successDefinition": "boolean",
@@ -64,7 +65,12 @@ Rules:
 
 - `messageToUser` is the exact next Game Master message shown to the User.
 - `coveredSignals` marks whether each signal is sufficiently covered by the transcript after considering the latest turn.
+- If the metadata `interviewStatus` is not `awaiting_confirmation`, set `readinessConfirmation` to `not_confirmed`.
+- If the metadata `interviewStatus` is `awaiting_confirmation`, classify the latest User reply before choosing the next message:
+  - Set `readinessConfirmation` to `confirmed` only when the reply clearly means “no more context; start forging” (for example: “I am good”, “ready”, “nothing else”, “go ahead”). Also set `readinessStatus` to `ready_to_generate`.
+  - Set `readinessConfirmation` to `not_confirmed` when the reply adds context, asks a question, expresses uncertainty, changes the goal, or mentions constraints/resources/boundaries. Then continue the interview normally: ask a follow-up if needed, or ask the final confirmation again if still ready.
 - If `readinessStatus` is `not_ready`, `messageToUser` must ask the single next best question.
-- If `readinessStatus` is `ready_to_generate`, `messageToUser` must ask a final confirmation question instead of a new interview question. Use copy like: “I have what I need to forge this Adventure. Anything else you want me to know before I begin?”
+- If `readinessStatus` is `ready_to_generate` and `readinessConfirmation` is `not_confirmed`, `messageToUser` must ask a final confirmation question instead of a new interview question. Use copy like: “I have what I need to forge this Adventure. Anything else you want me to know before I begin?”
 - For `ready_to_generate`, do not say the flow is complete, do not mention readiness, artifacts, schemas, or internal status, and do not generate any Adventure content.
+- If `readinessConfirmation` is `confirmed`, use a short acknowledgement for `messageToUser`; the app may not show it.
 - `summaryDelta` is a compact update to remembered context, or `null` if nothing useful changed.

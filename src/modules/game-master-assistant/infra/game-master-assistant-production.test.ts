@@ -15,6 +15,7 @@ describe("createGameMasterAssistantProduction", () => {
     interviewer.queueResult({
       messageToUser: "What does victory look like for this Adventure?",
       readinessStatus: "ready_to_generate",
+      readinessConfirmation: "not_confirmed",
     });
     const production = createGameMasterAssistantProduction({
       adventureDraftRepository: repository,
@@ -64,6 +65,7 @@ describe("createGameMasterAssistantProduction", () => {
     interviewer.queueResult({
       messageToUser: "What ingredients, tools, and time do you already have?",
       readinessStatus: "ready_to_generate",
+      readinessConfirmation: "not_confirmed",
     });
     const production = createGameMasterAssistantProduction({
       adventureDraftRepository: repository,

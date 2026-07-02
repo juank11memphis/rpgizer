@@ -61,7 +61,6 @@ export function InterviewScreen({
   const submitForm = (input: {
     answerText?: string;
     retryUserMessageId?: string;
-    submissionIntent?: "answer" | "confirm_readiness";
   }) => {
     if (isPending) {
       return;
@@ -78,9 +77,6 @@ export function InterviewScreen({
       formData.set("retryUserMessageId", input.retryUserMessageId);
     }
 
-    if (input.submissionIntent !== undefined) {
-      formData.set("submissionIntent", input.submissionIntent);
-    }
 
     setSaveStatus("saving");
     startTransition(async () => {
@@ -113,10 +109,6 @@ export function InterviewScreen({
 
   const handleSubmit = () => {
     submitForm({ answerText });
-  };
-
-  const handleConfirmReadiness = () => {
-    submitForm({ submissionIntent: "confirm_readiness" });
   };
 
   const handleRetry = () => {
@@ -176,7 +168,6 @@ export function InterviewScreen({
                   formError={submissionState.formError}
                   isPending={isPending}
                   canRetry={Boolean(submissionState.retryUserMessageId)}
-                  canConfirmReadiness={isAwaitingConfirmation}
                   placeholder={
                     isAwaitingConfirmation
                       ? "Add one last detail, or say you’re ready..."
@@ -185,7 +176,6 @@ export function InterviewScreen({
                   onAnswerTextChange={setAnswerText}
                   onSubmit={handleSubmit}
                   onRetry={handleRetry}
-                  onConfirmReadiness={handleConfirmReadiness}
                 />
               )}
             </div>

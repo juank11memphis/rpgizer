@@ -31,12 +31,16 @@ export type InterviewTurnRequest = {
   adventureId: string;
   goalText: string;
   readinessStatus: InterviewReadinessStatus;
+  interviewStatus: InterviewStatus;
   transcript: InterviewMessage[];
 };
+
+export type InterviewReadinessConfirmation = "confirmed" | "not_confirmed";
 
 export type InterviewTurnResult = {
   messageToUser: string;
   readinessStatus: InterviewReadinessStatus;
+  readinessConfirmation: InterviewReadinessConfirmation;
   coveredSignals?: string[];
   summaryDelta?: string | null;
 };

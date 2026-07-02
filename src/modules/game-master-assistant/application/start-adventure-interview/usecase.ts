@@ -45,6 +45,7 @@ export async function startAdventureInterview(
       adventureId: draft.id,
       goalText: draft.goalText,
       readinessStatus: draft.readinessStatus,
+      interviewStatus: draft.interviewStatus,
       transcript: [initialGoalMessage],
     }),
   );

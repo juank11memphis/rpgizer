@@ -163,7 +163,7 @@ describe("InterviewScreen", () => {
 
 
 
-  it("renders final-context composer and explicit confirmation control while awaiting confirmation", () => {
+  it("renders final-context composer without a separate confirmation button while awaiting confirmation", () => {
     const markup = renderInterviewMarkup({
       draft: {
         id: "adventure-1",
@@ -184,7 +184,7 @@ describe("InterviewScreen", () => {
     });
 
     expect(markup).toContain("Add one last detail, or say you’re ready...");
-    expect(markup).toContain("I’m Ready");
+    expect(markup).not.toContain("I’m Ready");
     expect(markup).toContain('aria-label="Answer the Game Master"');
     expect(markup).toContain('name="answerText"');
     expect(markup).toContain("Send");

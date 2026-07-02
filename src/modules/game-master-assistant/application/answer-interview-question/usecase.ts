@@ -5,9 +5,7 @@ import {
   InterviewProviderFailure,
   normalizeInterviewProviderFailure,
 } from "../start-adventure-interview/provider-error";
-import type { AdventureInterview } from "../get-adventure-interview/output";
 import type { AnswerInterviewQuestionInput } from "./input";
-import { INVALID_INTERVIEW_CONFIRMATION_MESSAGE } from "./output";
 import type { AnswerInterviewQuestionOutput } from "./output";
 import type {
   AnswerInterviewQuestionRepository,
@@ -24,8 +22,7 @@ export async function answerInterviewQuestion(
   dependencies: AnswerInterviewQuestionDependencies,
 ): Promise<AnswerInterviewQuestionOutput> {
   const retryUserMessageId = readRetryUserMessageId(input);
-  const submissionIntent = readSubmissionIntent(input);
-  const answerText = retryUserMessageId || submissionIntent === "confirm_readiness"
+  const answerText = retryUserMessageId
     ? null
     : normalizeRequiredInterviewText("Answer", readAnswerText(input));
   const repository = dependencies.adventureDraftRepository;
@@ -39,9 +36,6 @@ export async function answerInterviewQuestion(
     throw new Error("Adventure draft was not found.");
   }
 
-  if (submissionIntent === "confirm_readiness") {
-    return confirmInterviewReadiness(input, existingInterview, repository);
-  }
 
   const userMessage =
     retryUserMessageId
@@ -63,6 +57,7 @@ export async function answerInterviewQuestion(
       adventureId: input.adventureId,
       goalText: existingInterview.draft.goalText,
       readinessStatus: existingInterview.draft.readinessStatus,
+      interviewStatus: existingInterview.draft.interviewStatus,
       transcript: transcriptWithAnswer,
     }),
   );
@@ -75,6 +70,27 @@ export async function answerInterviewQuestion(
       preservedUserMessage: userMessage,
       retryUserMessageId: userMessage.id,
       message: interviewerResult.userMessage,
+    };
+  }
+
+  if (
+    existingInterview.draft.interviewStatus === "awaiting_confirmation" &&
+    interviewerResult.readinessConfirmation === "confirmed"
+  ) {
+    await repository.confirmReadiness({
+      userId: input.userId,
+      adventureId: input.adventureId,
+    });
+
+    return {
+      status: "success",
+      draft: {
+        ...existingInterview.draft,
+        readinessStatus: "ready_to_generate",
+        interviewStatus: "confirmed",
+      },
+      transcript: transcriptWithAnswer,
+      userMessage,
     };
   }
 
@@ -112,44 +128,6 @@ export async function answerInterviewQuestion(
     userMessage,
     gameMasterMessage,
   };
-}
-
-async function confirmInterviewReadiness(
-  input: AnswerInterviewQuestionInput,
-  existingInterview: AdventureInterview,
-  repository: AnswerInterviewQuestionRepository,
-): Promise<AnswerInterviewQuestionOutput> {
-  if (existingInterview.draft.interviewStatus !== "awaiting_confirmation") {
-    return {
-      status: "expected_error",
-      draft: existingInterview.draft,
-      transcript: existingInterview.transcript,
-      message: INVALID_INTERVIEW_CONFIRMATION_MESSAGE,
-    };
-  }
-
-  await repository.confirmReadiness({
-    userId: input.userId,
-    adventureId: input.adventureId,
-  });
-
-  return {
-    status: "success",
-    draft: {
-      ...existingInterview.draft,
-      readinessStatus: "ready_to_generate",
-      interviewStatus: "confirmed",
-    },
-    transcript: existingInterview.transcript,
-  };
-}
-
-function readSubmissionIntent(
-  input: AnswerInterviewQuestionInput,
-): "answer" | "confirm_readiness" {
-  return "submissionIntent" in input && input.submissionIntent === "confirm_readiness"
-    ? "confirm_readiness"
-    : "answer";
 }
 
 function readAnswerText(input: AnswerInterviewQuestionInput): string {

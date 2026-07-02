@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { INVALID_INTERVIEW_CONFIRMATION_MESSAGE } from "./output";
 import { answerInterviewQuestion } from "./usecase";
 import {
   GameMasterInterviewerError,
@@ -45,6 +44,7 @@ describe("answerInterviewQuestion", () => {
     interviewer.queueResult({
       messageToUser: "Great. What tools and time do you already have?",
       readinessStatus: "ready_to_generate",
+      readinessConfirmation: "not_confirmed",
     });
 
     const result = await answerInterviewQuestion(
@@ -92,6 +92,7 @@ describe("answerInterviewQuestion", () => {
     interviewer.queueResult({
       messageToUser: "That changes the route. What budget should we plan around?",
       readinessStatus: "not_ready",
+      readinessConfirmation: "not_confirmed",
     });
 
     const result = await answerInterviewQuestion(
@@ -109,6 +110,7 @@ describe("answerInterviewQuestion", () => {
     expect(repository.getStoredInterviewStatus("adventure-1")).toBe("interviewing");
     expect(interviewer.requests[0]).toMatchObject({
       readinessStatus: "ready_to_generate",
+      interviewStatus: "awaiting_confirmation",
     });
     expect(interviewer.requests[0]?.transcript.map((message) => [message.role, message.content])).toEqual([
       [
@@ -140,6 +142,7 @@ describe("answerInterviewQuestion", () => {
       messageToUser:
         "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
       readinessStatus: "ready_to_generate",
+      readinessConfirmation: "not_confirmed",
     });
 
     const result = await answerInterviewQuestion(
@@ -168,7 +171,7 @@ describe("answerInterviewQuestion", () => {
   });
 
 
-  it("confirms readiness from awaiting confirmation without calling the interviewer or appending messages", async () => {
+  it("confirms readiness when awaiting confirmation and the User says they are good", async () => {
     const repository = new FakeAdventureDraftRepository();
     repository.seedDraft({
       id: "adventure-1",
@@ -185,12 +188,17 @@ describe("answerInterviewQuestion", () => {
       sequenceNumber: 1,
     });
     const interviewer = new FakeGameMasterInterviewer();
+    interviewer.queueResult({
+      messageToUser: "Great — I’ll forge from here.",
+      readinessStatus: "ready_to_generate",
+      readinessConfirmation: "confirmed",
+    });
 
     const result = await answerInterviewQuestion(
       {
         userId: "user-1",
         adventureId: "adventure-1",
-        submissionIntent: "confirm_readiness",
+        answerText: "I am good",
       },
       { adventureDraftRepository: repository, gameMasterInterviewer: interviewer },
     );
@@ -198,47 +206,19 @@ describe("answerInterviewQuestion", () => {
     expect(result.status).toBe("success");
     expect(result.draft.interviewStatus).toBe("confirmed");
     expect(result.draft.readinessStatus).toBe("ready_to_generate");
-    expect(result.transcript.map((message) => message.content)).toEqual([
-      "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+    expect(result.transcript.map((message) => [message.role, message.content])).toEqual([
+      [
+        "game_master",
+        "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+      ],
+      ["user", "I am good"],
     ]);
     expect(repository.getStoredInterviewStatus("adventure-1")).toBe("confirmed");
-    expect(repository.appendedMessages).toEqual([]);
-    expect(interviewer.requests).toEqual([]);
-  });
-
-  it("returns a safe expected error when confirmation is submitted outside awaiting confirmation", async () => {
-    const repository = new FakeAdventureDraftRepository();
-    repository.seedDraft({
-      id: "adventure-1",
-      userId: "user-1",
-      goalText: "Become a chef",
-      readinessStatus: "not_ready",
-      interviewStatus: "interviewing",
+    expect(repository.appendedMessages.map((message) => message.role)).toEqual(["user"]);
+    expect(interviewer.requests[0]).toMatchObject({
+      readinessStatus: "ready_to_generate",
+      interviewStatus: "awaiting_confirmation",
     });
-    repository.seedMessage({
-      adventureId: "adventure-1",
-      role: "game_master",
-      content: "What is your current cooking level?",
-      sequenceNumber: 1,
-    });
-    const interviewer = new FakeGameMasterInterviewer();
-
-    const result = await answerInterviewQuestion(
-      {
-        userId: "user-1",
-        adventureId: "adventure-1",
-        submissionIntent: "confirm_readiness",
-      },
-      { adventureDraftRepository: repository, gameMasterInterviewer: interviewer },
-    );
-
-    expect(result).toMatchObject({
-      status: "expected_error",
-      message: INVALID_INTERVIEW_CONFIRMATION_MESSAGE,
-    });
-    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("interviewing");
-    expect(repository.appendedMessages).toEqual([]);
-    expect(interviewer.requests).toEqual([]);
   });
 
   it("rejects a missing draft with a generic not-found error", async () => {
@@ -284,6 +264,7 @@ describe("answerInterviewQuestion", () => {
     interviewer.queueResult({
       messageToUser: "Great. What tools and time do you already have?",
       readinessStatus: "ready_to_generate",
+      readinessConfirmation: "not_confirmed",
     });
 
     await expect(
@@ -390,6 +371,7 @@ describe("answerInterviewQuestion", () => {
     interviewer.queueResult({
       messageToUser: "Great. What tools and time do you already have?",
       readinessStatus: "not_ready",
+      readinessConfirmation: "not_confirmed",
     });
 
     const result = await answerInterviewQuestion(

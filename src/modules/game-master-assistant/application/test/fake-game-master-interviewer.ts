@@ -23,6 +23,7 @@ export class FakeGameMasterInterviewer implements GameMasterInterviewer {
     const result = this.queuedResults.shift() ?? {
       messageToUser: "What would success look like for this Adventure?",
       readinessStatus: "not_ready",
+      readinessConfirmation: "not_confirmed",
     };
 
     if (result instanceof Error) {

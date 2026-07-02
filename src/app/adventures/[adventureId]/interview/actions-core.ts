@@ -54,17 +54,12 @@ export function createSubmitInterviewAnswerAction(
     const adventureId = readRequiredString(formData, "adventureId");
     const answerText = readString(formData, "answerText").trim();
     const retryUserMessageId = readString(formData, "retryUserMessageId").trim();
-    const submissionIntent = readSubmissionIntent(formData);
 
     if (!adventureId) {
       throw new Error("Adventure id is required.");
     }
 
-    if (submissionIntent === "confirm_readiness" && retryUserMessageId) {
-      throw new Error("Retry and confirmation cannot be submitted together.");
-    }
-
-    if (submissionIntent === "answer" && !answerText && !retryUserMessageId) {
+    if (!answerText && !retryUserMessageId) {
       return {
         ...previousState,
         status: "field_error",
@@ -83,25 +78,17 @@ export function createSubmitInterviewAnswerAction(
     }
 
     const result = await dependencies.answerInterviewQuestion(
-      submissionIntent === "confirm_readiness"
+      retryUserMessageId
         ? {
             userId: currentUser.user.id,
             adventureId,
-            submissionIntent,
+            retryUserMessageId,
           }
-        : retryUserMessageId
-          ? {
-              userId: currentUser.user.id,
-              adventureId,
-              retryUserMessageId,
-              submissionIntent,
-            }
-          : {
-              userId: currentUser.user.id,
-              adventureId,
-              answerText,
-              submissionIntent,
-            },
+        : {
+            userId: currentUser.user.id,
+            adventureId,
+            answerText,
+          },
     );
 
     if (result.status === "expected_error") {
@@ -150,10 +137,4 @@ function readString(formData: FormData, name: string): string {
   const value = formData.get(name);
 
   return typeof value === "string" ? value : "";
-}
-
-function readSubmissionIntent(formData: FormData): "answer" | "confirm_readiness" {
-  const value = readString(formData, "submissionIntent").trim();
-
-  return value === "confirm_readiness" ? "confirm_readiness" : "answer";
 }

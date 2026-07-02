@@ -18,6 +18,7 @@ type MockOpenAIClient = {
 const validStructuredOutput = {
   messageToUser: "A fine quest. What does success look like in the real world?",
   readinessStatus: "not_ready",
+  readinessConfirmation: "not_confirmed",
   coveredSignals: {
     motivation: true,
     successDefinition: false,
@@ -39,14 +40,13 @@ describe("OpenAIGameMasterInterviewer", () => {
     );
 
     expect(prompt).toContain(
-      'If `readinessStatus` is `ready_to_generate`, `messageToUser` must ask a final confirmation question',
+      'If `readinessStatus` is `ready_to_generate` and `readinessConfirmation` is `not_confirmed`, `messageToUser` must ask a final confirmation question',
     );
     expect(prompt).toContain(
       "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
     );
-    expect(prompt).not.toContain(
-      "`messageToUser` should briefly say the Game Master has enough to forge the Adventure and must not include a new question.",
-    );
+    expect(prompt).toContain("metadata `interviewStatus` is `awaiting_confirmation`");
+    expect(prompt).toContain("Set `readinessConfirmation` to `confirmed` only when the reply clearly means");
   });
 
   it("calls OpenAI Responses with the Markdown prompt as instructions and returns RPGizer-owned data", async () => {
@@ -60,6 +60,7 @@ describe("OpenAIGameMasterInterviewer", () => {
     expect(result).toEqual({
       messageToUser: "A fine quest. What does success look like in the real world?",
       readinessStatus: "not_ready",
+      readinessConfirmation: "not_confirmed",
       coveredSignals: ["motivation", "safetyBoundary"],
       summaryDelta: "The User wants to become a chef because cooking feels creative.",
     });
@@ -86,6 +87,7 @@ describe("OpenAIGameMasterInterviewer", () => {
           adventureId: "adventure-1",
           goalText: "Become a chef",
           readinessStatus: "not_ready",
+          interviewStatus: "interviewing",
         }),
       },
       { role: "user", content: "Become a chef" },
@@ -158,6 +160,39 @@ describe("OpenAIGameMasterInterviewer", () => {
         JSON.stringify({
           ...validStructuredOutput,
           readinessStatus: "almost_ready",
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("rejects invalid readiness confirmation", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          readinessConfirmation: "maybe",
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("rejects confirmed readiness without ready status", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          readinessStatus: "not_ready",
+          readinessConfirmation: "confirmed",
         }),
       ),
     );
@@ -263,6 +298,7 @@ function baseRequest(): InterviewTurnRequest {
     adventureId: "adventure-1",
     goalText: "Become a chef",
     readinessStatus: "not_ready",
+    interviewStatus: "interviewing",
     transcript: [
       message("message-1", "user", "Become a chef", 1),
       message("message-2", "game_master", "What is your current cooking level?", 2),

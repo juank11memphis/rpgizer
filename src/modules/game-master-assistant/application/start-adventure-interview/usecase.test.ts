@@ -28,6 +28,7 @@ describe("startAdventureInterview", () => {
     interviewer.queueResult({
       messageToUser: "What makes becoming a chef meaningful right now?",
       readinessStatus: "not_ready",
+      readinessConfirmation: "not_confirmed",
     });
 
     const result = await startAdventureInterview(
@@ -50,6 +51,7 @@ describe("startAdventureInterview", () => {
       adventureId: "adventure-1",
       goalText: "Become a chef",
       readinessStatus: "not_ready",
+      interviewStatus: "interviewing",
     });
     expect(interviewer.requests[0]?.transcript.map((message) => message.content)).toEqual([
       "Become a chef",
@@ -62,6 +64,7 @@ describe("startAdventureInterview", () => {
     interviewer.queueResult({
       messageToUser: "I have what I need to shape this Adventure.",
       readinessStatus: "ready_to_generate",
+      readinessConfirmation: "not_confirmed",
     });
 
     const result = await startAdventureInterview(

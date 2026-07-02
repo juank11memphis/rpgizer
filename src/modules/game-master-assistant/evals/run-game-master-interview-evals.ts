@@ -251,6 +251,7 @@ function buildRequest(fixture: EvalFixture): InterviewTurnRequest {
     adventureId: `eval-adventure-${fixture.id}`,
     goalText: fixture.goalText,
     readinessStatus: "not_ready",
+    interviewStatus: "interviewing",
     transcript: fixture.transcript.map((message, index) => ({
       id: `${fixture.id}-${index + 1}`,
       role: message.role,

@@ -25,6 +25,8 @@ const PROMPT_PATH = path.join(
   "src/modules/game-master-assistant/infra/prompts/game-master-interview.md",
 );
 
+const INTERVIEW_READINESS_CONFIRMATIONS = ["confirmed", "not_confirmed"] as const;
+
 const COVERED_SIGNAL_KEYS = [
   "motivation",
   "successDefinition",
@@ -111,6 +113,7 @@ const INTERVIEW_TURN_RESULT_FORMAT = {
     required: [
       "messageToUser",
       "readinessStatus",
+      "readinessConfirmation",
       "coveredSignals",
       "summaryDelta",
     ],
@@ -119,6 +122,10 @@ const INTERVIEW_TURN_RESULT_FORMAT = {
       readinessStatus: {
         type: "string",
         enum: INTERVIEW_READINESS_STATUSES,
+      },
+      readinessConfirmation: {
+        type: "string",
+        enum: INTERVIEW_READINESS_CONFIRMATIONS,
       },
       coveredSignals: {
         type: "object",
@@ -141,6 +148,7 @@ function buildResponseInput(input: InterviewTurnRequest): ResponseCreateParamsNo
         adventureId: input.adventureId,
         goalText: input.goalText,
         readinessStatus: input.readinessStatus,
+        interviewStatus: input.interviewStatus,
       }),
     },
     ...input.transcript.map(toOpenAIInputMessage),
@@ -197,15 +205,42 @@ function validateInterviewTurnResult(value: unknown): InterviewTurnResult {
     throw invalidOutput("Interview turn result had invalid readinessStatus.");
   }
 
+  const readinessConfirmation = validateReadinessConfirmation(
+    value.readinessConfirmation,
+    readinessStatus,
+  );
   const coveredSignals = validateCoveredSignals(value.coveredSignals);
   const summaryDelta = validateSummaryDelta(value.summaryDelta);
 
   return {
     messageToUser: messageToUser.trim(),
     readinessStatus,
+    readinessConfirmation,
     coveredSignals,
     summaryDelta,
   };
+}
+
+function validateReadinessConfirmation(
+  value: unknown,
+  readinessStatus: InterviewTurnResult["readinessStatus"],
+): InterviewTurnResult["readinessConfirmation"] {
+  if (
+    typeof value !== "string" ||
+    !INTERVIEW_READINESS_CONFIRMATIONS.includes(
+      value as InterviewTurnResult["readinessConfirmation"],
+    )
+  ) {
+    throw invalidOutput("Interview turn result had invalid readinessConfirmation.");
+  }
+
+  if (value === "confirmed" && readinessStatus !== "ready_to_generate") {
+    throw invalidOutput(
+      "Interview turn result confirmed readiness without ready_to_generate status.",
+    );
+  }
+
+  return value as InterviewTurnResult["readinessConfirmation"];
 }
 
 function validateCoveredSignals(value: unknown): CoveredSignalKey[] {

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { INVALID_INTERVIEW_CONFIRMATION_MESSAGE } from "@/modules/game-master-assistant/application/answer-interview-question/output";
 import type { AnswerInterviewQuestionOutput } from "@/modules/game-master-assistant/application/answer-interview-question/output";
 import type { RequireCurrentUserResult } from "@/modules/user-identity/application/require-current-user/output";
 
@@ -15,7 +14,6 @@ function buildFormData(input: {
   adventureId?: string;
   answerText?: string;
   retryUserMessageId?: string;
-  submissionIntent?: string;
 }): FormData {
   const formData = new FormData();
 
@@ -31,9 +29,6 @@ function buildFormData(input: {
     formData.set("retryUserMessageId", input.retryUserMessageId);
   }
 
-  if (input.submissionIntent !== undefined) {
-    formData.set("submissionIntent", input.submissionIntent);
-  }
 
   return formData;
 }
@@ -109,67 +104,6 @@ describe("submitInterviewAnswerAction", () => {
       userId: "user-1",
       adventureId: "adventure-1",
       answerText: "I can cook eggs and pasta.",
-      submissionIntent: "answer",
-    });
-  });
-
-  it("submits explicit confirmation without requiring answer text", async () => {
-    const answerInterviewQuestion = vi.fn().mockResolvedValue(
-      successOutput({
-        readinessStatus: "ready_to_generate",
-        interviewStatus: "confirmed",
-      }),
-    );
-    const action = createSubmitInterviewAnswerAction({
-      requireCurrentUser: async () => authenticatedUser(),
-      answerInterviewQuestion,
-      redirectTo,
-    });
-
-    await expect(
-      action(
-        initialInterviewAnswerFormState,
-        buildFormData({
-          adventureId: "adventure-1",
-          submissionIntent: "confirm_readiness",
-        }),
-      ),
-    ).resolves.toMatchObject({
-      status: "success",
-      fieldError: null,
-      draft: { interviewStatus: "confirmed" },
-    });
-    expect(answerInterviewQuestion).toHaveBeenCalledWith({
-      userId: "user-1",
-      adventureId: "adventure-1",
-      submissionIntent: "confirm_readiness",
-    });
-  });
-
-  it("maps invalid confirmation state to a safe form error", async () => {
-    const answerInterviewQuestion = vi.fn().mockResolvedValue({
-      status: "expected_error",
-      draft: draft(),
-      transcript: [],
-      message: INVALID_INTERVIEW_CONFIRMATION_MESSAGE,
-    } satisfies AnswerInterviewQuestionOutput);
-    const action = createSubmitInterviewAnswerAction({
-      requireCurrentUser: async () => authenticatedUser(),
-      answerInterviewQuestion,
-      redirectTo,
-    });
-
-    await expect(
-      action(
-        initialInterviewAnswerFormState,
-        buildFormData({
-          adventureId: "adventure-1",
-          submissionIntent: "confirm_readiness",
-        }),
-      ),
-    ).resolves.toMatchObject({
-      status: "form_error",
-      formError: INVALID_INTERVIEW_CONFIRMATION_MESSAGE,
     });
   });
 
@@ -214,7 +148,6 @@ describe("submitInterviewAnswerAction", () => {
       userId: "user-1",
       adventureId: "adventure-1",
       answerText: "No safety concerns.",
-      submissionIntent: "answer",
     });
   });
 
@@ -263,7 +196,6 @@ describe("submitInterviewAnswerAction", () => {
       userId: "user-1",
       adventureId: "adventure-1",
       retryUserMessageId: "message-3",
-      submissionIntent: "answer",
     });
   });
 });
