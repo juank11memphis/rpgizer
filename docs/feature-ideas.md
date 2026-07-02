@@ -13,14 +13,6 @@
 - Localize UI labels separately, for example render `quests` as “Quests” in English and “Misiones” in Spanish.
 - Avoid mixed-language experiences where JSON keys, UI labels, interview responses, and generated adventure content drift between English and Spanish.
 
-## Structured JSON Application Logging
-
-- Improve app observability with structured JSON logs for important good and bad events across RPGizer.
-- Log successful flows such as sign-in, draft creation, interview turn completion, AI readiness changes, and adventure generation milestones.
-- Log failure flows such as auth callback errors, database failures, AI provider errors, validation failures, and unexpected server exceptions.
-- Logs should be machine-readable with consistent fields like event name, severity, timestamp, request/user/session context where safe, adventure ID where relevant, and error metadata.
-- Do not log secrets, OAuth tokens, full sensitive prompts, or private user content unless explicitly designed and redacted.
-
 ## AI Cost Tracking by Product Flow
 
 - Add optional AI cost tracking controlled by an environment variable, for example `AI_COST_TRACKING_ENABLED=true`.

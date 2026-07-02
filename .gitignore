@@ -32,3 +32,5 @@ pnpm-debug.log*
 notes.md
 
 docs/features
+# RPGizer application logs
+rpgizer*.log
