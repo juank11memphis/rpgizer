@@ -21,7 +21,7 @@ describe("answerInterviewQuestion", () => {
     ).rejects.toThrow("Answer must not be blank.");
   });
 
-  it("stores the User answer, stores the Game Master response, and updates readiness", async () => {
+  it("stores the User answer, stores the Game Master response, and updates readiness with lifecycle state", async () => {
     const repository = new FakeAdventureDraftRepository();
     repository.seedDraft({
       id: "adventure-1",
@@ -66,6 +66,8 @@ describe("answerInterviewQuestion", () => {
     ]);
     expect(result.status).toBe("success");
     expect(result.draft.readinessStatus).toBe("ready_to_generate");
+    expect(result.draft.interviewStatus).toBe("awaiting_confirmation");
+    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("awaiting_confirmation");
     expect(result.transcript.map((message) => message.sequenceNumber)).toEqual([1, 2, 3, 4]);
   });
 
@@ -185,6 +187,7 @@ describe("answerInterviewQuestion", () => {
       },
     });
     expect(repository.getStoredDraftReadiness("adventure-1")).toBe("not_ready");
+    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("interviewing");
   });
 
   it("retries a preserved User answer without appending a duplicate User message", async () => {
@@ -229,6 +232,8 @@ describe("answerInterviewQuestion", () => {
     );
 
     expect(result.status).toBe("success");
+    expect(result.draft.interviewStatus).toBe("interviewing");
+    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("interviewing");
     expect(repository.appendedMessages.map((message) => [message.role, message.content])).toEqual([
       ["game_master", "Great. What tools and time do you already have?"],
     ]);

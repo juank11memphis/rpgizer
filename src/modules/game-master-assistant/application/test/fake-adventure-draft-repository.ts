@@ -1,6 +1,7 @@
 import { ADVENTURE_DRAFT_STATE } from "../../domain/adventure-draft-state";
 import type { InterviewMessage, InterviewMessageRole } from "../../domain/interview-message";
 import type { InterviewReadinessStatus } from "../../domain/interview-readiness";
+import type { InterviewStatus } from "../../domain/interview-status";
 import type { DashboardAdventureDraftRepository } from "../get-dashboard-adventure-draft/ports";
 import type { AdventureInterview } from "../get-adventure-interview/output";
 import type { AdventureInterviewRepository } from "../get-adventure-interview/ports";
@@ -13,6 +14,7 @@ type StoredDraft = {
   goalText: string;
   state: typeof ADVENTURE_DRAFT_STATE;
   readinessStatus: InterviewReadinessStatus;
+  interviewStatus: InterviewStatus;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -43,6 +45,7 @@ export class FakeAdventureDraftRepository
     userId: string;
     goalText: string;
     readinessStatus?: InterviewReadinessStatus;
+    interviewStatus?: InterviewStatus;
     updatedAt?: Date;
   }): void {
     this.drafts.set(input.id, {
@@ -51,6 +54,7 @@ export class FakeAdventureDraftRepository
       goalText: input.goalText,
       state: ADVENTURE_DRAFT_STATE,
       readinessStatus: input.readinessStatus ?? "not_ready",
+      interviewStatus: input.interviewStatus ?? "interviewing",
       createdAt: input.updatedAt ?? new Date("2026-01-01T00:00:00.000Z"),
       updatedAt: input.updatedAt ?? new Date("2026-01-01T00:00:00.000Z"),
     });
@@ -80,6 +84,10 @@ export class FakeAdventureDraftRepository
     return this.drafts.get(adventureId)?.readinessStatus ?? null;
   }
 
+  getStoredInterviewStatus(adventureId: string): InterviewStatus | null {
+    return this.drafts.get(adventureId)?.interviewStatus ?? null;
+  }
+
   getStoredTranscript(adventureId: string): InterviewMessage[] {
     return [...(this.messagesByDraft.get(adventureId) ?? [])].sort(
       (left, right) => left.sequenceNumber - right.sequenceNumber,
@@ -101,6 +109,7 @@ export class FakeAdventureDraftRepository
       goalText: draft.goalText,
       state: draft.state,
       readinessStatus: draft.readinessStatus,
+      interviewStatus: draft.interviewStatus,
       updatedAt: draft.updatedAt,
     };
   }
@@ -110,6 +119,7 @@ export class FakeAdventureDraftRepository
     goalText: string;
     state: typeof ADVENTURE_DRAFT_STATE;
     readinessStatus: InterviewReadinessStatus;
+    interviewStatus: InterviewStatus;
   }) {
     const draft: StoredDraft = {
       id: `adventure-${this.nextDraftNumber}`,
@@ -117,6 +127,7 @@ export class FakeAdventureDraftRepository
       goalText: input.goalText,
       state: input.state,
       readinessStatus: input.readinessStatus,
+      interviewStatus: input.interviewStatus,
       createdAt: new Date("2026-01-01T00:00:00.000Z"),
       updatedAt: new Date("2026-01-01T00:00:00.000Z"),
     };
@@ -129,6 +140,7 @@ export class FakeAdventureDraftRepository
       goalText: draft.goalText,
       state: draft.state,
       readinessStatus: draft.readinessStatus,
+      interviewStatus: draft.interviewStatus,
     };
   }
 
@@ -175,6 +187,7 @@ export class FakeAdventureDraftRepository
         goalText: draft.goalText,
         state: draft.state,
         readinessStatus: draft.readinessStatus,
+        interviewStatus: draft.interviewStatus,
         updatedAt: draft.updatedAt,
       },
       transcript,
@@ -185,6 +198,7 @@ export class FakeAdventureDraftRepository
     userId: string;
     adventureId: string;
     readinessStatus: InterviewReadinessStatus;
+    interviewStatus: InterviewStatus;
   }): Promise<void> {
     const draft = this.drafts.get(input.adventureId);
 
@@ -193,5 +207,6 @@ export class FakeAdventureDraftRepository
     }
 
     draft.readinessStatus = input.readinessStatus;
+    draft.interviewStatus = input.interviewStatus;
   }
 }

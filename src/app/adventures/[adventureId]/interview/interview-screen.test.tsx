@@ -36,6 +36,7 @@ describe("InterviewScreen", () => {
         goalText: "Become a chef",
         state: "drafting",
         readinessStatus: "not_ready",
+        interviewStatus: "interviewing",
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
       },
       transcript: [
@@ -93,6 +94,7 @@ describe("InterviewScreen", () => {
         goalText: "Become a chef",
         state: "drafting",
         readinessStatus: "not_ready",
+        interviewStatus: "interviewing",
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
       },
       transcript: [],
@@ -218,6 +220,7 @@ function buildInterview(): AdventureInterview {
       goalText: "Become a chef",
       state: "drafting",
       readinessStatus: "not_ready",
+      interviewStatus: "interviewing",
       updatedAt: new Date("2026-01-02T00:00:00.000Z"),
     },
     transcript: [

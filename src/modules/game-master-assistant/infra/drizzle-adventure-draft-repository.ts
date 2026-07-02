@@ -12,6 +12,8 @@ import type { InterviewMessage, InterviewMessageRole } from "../domain/interview
 import { normalizeRequiredInterviewText } from "../domain/interview-message";
 import type { InterviewReadinessStatus } from "../domain/interview-readiness";
 import { isInterviewReadinessStatus } from "../domain/interview-readiness";
+import type { InterviewStatus } from "../domain/interview-status";
+import { isInterviewStatus } from "../domain/interview-status";
 import type { DashboardAdventureDraftRepository } from "../application/get-dashboard-adventure-draft/ports";
 import type { DashboardAdventureDraft } from "../application/get-dashboard-adventure-draft/output";
 import type { AdventureInterview } from "../application/get-adventure-interview/output";
@@ -27,12 +29,12 @@ export type GameMasterAssistantDb = ReturnType<typeof drizzle<typeof schema>>;
 
 type AdventureDraftRow = Pick<
   typeof adventures.$inferSelect,
-  "id" | "goalText" | "state" | "readinessStatus" | "updatedAt"
+  "id" | "goalText" | "state" | "readinessStatus" | "interviewStatus" | "updatedAt"
 >;
 
 type CreatedAdventureDraftRow = Pick<
   typeof adventures.$inferSelect,
-  "id" | "goalText" | "state" | "readinessStatus"
+  "id" | "goalText" | "state" | "readinessStatus" | "interviewStatus"
 >;
 
 type InterviewMessageRow = Pick<
@@ -56,6 +58,7 @@ export class DrizzleAdventureDraftRepository
         goalText: adventures.goalText,
         state: adventures.state,
         readinessStatus: adventures.readinessStatus,
+        interviewStatus: adventures.interviewStatus,
         updatedAt: adventures.updatedAt,
       })
       .from(adventures)
@@ -75,12 +78,14 @@ export class DrizzleAdventureDraftRepository
         goalText: input.goalText,
         state: input.state,
         readinessStatus: input.readinessStatus,
+        interviewStatus: input.interviewStatus,
       })
       .returning({
         id: adventures.id,
         goalText: adventures.goalText,
         state: adventures.state,
         readinessStatus: adventures.readinessStatus,
+        interviewStatus: adventures.interviewStatus,
       });
 
     const row = rows[0];
@@ -168,6 +173,7 @@ export class DrizzleAdventureDraftRepository
         goalText: adventures.goalText,
         state: adventures.state,
         readinessStatus: adventures.readinessStatus,
+        interviewStatus: adventures.interviewStatus,
         updatedAt: adventures.updatedAt,
       })
       .from(adventures)
@@ -207,11 +213,13 @@ export class DrizzleAdventureDraftRepository
     userId: string;
     adventureId: string;
     readinessStatus: InterviewReadinessStatus;
+    interviewStatus: InterviewStatus;
   }): Promise<void> {
     const rows = await this.db
       .update(adventures)
       .set({
         readinessStatus: input.readinessStatus,
+        interviewStatus: input.interviewStatus,
         updatedAt: sql`now()`,
       })
       .where(
@@ -235,6 +243,7 @@ function mapCreatedDraft(row: CreatedAdventureDraftRow): CreatedAdventureDraft {
     goalText: row.goalText,
     state: readDraftState(row.state),
     readinessStatus: readReadinessStatus(row.readinessStatus),
+    interviewStatus: readInterviewStatus(row.interviewStatus),
   };
 }
 
@@ -244,6 +253,7 @@ function mapDashboardDraft(row: AdventureDraftRow): DashboardAdventureDraft {
     goalText: row.goalText,
     state: readDraftState(row.state),
     readinessStatus: readReadinessStatus(row.readinessStatus),
+    interviewStatus: readInterviewStatus(row.interviewStatus),
     updatedAt: row.updatedAt,
   };
 }
@@ -278,6 +288,14 @@ function readDraftState(value: string): typeof ADVENTURE_DRAFT_STATE {
 function readReadinessStatus(value: string): InterviewReadinessStatus {
   if (!isInterviewReadinessStatus(value)) {
     throw new Error("Adventure draft row had an invalid readiness status.");
+  }
+
+  return value;
+}
+
+function readInterviewStatus(value: string): InterviewStatus {
+  if (!isInterviewStatus(value)) {
+    throw new Error("Adventure draft row had an invalid interview status.");
   }
 
   return value;

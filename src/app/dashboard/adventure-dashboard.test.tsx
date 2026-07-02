@@ -30,6 +30,7 @@ describe("AdventureDashboard", () => {
         goalText: "Become a chef",
         state: "drafting",
         readinessStatus: "not_ready",
+        interviewStatus: "interviewing",
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
       },
     });
@@ -53,6 +54,7 @@ describe("AdventureDashboard", () => {
         goalText: "Become a chef",
         state: "drafting",
         readinessStatus: "not_ready",
+        interviewStatus: "interviewing",
         updatedAt: new Date("2026-01-02T00:00:00.000Z"),
       },
     });

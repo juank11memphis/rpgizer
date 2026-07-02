@@ -1,12 +1,14 @@
 import type { AdventureDraftState } from "../../domain/adventure-draft-state";
 import type { InterviewMessage, InterviewMessageRole } from "../../domain/interview-message";
 import type { InterviewReadinessStatus } from "../../domain/interview-readiness";
+import type { InterviewStatus } from "../../domain/interview-status";
 
 export type CreatedAdventureDraft = {
   id: string;
   goalText: string;
   state: AdventureDraftState;
   readinessStatus: InterviewReadinessStatus;
+  interviewStatus: InterviewStatus;
 };
 
 export type CreateAdventureDraftInput = {
@@ -14,6 +16,7 @@ export type CreateAdventureDraftInput = {
   goalText: string;
   state: AdventureDraftState;
   readinessStatus: InterviewReadinessStatus;
+  interviewStatus: InterviewStatus;
 };
 
 export type AppendInterviewMessageInput = {
@@ -45,6 +48,7 @@ export type StartAdventureInterviewRepository = {
     userId: string;
     adventureId: string;
     readinessStatus: InterviewReadinessStatus;
+    interviewStatus: InterviewStatus;
   }): Promise<void>;
 };
 

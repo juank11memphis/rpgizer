@@ -1,4 +1,5 @@
 import { normalizeRequiredInterviewText } from "../../domain/interview-message";
+import { deriveInterviewStatusFromReadiness } from "../../domain/interview-status";
 import type { InterviewMessage } from "../../domain/interview-message";
 import {
   InterviewProviderFailure,
@@ -82,10 +83,15 @@ export async function answerInterviewQuestion(
     content: gameMasterMessageText,
   });
 
+  const interviewStatus = deriveInterviewStatusFromReadiness(
+    interviewerResult.readinessStatus,
+  );
+
   await repository.updateReadiness({
     userId: input.userId,
     adventureId: input.adventureId,
     readinessStatus: interviewerResult.readinessStatus,
+    interviewStatus,
   });
 
   return {
@@ -93,6 +99,7 @@ export async function answerInterviewQuestion(
     draft: {
       ...existingInterview.draft,
       readinessStatus: interviewerResult.readinessStatus,
+      interviewStatus,
     },
     transcript: [...transcriptWithAnswer, gameMasterMessage],
     userMessage,

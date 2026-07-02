@@ -27,8 +27,10 @@ describe("createGameMasterAssistantProduction", () => {
       id: "adventure-1",
       goalText: "Become a chef",
       readinessStatus: "ready_to_generate",
+      interviewStatus: "awaiting_confirmation",
     });
     expect(repository.getStoredDraftReadiness("adventure-1")).toBe("ready_to_generate");
+    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("awaiting_confirmation");
     expect(result.transcript.map((message) => [message.role, message.content])).toEqual([
       ["user", "Become a chef"],
       ["game_master", "What does victory look like for this Adventure?"],

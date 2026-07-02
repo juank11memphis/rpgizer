@@ -1,15 +1,5 @@
 # Feature Ideas
 
-## Interview Output Artifact Generation
-
-- Add a separate AI interaction after the goal interview that reads the full conversation transcript and produces a compact structured JSON/object artifact.
-- The artifact should summarize the conversation in a way another AI interaction can reliably consume later to generate the full RPG adventure.
-- Treat the overall flow as three distinct AI steps:
-  1. Run the interview itself.
-  2. Generate the interview output artifact from the transcript.
-  3. Generate the full adventure from that artifact, including quests, skills, inventory, milestones, rewards, and related RPG structures.
-- The artifact should preserve important discovery signals such as the core why, success definition, current stage, existing inventory/resources, blockers, constraints, readiness, and emotional drivers without requiring later prompts to reread the entire transcript.
-
 ## Internationalization and Language Selector
 
 - Add app internationalization so RPGizer can support multiple languages.

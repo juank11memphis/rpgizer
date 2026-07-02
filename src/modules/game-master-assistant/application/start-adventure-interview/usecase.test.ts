@@ -39,6 +39,7 @@ describe("startAdventureInterview", () => {
       id: "adventure-1",
       goalText: "Become a chef",
       readinessStatus: "not_ready",
+      interviewStatus: "interviewing",
     });
     expect(result.transcript.map((message) => [message.role, message.content])).toEqual([
       ["user", "Become a chef"],
@@ -69,7 +70,9 @@ describe("startAdventureInterview", () => {
     );
 
     expect(result.draft.readinessStatus).toBe("ready_to_generate");
+    expect(result.draft.interviewStatus).toBe("awaiting_confirmation");
     expect(repository.getStoredDraftReadiness("adventure-1")).toBe("ready_to_generate");
+    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("awaiting_confirmation");
   });
 
   it("normalizes provider failures without exposing provider internals", async () => {

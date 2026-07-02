@@ -50,6 +50,7 @@ describe("getAdventureInterview", () => {
       goalText: "Become a chef",
       state: "drafting",
       readinessStatus: "not_ready",
+      interviewStatus: "interviewing",
     });
     expect(result.interview?.transcript.map((message) => message.sequenceNumber)).toEqual([
       1, 2,

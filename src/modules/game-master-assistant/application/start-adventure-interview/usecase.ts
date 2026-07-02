@@ -1,5 +1,6 @@
 import { ADVENTURE_DRAFT_STATE } from "../../domain/adventure-draft-state";
 import { normalizeRequiredInterviewText } from "../../domain/interview-message";
+import { deriveInterviewStatusFromReadiness } from "../../domain/interview-status";
 import { normalizeInterviewProviderFailure } from "../start-adventure-interview/provider-error";
 import type { StartAdventureInterviewInput } from "./input";
 import type { StartAdventureInterviewOutput } from "./output";
@@ -9,6 +10,7 @@ import type {
 } from "./ports";
 
 const INITIAL_READINESS_STATUS = "not_ready";
+const INITIAL_INTERVIEW_STATUS = "interviewing";
 
 export type StartAdventureInterviewDependencies = {
   adventureDraftRepository: StartAdventureInterviewRepository;
@@ -27,6 +29,7 @@ export async function startAdventureInterview(
     goalText,
     state: ADVENTURE_DRAFT_STATE,
     readinessStatus: INITIAL_READINESS_STATUS,
+    interviewStatus: INITIAL_INTERVIEW_STATUS,
   });
 
   const initialGoalMessage = await repository.appendInterviewMessage({
@@ -58,11 +61,19 @@ export async function startAdventureInterview(
     content: gameMasterMessageText,
   });
 
-  if (interviewerResult.readinessStatus !== draft.readinessStatus) {
+  const interviewStatus = deriveInterviewStatusFromReadiness(
+    interviewerResult.readinessStatus,
+  );
+
+  if (
+    interviewerResult.readinessStatus !== draft.readinessStatus ||
+    interviewStatus !== draft.interviewStatus
+  ) {
     await repository.updateReadiness({
       userId: input.userId,
       adventureId: draft.id,
       readinessStatus: interviewerResult.readinessStatus,
+      interviewStatus,
     });
   }
 
@@ -71,6 +82,7 @@ export async function startAdventureInterview(
       id: draft.id,
       goalText: draft.goalText,
       readinessStatus: interviewerResult.readinessStatus,
+      interviewStatus,
     },
     transcript: [initialGoalMessage, gameMasterMessage],
   };

@@ -74,6 +74,7 @@ export const adventures = pgTable(
     title: text("title"),
     state: text("state").notNull().default("drafting"),
     readinessStatus: text("readinessStatus").notNull().default("not_ready"),
+    interviewStatus: text("interviewStatus").notNull().default("interviewing"),
     createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
   },
@@ -82,6 +83,10 @@ export const adventures = pgTable(
     check(
       "adventures_readiness_status_check",
       sql`${adventure.readinessStatus} in ('not_ready', 'ready_to_generate')`,
+    ),
+    check(
+      "adventures_interview_status_check",
+      sql`${adventure.interviewStatus} in ('interviewing', 'awaiting_confirmation', 'confirmed')`,
     ),
   ],
 );

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { FakeAdventureDraftRepository } from "./fake-adventure-draft-repository";
 
 describe("FakeAdventureDraftRepository", () => {
-  it("rejects unauthorized writes without changing transcript or readiness", async () => {
+  it("rejects unauthorized writes without changing transcript, readiness, or lifecycle state", async () => {
     const repository = new FakeAdventureDraftRepository();
     repository.seedDraft({
       id: "adventure-1",
@@ -32,6 +32,7 @@ describe("FakeAdventureDraftRepository", () => {
         userId: "other-user",
         adventureId: "adventure-1",
         readinessStatus: "ready_to_generate",
+        interviewStatus: "awaiting_confirmation",
       }),
     ).rejects.toThrow("Adventure draft was not found.");
 
@@ -39,6 +40,7 @@ describe("FakeAdventureDraftRepository", () => {
       "Become a chef",
     ]);
     expect(repository.getStoredDraftReadiness("adventure-1")).toBe("not_ready");
+    expect(repository.getStoredInterviewStatus("adventure-1")).toBe("interviewing");
     expect(repository.appendedMessages).toEqual([]);
   });
 });

@@ -235,12 +235,14 @@ function recoverableFailureOutput(): AnswerInterviewQuestionOutput {
 
 function draft(input: {
   readinessStatus?: "not_ready" | "ready_to_generate";
+  interviewStatus?: "interviewing" | "awaiting_confirmation" | "confirmed";
 } = {}) {
   return {
     id: "adventure-1",
     goalText: "Become a chef",
     state: "drafting" as const,
     readinessStatus: input.readinessStatus ?? "not_ready",
+    interviewStatus: input.interviewStatus ?? "interviewing",
     updatedAt: new Date("2026-01-02T00:00:00.000Z"),
   };
 }

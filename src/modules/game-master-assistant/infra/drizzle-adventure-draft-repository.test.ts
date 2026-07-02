@@ -106,6 +106,7 @@ const draftRow = {
   goalText: "Become a chef",
   state: "drafting",
   readinessStatus: "not_ready",
+  interviewStatus: "interviewing",
   updatedAt: new Date("2026-01-02T00:00:00.000Z"),
 };
 
@@ -135,6 +136,7 @@ describe("DrizzleAdventureDraftRepository", () => {
       goalText: "Become a chef",
       state: "drafting",
       readinessStatus: "not_ready",
+      interviewStatus: "interviewing",
       updatedAt: new Date("2026-01-02T00:00:00.000Z"),
     });
     expect(db.operations).toEqual(["select"]);
@@ -154,6 +156,7 @@ describe("DrizzleAdventureDraftRepository", () => {
       goalText: "Become a chef",
       state: "drafting",
       readinessStatus: "not_ready",
+      interviewStatus: "interviewing",
     });
     expect(result?.transcript.map((message) => [message.role, message.sequenceNumber])).toEqual([
       ["user", 1],
@@ -189,12 +192,14 @@ describe("DrizzleAdventureDraftRepository", () => {
         goalText: "Become a chef",
         state: "drafting",
         readinessStatus: "not_ready",
+        interviewStatus: "interviewing",
       }),
     ).resolves.toEqual({
       id: "adventure-1",
       goalText: "Become a chef",
       state: "drafting",
       readinessStatus: "not_ready",
+      interviewStatus: "interviewing",
     });
 
     await expect(
@@ -215,6 +220,7 @@ describe("DrizzleAdventureDraftRepository", () => {
         userId: "user-1",
         adventureId: "adventure-1",
         readinessStatus: "ready_to_generate",
+        interviewStatus: "awaiting_confirmation",
       }),
     ).resolves.toBeUndefined();
     expect(db.operations).toEqual([
@@ -246,6 +252,7 @@ describe("DrizzleAdventureDraftRepository", () => {
         userId: "other-user",
         adventureId: "adventure-1",
         readinessStatus: "ready_to_generate",
+        interviewStatus: "awaiting_confirmation",
       }),
     ).rejects.toThrow("Adventure draft was not found.");
   });
