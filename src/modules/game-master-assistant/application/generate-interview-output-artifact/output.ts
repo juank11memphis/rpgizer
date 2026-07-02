@@ -1,5 +1,5 @@
 export const INTERVIEW_OUTPUT_ARTIFACT_FAILURE_MESSAGE =
-  "Couldn’t finish the forge. Your interview is safe. Try again when you’re ready.";
+  "Your interview is safe. Try again when you’re ready.";
 
 export const INTERVIEW_NOT_CONFIRMED_MESSAGE =
   "Confirm the Interview before forging the Adventure foundation.";
