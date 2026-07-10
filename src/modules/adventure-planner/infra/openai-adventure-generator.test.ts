@@ -163,6 +163,39 @@ describe("OpenAIAdventureGenerator", () => {
     });
   });
 
+
+  it("retries once with repair instructions when generated references are invalid", async () => {
+    const badReferences = buildGeneratedAdventureBoundaryPayload({
+      acts: [
+        {
+          ...validPayload.acts[0],
+          mainQuests: [
+            {
+              ...validPayload.acts[0].mainQuests[0],
+              skillRewards: [{ skillKey: "communicate", xp: 25 }],
+            },
+          ],
+        },
+      ],
+    });
+    const client = createMockClientSequence([
+      responseWithOutput(JSON.stringify(badReferences)),
+      responseWithOutput(JSON.stringify(validPayload)),
+    ]);
+
+    const result = await createGenerator(client).generateAdventure(baseRequest());
+
+    expect(result.title).toBe(validPayload.title);
+    expect(client.responses.create).toHaveBeenCalledTimes(2);
+    const repairRequest = client.responses.create.mock.calls[1]?.[0];
+    expect(JSON.stringify(repairRequest?.input)).toContain(
+      "skillRewards[0].skillKey references unknown skill: communicate",
+    );
+    expect(JSON.stringify(repairRequest?.input)).toContain(
+      "Every skillRewards.skillKey must match an existing top-level skills[].key.",
+    );
+  });
+
   it("normalizes provider request failures", async () => {
     const client = createMockClient(Promise.reject(new Error("raw provider failure")));
 
@@ -289,6 +322,16 @@ function createMockClient(response: Response | Promise<Response>): MockOpenAICli
       ),
     },
   };
+}
+
+function createMockClientSequence(responses: Response[]): MockOpenAIClient {
+  const create = vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>();
+
+  for (const response of responses) {
+    create.mockResolvedValueOnce(response);
+  }
+
+  return { responses: { create } };
 }
 
 function responseWithOutput(outputText: string): Response {
