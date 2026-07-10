@@ -51,7 +51,7 @@ function buildEnvironment(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.Pr
   return {
     NODE_ENV: "test",
     OPENAI_API_KEY: "sk-test",
-    OPENAI_GAME_MASTER_MODEL: "gpt-test",
+    OPENAI_ADVENTURE_GENERATION_MODEL: "gpt-test",
     ...overrides,
   };
 }
@@ -94,8 +94,13 @@ describe("Generate Adventure eval runner", () => {
       "OPENAI_API_KEY appears to be a placeholder value.",
     );
     expect(
-      validateOpenAIConfiguration(buildEnvironment({ OPENAI_GAME_MASTER_MODEL: " " })),
-    ).toContain("OPENAI_GAME_MASTER_MODEL is required by the runtime Adventure generator config");
+      validateOpenAIConfiguration(buildEnvironment({ OPENAI_ADVENTURE_GENERATION_MODEL: " " })),
+    ).toBeNull();
+    expect(
+      validateOpenAIConfiguration(
+        buildEnvironment({ OPENAI_ADVENTURE_GENERATION_MODEL: "replace-with-model" }),
+      ),
+    ).toBe("OPENAI_ADVENTURE_GENERATION_MODEL appears to be a placeholder value.");
     expect(validateOpenAIConfiguration(buildEnvironment())).toBeNull();
   });
 

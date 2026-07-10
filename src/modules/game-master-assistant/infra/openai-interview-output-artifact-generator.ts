@@ -23,7 +23,7 @@ import {
 } from "../domain/interview-output-artifact";
 import type { InterviewMessage } from "../domain/interview-message";
 import {
-  loadOpenAIGameMasterInterviewerConfig,
+  loadOpenAIInterviewSummaryConfig,
   type OpenAIGameMasterInterviewerConfig,
 } from "./openai-game-master-interviewer-config";
 
@@ -69,7 +69,7 @@ export class OpenAIInterviewOutputArtifactGenerator implements InterviewOutputAr
   private readonly promptPath: string;
 
   constructor(options: OpenAIInterviewOutputArtifactGeneratorOptions = {}) {
-    this.config = options.config ?? loadOpenAIGameMasterInterviewerConfig();
+    this.config = options.config ?? loadOpenAIInterviewSummaryConfig();
     this.client = options.client ?? new OpenAI({ apiKey: this.config.apiKey });
     this.instructions = options.instructions;
     this.promptPath = options.promptPath ?? PROMPT_PATH;

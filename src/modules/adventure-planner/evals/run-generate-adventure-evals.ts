@@ -2,10 +2,12 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { loadEnvConfig } from "@next/env";
+
 import type { AdventureGeneratorRequest } from "../application/generate-adventure/ports";
 import { AdventureGeneratorError } from "../application/generate-adventure/ports";
 import type { GeneratedAdventure } from "../domain/generated-adventure";
-import { loadOpenAIGameMasterInterviewerConfig } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
+import { loadOpenAIAdventureGenerationConfig } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
 import { checkGeneratedAdventureQuality } from "./adventure-quality-checks";
 import { parseGenerateAdventureEvalFixture } from "./generate-adventure-eval-fixture-parser";
 import type {
@@ -51,6 +53,7 @@ export async function runGenerateAdventureEvals(
 ): Promise<GenerateAdventureEvalRunResult> {
   const output = options.output ?? process.stdout;
   const errorOutput = options.errorOutput ?? process.stderr;
+  loadNextEnvironmentWhenUsingProcessEnv(options.environment);
   const environment = options.environment ?? process.env;
 
   const configurationError = validateOpenAIConfiguration(environment);
@@ -143,18 +146,26 @@ export async function loadGenerateAdventureEvalFixtures(
   );
 }
 
+function loadNextEnvironmentWhenUsingProcessEnv(environment: NodeJS.ProcessEnv | undefined): void {
+  if (environment !== undefined) {
+    return;
+  }
+
+  loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
+}
+
 export function validateOpenAIConfiguration(
   environment: NodeJS.ProcessEnv,
 ): string | null {
   try {
-    const config = loadOpenAIGameMasterInterviewerConfig(environment);
+    const config = loadOpenAIAdventureGenerationConfig(environment);
 
     if (isPlaceholderValue(config.apiKey)) {
       return "OPENAI_API_KEY appears to be a placeholder value.";
     }
 
     if (isPlaceholderValue(config.model)) {
-      return "OPENAI_GAME_MASTER_MODEL appears to be a placeholder value.";
+      return "OPENAI_ADVENTURE_GENERATION_MODEL appears to be a placeholder value.";
     }
 
     return null;
@@ -214,17 +225,13 @@ function formatConfigurationError(error: unknown): string {
     return "OPENAI_API_KEY is required to run Generate Adventure evals.";
   }
 
-  if (message.includes("OPENAI_GAME_MASTER_MODEL is required")) {
-    return "OPENAI_GAME_MASTER_MODEL is required by the runtime Adventure generator config.";
-  }
-
   return message;
 }
 
 function formatGenerationError(error: unknown): string {
   if (error instanceof AdventureGeneratorError) {
     if (error.code === "provider_output_invalid") {
-      return `OpenAI Adventure output was invalid: ${error.message}`;
+      return formatInvalidProviderOutputError(error);
     }
 
     if (error.code === "configuration_missing") {
@@ -237,6 +244,26 @@ function formatGenerationError(error: unknown): string {
   return `Adventure generation failed: ${formatEvalError(error)}`;
 }
 
+function formatInvalidProviderOutputError(error: AdventureGeneratorError): string {
+  const causeMessage = getErrorCauseMessage(error);
+
+  if (causeMessage === null) {
+    return `OpenAI Adventure output was invalid: ${error.message}`;
+  }
+
+  return `OpenAI Adventure output was invalid: ${error.message} Cause: ${causeMessage}`;
+}
+
+function getErrorCauseMessage(error: Error): string | null {
+  const cause = error.cause;
+
+  if (cause instanceof Error && cause.message.trim().length > 0) {
+    return cause.message;
+  }
+
+  return null;
+}
+
 function formatEvalError(error: unknown): string {
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
@@ -246,7 +273,7 @@ function formatEvalError(error: unknown): string {
 }
 
 function isPlaceholderValue(value: string): boolean {
-  return /^(changeme|change-me|placeholder|todo|your-|replace-me|example)/iu.test(value.trim());
+  return /^(changeme|change-me|placeholder|todo|your-|replace-me|replace-with-|example)/iu.test(value.trim());
 }
 
 async function main(): Promise<void> {

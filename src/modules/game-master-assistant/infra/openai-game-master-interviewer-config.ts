@@ -1,5 +1,7 @@
 import { GameMasterInterviewerError } from "../application/start-adventure-interview/provider-error";
 
+const DEFAULT_OPENAI_MODEL = "gpt-5.4-mini";
+
 export type OpenAIGameMasterInterviewerConfig = {
   apiKey: string;
   model: string;
@@ -8,16 +10,39 @@ export type OpenAIGameMasterInterviewerConfig = {
 export type OpenAIGameMasterInterviewerEnvironment = {
   OPENAI_API_KEY?: string;
   OPENAI_GAME_MASTER_MODEL?: string;
+  OPENAI_INTERVIEW_SUMMARY_MODEL?: string;
+  OPENAI_ADVENTURE_GENERATION_MODEL?: string;
 };
 
 export function loadOpenAIGameMasterInterviewerConfig(
   environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
 ): OpenAIGameMasterInterviewerConfig {
+  return loadOpenAIModelConfig(environment, "OPENAI_GAME_MASTER_MODEL");
+}
+
+export function loadOpenAIInterviewSummaryConfig(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
+): OpenAIGameMasterInterviewerConfig {
+  return loadOpenAIModelConfig(environment, "OPENAI_INTERVIEW_SUMMARY_MODEL");
+}
+
+export function loadOpenAIAdventureGenerationConfig(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
+): OpenAIGameMasterInterviewerConfig {
+  return loadOpenAIModelConfig(environment, "OPENAI_ADVENTURE_GENERATION_MODEL");
+}
+
+function loadOpenAIModelConfig(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv,
+  modelEnvironmentVariableName: keyof Pick<
+    OpenAIGameMasterInterviewerEnvironment,
+    | "OPENAI_GAME_MASTER_MODEL"
+    | "OPENAI_INTERVIEW_SUMMARY_MODEL"
+    | "OPENAI_ADVENTURE_GENERATION_MODEL"
+  >,
+): OpenAIGameMasterInterviewerConfig {
   const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
-  const model = readRequiredEnvironmentValue(
-    environment.OPENAI_GAME_MASTER_MODEL,
-    "OPENAI_GAME_MASTER_MODEL",
-  );
+  const model = readModelEnvironmentValue(environment[modelEnvironmentVariableName]);
 
   return { apiKey, model };
 }
@@ -31,8 +56,18 @@ function readRequiredEnvironmentValue(
   if (trimmedValue.length === 0) {
     throw new GameMasterInterviewerError(
       "configuration_missing",
-      `${name} is required to use the OpenAI Game Master interviewer.`,
+      `${name} is required to use OpenAI providers.`,
     );
+  }
+
+  return trimmedValue;
+}
+
+function readModelEnvironmentValue(value: string | undefined): string {
+  const trimmedValue = value?.trim() ?? "";
+
+  if (trimmedValue.length === 0) {
+    return DEFAULT_OPENAI_MODEL;
   }
 
   return trimmedValue;

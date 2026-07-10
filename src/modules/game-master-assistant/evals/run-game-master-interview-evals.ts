@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   const credentialStatus = getCredentialStatus(process.env);
   if (!credentialStatus.canRun) {
     console.log(
-      `Game Master evals skipped: ${credentialStatus.reason}. Set OPENAI_API_KEY and OPENAI_GAME_MASTER_MODEL to run live local evals.`,
+      `Game Master evals skipped: ${credentialStatus.reason}. Set OPENAI_API_KEY to run live local evals; OPENAI_GAME_MASTER_MODEL is optional.`,
     );
     return;
   }
@@ -107,8 +107,8 @@ function getCredentialStatus(environment: NodeJS.ProcessEnv): {
     return { canRun: false, reason: "OPENAI_API_KEY is not configured" };
   }
 
-  if (model.length === 0 || model.startsWith("replace-with-")) {
-    return { canRun: false, reason: "OPENAI_GAME_MASTER_MODEL is not configured" };
+  if (model.startsWith("replace-with-")) {
+    return { canRun: false, reason: "OPENAI_GAME_MASTER_MODEL is a placeholder" };
   }
 
   return { canRun: true, reason: "credentials configured" };

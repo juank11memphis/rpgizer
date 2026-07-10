@@ -72,6 +72,13 @@ const BOSS_FIGHT_TERMS = [
   "complete",
   "final",
   "boss",
+  "trial",
+  "simulation",
+  "beta",
+  "defeat",
+  "boundary",
+  "oath",
+  "commitment",
 ];
 
 const RANDOM_LOOT_PATTERNS = [
@@ -99,6 +106,18 @@ const PRACTICAL_INVENTORY_TERMS = [
   "equipment",
   "guide",
   "document",
+  "repo",
+  "starter",
+  "sketch",
+  "sketches",
+  "sheet",
+  "statement",
+  "statements",
+  "login",
+  "card",
+  "phrase",
+  "phrases",
+  "fallback",
 ];
 
 const DECORATIVE_SKILL_NAMES = [
@@ -129,6 +148,11 @@ const CAPABILITY_TERMS = [
   "organize",
   "learn",
   "improve",
+  "track",
+  "reduce",
+  "modify",
+  "gather",
+  "prioritize",
 ];
 
 const UNLOCK_TERMS = ["complete", "after", "when", "once", "finish", "deliver", "publish"];
@@ -145,6 +169,10 @@ const NEXT_ACTION_VERBS = [
   "pick",
   "set",
   "create",
+  "pull",
+  "gather",
+  "open",
+  "prepare",
 ];
 
 const GENERIC_NEXT_ACTION_PATTERNS = [
@@ -523,10 +551,17 @@ function checkHighStakesSafety(
 function buildContextTerms(fixture: GenerateAdventureEvalFixture): string[] {
   return unique([
     ...fixture.expectations.expectedGoalTerms,
+    ...fixture.expectations.expectedSkillThemes,
+    ...fixture.expectations.expectedInventoryThemes,
     ...extractSignificantWords(fixture.goalText),
     ...extractSignificantWords(fixture.interviewOutputArtifact.goalSummary),
     ...extractSignificantWords(fixture.interviewOutputArtifact.currentStage),
+    ...fixture.interviewOutputArtifact.blockers.flatMap(extractSignificantWords),
+    ...fixture.interviewOutputArtifact.constraints.flatMap(extractSignificantWords),
     ...fixture.interviewOutputArtifact.existingResources.flatMap(extractSignificantWords),
+    ...fixture.interviewOutputArtifact.likelyMissingResources.flatMap(extractSignificantWords),
+    ...fixture.interviewOutputArtifact.preferences.flatMap(extractSignificantWords),
+    ...extractSignificantWords(fixture.interviewOutputArtifact.compactSourceSummary),
   ]);
 }
 

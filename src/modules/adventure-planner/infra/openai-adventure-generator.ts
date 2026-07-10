@@ -21,7 +21,7 @@ import {
   type GeneratedAdventure,
 } from "../domain/generated-adventure";
 import {
-  loadOpenAIGameMasterInterviewerConfig,
+  loadOpenAIAdventureGenerationConfig,
   type OpenAIGameMasterInterviewerConfig,
 } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
 
@@ -236,11 +236,11 @@ export const GENERATED_ADVENTURE_FORMAT = {
 
 function loadOpenAIAdventureGeneratorConfig(): OpenAIGameMasterInterviewerConfig {
   try {
-    return loadOpenAIGameMasterInterviewerConfig();
+    return loadOpenAIAdventureGenerationConfig();
   } catch (error) {
     throw new AdventureGeneratorError(
       "configuration_missing",
-      "OPENAI_API_KEY and OPENAI_GAME_MASTER_MODEL are required to use the OpenAI Adventure generator.",
+      "OPENAI_API_KEY is required to use the OpenAI Adventure generator; OPENAI_ADVENTURE_GENERATION_MODEL overrides the default model when set.",
       { cause: error },
     );
   }

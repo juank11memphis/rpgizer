@@ -16,12 +16,9 @@ src/modules/game-master-assistant/infra/prompts/game-master-interview.md
 
 ## Credentials
 
-Live evals require both environment variables:
+Live evals require `OPENAI_API_KEY`. `OPENAI_GAME_MASTER_MODEL` is optional and defaults to the shared runtime model when unset.
 
-- `OPENAI_API_KEY`
-- `OPENAI_GAME_MASTER_MODEL`
-
-If either value is missing or left as a `replace-with-*` placeholder, the command exits successfully with a clear skip message and does not call OpenAI. This keeps local validation usable when credentials are unavailable.
+If the API key is missing, or either value is left as a `replace-with-*` placeholder, the command exits successfully with a clear skip message and does not call OpenAI. This keeps local validation usable when credentials are unavailable.
 
 ## Fixtures
 
