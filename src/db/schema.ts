@@ -1,5 +1,6 @@
 import {
   check,
+  foreignKey,
   integer,
   jsonb,
   pgTable,
@@ -80,7 +81,7 @@ export const adventures = pgTable(
     updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
   },
   (adventure) => [
-    check("adventures_state_check", sql`${adventure.state} in ('drafting')`),
+    check("adventures_state_check", sql`${adventure.state} in ('drafting', 'generated')`),
     check(
       "adventures_readiness_status_check",
       sql`${adventure.readinessStatus} in ('not_ready', 'ready_to_generate')`,
@@ -107,6 +108,309 @@ export const interviewOutputArtifacts = pgTable(
   },
   (artifact) => [
     unique("interview_output_artifacts_adventure_unique").on(artifact.adventureId),
+  ],
+);
+
+export const generatedAdventureManifests = pgTable(
+  "generatedAdventureManifests",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    interviewOutputArtifactId: text("interviewOutputArtifactId").notNull(),
+    title: text("title").notNull(),
+    themeSummary: text("themeSummary").notNull(),
+    goalSummary: text("goalSummary").notNull(),
+    safetySummary: text("safetySummary"),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (manifest) => [
+    unique("generated_adventure_manifests_adventure_unique").on(manifest.adventureId),
+    foreignKey({
+      columns: [manifest.interviewOutputArtifactId],
+      foreignColumns: [interviewOutputArtifacts.id],
+      name: "generated_adventure_manifests_artifact_fk",
+    }).onDelete("restrict"),
+  ],
+);
+
+export const adventureActs = pgTable(
+  "adventureActs",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (act) => [
+    unique("adventure_acts_adventure_sequence_unique").on(
+      act.adventureId,
+      act.sequenceNumber,
+    ),
+    check("adventure_acts_sequence_number_check", sql`${act.sequenceNumber} > 0`),
+  ],
+);
+
+export const adventureSkills = pgTable(
+  "adventureSkills",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    xp: integer("xp").notNull().default(0),
+    level: integer("level").notNull().default(1),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (skill) => [
+    unique("adventure_skills_adventure_name_unique").on(skill.adventureId, skill.name),
+    check("adventure_skills_xp_check", sql`${skill.xp} >= 0`),
+    check("adventure_skills_level_check", sql`${skill.level} >= 1`),
+  ],
+);
+
+export const adventureInventoryItems = pgTable(
+  "adventureInventoryItems",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    purpose: text("purpose").notNull(),
+    status: text("status").notNull().default("needed"),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    acquiredAt: timestamp("acquiredAt", { mode: "date" }),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (item) => [
+    unique("adventure_inventory_items_adventure_sequence_unique").on(
+      item.adventureId,
+      item.sequenceNumber,
+    ),
+    check("adventure_inventory_items_sequence_number_check", sql`${item.sequenceNumber} > 0`),
+    check("adventure_inventory_items_status_check", sql`${item.status} in ('needed', 'acquired')`),
+    check(
+      "adventure_inventory_items_acquired_at_check",
+      sql`(${item.status} = 'acquired' and ${item.acquiredAt} is not null) or (${item.status} = 'needed' and ${item.acquiredAt} is null)`,
+    ),
+  ],
+);
+
+export const adventureAchievements = pgTable(
+  "adventureAchievements",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull(),
+    unlockCondition: text("unlockCondition").notNull(),
+    status: text("status").notNull().default("locked"),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    unlockedAt: timestamp("unlockedAt", { mode: "date" }),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (achievement) => [
+    unique("adventure_achievements_adventure_sequence_unique").on(
+      achievement.adventureId,
+      achievement.sequenceNumber,
+    ),
+    check(
+      "adventure_achievements_sequence_number_check",
+      sql`${achievement.sequenceNumber} > 0`,
+    ),
+    check(
+      "adventure_achievements_status_check",
+      sql`${achievement.status} in ('locked', 'unlocked')`,
+    ),
+    check(
+      "adventure_achievements_unlocked_at_check",
+      sql`(${achievement.status} = 'unlocked' and ${achievement.unlockedAt} is not null) or (${achievement.status} = 'locked' and ${achievement.unlockedAt} is null)`,
+    ),
+  ],
+);
+
+export const adventureQuests = pgTable(
+  "adventureQuests",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    actId: text("actId")
+      .notNull()
+      .references(() => adventureActs.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    doneCondition: text("doneCondition").notNull(),
+    rewardIntent: text("rewardIntent").notNull(),
+    status: text("status").notNull().default("not_started"),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    completedAt: timestamp("completedAt", { mode: "date" }),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (quest) => [
+    unique("adventure_quests_act_type_sequence_unique").on(
+      quest.actId,
+      quest.type,
+      quest.sequenceNumber,
+    ),
+    check("adventure_quests_type_check", sql`${quest.type} in ('main', 'side')`),
+    check("adventure_quests_status_check", sql`${quest.status} in ('not_started', 'completed')`),
+    check("adventure_quests_sequence_number_check", sql`${quest.sequenceNumber} > 0`),
+    check(
+      "adventure_quests_completed_at_check",
+      sql`(${quest.status} = 'completed' and ${quest.completedAt} is not null) or (${quest.status} = 'not_started' and ${quest.completedAt} is null)`,
+    ),
+  ],
+);
+
+export const adventureBossFights = pgTable(
+  "adventureBossFights",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    actId: text("actId")
+      .notNull()
+      .references(() => adventureActs.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    doneCondition: text("doneCondition").notNull(),
+    rewardIntent: text("rewardIntent").notNull(),
+    status: text("status").notNull().default("not_started"),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    completedAt: timestamp("completedAt", { mode: "date" }),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (bossFight) => [
+    unique("adventure_boss_fights_act_sequence_unique").on(
+      bossFight.actId,
+      bossFight.sequenceNumber,
+    ),
+    check("adventure_boss_fights_sequence_number_check", sql`${bossFight.sequenceNumber} > 0`),
+    check(
+      "adventure_boss_fights_status_check",
+      sql`${bossFight.status} in ('not_started', 'completed')`,
+    ),
+    check(
+      "adventure_boss_fights_completed_at_check",
+      sql`(${bossFight.status} = 'completed' and ${bossFight.completedAt} is not null) or (${bossFight.status} = 'not_started' and ${bossFight.completedAt} is null)`,
+    ),
+  ],
+);
+
+export const adventureQuestSkillRewards = pgTable(
+  "adventureQuestSkillRewards",
+  {
+    questId: text("questId")
+      .notNull()
+      .references(() => adventureQuests.id, { onDelete: "cascade" }),
+    skillId: text("skillId")
+      .notNull()
+      .references(() => adventureSkills.id, { onDelete: "cascade" }),
+    xp: integer("xp").notNull(),
+  },
+  (reward) => [
+    primaryKey({ columns: [reward.questId, reward.skillId] }),
+    check("adventure_quest_skill_rewards_xp_check", sql`${reward.xp} > 0`),
+  ],
+);
+
+export const adventureBossFightSkillRewards = pgTable(
+  "adventureBossFightSkillRewards",
+  {
+    bossFightId: text("bossFightId").notNull(),
+    skillId: text("skillId").notNull(),
+    xp: integer("xp").notNull(),
+  },
+  (reward) => [
+    primaryKey({ columns: [reward.bossFightId, reward.skillId] }),
+    foreignKey({
+      columns: [reward.bossFightId],
+      foreignColumns: [adventureBossFights.id],
+      name: "adventure_boss_fight_skill_rewards_boss_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [reward.skillId],
+      foreignColumns: [adventureSkills.id],
+      name: "adventure_boss_fight_skill_rewards_skill_fk",
+    }).onDelete("cascade"),
+    check("adventure_boss_fight_skill_rewards_xp_check", sql`${reward.xp} > 0`),
+  ],
+);
+
+export const adventureQuestInventoryItems = pgTable(
+  "adventureQuestInventoryItems",
+  {
+    questId: text("questId").notNull(),
+    inventoryItemId: text("inventoryItemId").notNull(),
+  },
+  (link) => [
+    primaryKey({ columns: [link.questId, link.inventoryItemId] }),
+    foreignKey({
+      columns: [link.questId],
+      foreignColumns: [adventureQuests.id],
+      name: "adventure_quest_inventory_items_quest_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [link.inventoryItemId],
+      foreignColumns: [adventureInventoryItems.id],
+      name: "adventure_quest_inventory_items_item_fk",
+    }).onDelete("cascade"),
+  ],
+);
+
+export const adventureBossFightInventoryItems = pgTable(
+  "adventureBossFightInventoryItems",
+  {
+    bossFightId: text("bossFightId").notNull(),
+    inventoryItemId: text("inventoryItemId").notNull(),
+  },
+  (link) => [
+    primaryKey({ columns: [link.bossFightId, link.inventoryItemId] }),
+    foreignKey({
+      columns: [link.bossFightId],
+      foreignColumns: [adventureBossFights.id],
+      name: "adventure_boss_fight_inventory_boss_fk",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [link.inventoryItemId],
+      foreignColumns: [adventureInventoryItems.id],
+      name: "adventure_boss_fight_inventory_item_fk",
+    }).onDelete("cascade"),
   ],
 );
 
