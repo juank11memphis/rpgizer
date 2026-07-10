@@ -1,0 +1,30 @@
+{
+  "id": "learn-a-skill",
+  "name": "Learn a skill",
+  "goalText": "Learn enough Spanish conversation to handle a ten-minute coffee chat in three months.",
+  "interviewOutputArtifact": {
+    "goalSummary": "Build beginner Spanish conversation confidence for a ten-minute coffee chat.",
+    "coreWhy": "The user wants to connect with Spanish-speaking neighbors and feel less stuck when speaking.",
+    "successDefinition": "A ten-minute coffee chat is completed with prepared topics, follow-up questions, and a short reflection.",
+    "currentStage": "The user knows scattered vocabulary but freezes during live conversation.",
+    "blockers": ["Speaking anxiety", "Inconsistent practice", "Too many app lessons without real conversation"],
+    "constraints": ["Twenty minutes on weekdays", "One longer weekend practice slot"],
+    "existingResources": ["Language app streak", "Notebook", "Two Spanish-speaking coworkers"],
+    "likelyMissingResources": ["Conversation prompt list", "Weekly speaking schedule", "Reflection tracker"],
+    "safetyBoundaries": ["Educational language learning guidance only"],
+    "preferences": ["Cozy tavern quest tone", "Small practice missions", "Visible confidence gains"],
+    "compactSourceSummary": "The user wants practical Spanish speaking practice for a real coffee chat, not grammar perfection."
+  },
+  "transcript": [
+    { "role": "user", "content": "I want to learn Spanish but I freeze when I try to speak." },
+    { "role": "game_master", "content": "What would prove the skill is working in real life?" },
+    { "role": "user", "content": "A ten-minute coffee chat where I can ask follow-up questions and not switch back to English immediately." }
+  ],
+  "expectations": {
+    "highStakesSafety": false,
+    "expectedGoalTerms": ["Spanish", "coffee", "conversation"],
+    "expectedSkillThemes": ["speaking", "practice"],
+    "expectedInventoryThemes": ["prompt", "schedule"],
+    "forbiddenAdvicePatterns": ["guaranteed fluency"]
+  }
+}

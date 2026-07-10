@@ -1,0 +1,206 @@
+import { mkdtemp, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+import { buildGeneratedAdventureBoundaryPayload } from "../application/test/generated-adventure-fixtures";
+import { AdventureGeneratorError } from "../application/generate-adventure/ports";
+import { parseGeneratedAdventure } from "../domain/generated-adventure";
+import { parseGenerateAdventureEvalFixture } from "./generate-adventure-eval-fixture-parser";
+import {
+  buildAdventureGeneratorRequest,
+  formatDiagnostic,
+  loadGenerateAdventureEvalFixtures,
+  runGenerateAdventureEvals,
+  validateOpenAIConfiguration,
+  type GenerateAdventureEvalGenerator,
+} from "./run-generate-adventure-evals";
+
+function buildFixture(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: "cooking-eval",
+    name: "Cooking eval",
+    goalText: "Learn weeknight cooking with repeatable meal planning.",
+    interviewOutputArtifact: {
+      goalSummary: "Cook three practical weeknight dinners.",
+      coreWhy: "Feel confident feeding myself after work.",
+      successDefinition: "Three dinners are cooked and reviewed.",
+      currentStage: "Can follow recipes but needs meal planning routines.",
+      blockers: ["Time pressure"],
+      constraints: ["Thirty-minute weeknight sessions"],
+      existingResources: ["Kitchen tools", "Recipe bookmarks"],
+      likelyMissingResources: ["Weekly menu template"],
+      safetyBoundaries: ["Educational cooking guidance only"],
+      preferences: ["Cozy guild framing"],
+      compactSourceSummary: "The user wants practical cooking routines.",
+    },
+    transcript: [{ role: "user", content: "I want to cook dinner more often." }],
+    expectations: {
+      highStakesSafety: false,
+      expectedGoalTerms: ["cooking"],
+      expectedSkillThemes: ["meal"],
+      expectedInventoryThemes: ["template"],
+      forbiddenAdvicePatterns: ["guaranteed cure"],
+    },
+    ...overrides,
+  };
+}
+
+function buildEnvironment(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.ProcessEnv {
+  return {
+    NODE_ENV: "test",
+    OPENAI_API_KEY: "sk-test",
+    OPENAI_GAME_MASTER_MODEL: "gpt-test",
+    ...overrides,
+  };
+}
+
+function createOutputCollector(): { output: () => string; stream: Pick<NodeJS.WriteStream, "write"> } {
+  let output = "";
+
+  return {
+    output: () => output,
+    stream: {
+      write: (chunk: string | Uint8Array) => {
+        output += String(chunk);
+        return true;
+      },
+    },
+  };
+}
+
+async function createFixtureDirectory(fixtures: Record<string, unknown>[]): Promise<string> {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "generate-adventure-evals-"));
+
+  await Promise.all(
+    fixtures.map((fixture, index) =>
+      writeFile(
+        path.join(directory, `${String(index + 1).padStart(2, "0")}-${fixture.id}.json`),
+        JSON.stringify(fixture),
+      ),
+    ),
+  );
+
+  return directory;
+}
+
+describe("Generate Adventure eval runner", () => {
+  it("validates missing and placeholder OpenAI configuration clearly", () => {
+    expect(validateOpenAIConfiguration(buildEnvironment({ OPENAI_API_KEY: " " }))).toContain(
+      "OPENAI_API_KEY is required to run Generate Adventure evals",
+    );
+    expect(validateOpenAIConfiguration(buildEnvironment({ OPENAI_API_KEY: "placeholder" }))).toBe(
+      "OPENAI_API_KEY appears to be a placeholder value.",
+    );
+    expect(
+      validateOpenAIConfiguration(buildEnvironment({ OPENAI_GAME_MASTER_MODEL: " " })),
+    ).toContain("OPENAI_GAME_MASTER_MODEL is required by the runtime Adventure generator config");
+    expect(validateOpenAIConfiguration(buildEnvironment())).toBeNull();
+  });
+
+  it("loads JSON fixtures in deterministic filename order", async () => {
+    const directory = await createFixtureDirectory([
+      buildFixture({ id: "second", name: "Second" }),
+      buildFixture({ id: "first", name: "First" }),
+    ]);
+
+    const fixtures = await loadGenerateAdventureEvalFixtures(directory);
+
+    expect(fixtures.map((fixture) => fixture.id)).toEqual(["second", "first"]);
+  });
+
+  it("builds stable Adventure generator requests from fixtures", () => {
+    const request = buildAdventureGeneratorRequest(
+      loadFixtureForRequest(buildFixture({ id: "learn-cooking" })),
+    );
+
+    expect(request).toMatchObject({
+      userId: "eval-user-learn-cooking",
+      adventureId: "eval-adventure-learn-cooking",
+      interviewOutputArtifactId: "eval-artifact-learn-cooking",
+      transcript: [
+        {
+          id: "eval-message-learn-cooking-1",
+          sequenceNumber: 1,
+          role: "user",
+          content: "I want to cook dinner more often.",
+        },
+      ],
+    });
+    expect(request.transcript[0].createdAt.toISOString()).toBe("2026-01-01T00:00:00.000Z");
+  });
+
+  it("runs fixtures through an injected generator and prints a pass summary", async () => {
+    const directory = await createFixtureDirectory([buildFixture()]);
+    const promptPath = path.join(directory, "prompt.md");
+    await writeFile(promptPath, "Generate an Adventure.");
+
+    const output = createOutputCollector();
+    const errorOutput = createOutputCollector();
+    const seenRequests: string[] = [];
+    const generator: GenerateAdventureEvalGenerator = {
+      async generateAdventure(input) {
+        seenRequests.push(input.adventureId);
+        return parseGeneratedAdventure(buildGeneratedAdventureBoundaryPayload());
+      },
+    };
+
+    const result = await runGenerateAdventureEvals({
+      fixturesDirectory: directory,
+      promptPath,
+      environment: buildEnvironment(),
+      createGenerator: () => generator,
+      output: output.stream,
+      errorOutput: errorOutput.stream,
+    });
+
+    expect(result).toMatchObject({ passed: true, fixtureIds: ["cooking-eval"], diagnostics: [] });
+    expect(seenRequests).toEqual(["eval-adventure-cooking-eval"]);
+    expect(output.output()).toBe("Generate Adventure evals passed: cooking-eval\n");
+    expect(errorOutput.output()).toBe("");
+  });
+
+  it("formats generation failures without leaking SDK internals", async () => {
+    const directory = await createFixtureDirectory([buildFixture()]);
+    const promptPath = path.join(directory, "prompt.md");
+    await writeFile(promptPath, "Generate an Adventure.");
+    const errorOutput = createOutputCollector();
+
+    const result = await runGenerateAdventureEvals({
+      fixturesDirectory: directory,
+      promptPath,
+      environment: buildEnvironment(),
+      createGenerator: () => ({
+        async generateAdventure() {
+          throw new AdventureGeneratorError(
+            "provider_output_invalid",
+            "OpenAI structured output was not valid JSON.",
+          );
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: errorOutput.stream,
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.diagnostics).toEqual([
+      {
+        fixtureId: "cooking-eval",
+        area: "generation",
+        message: "OpenAI Adventure output was invalid: OpenAI structured output was not valid JSON.",
+      },
+    ]);
+    expect(errorOutput.output()).toContain("[cooking-eval] generation:");
+  });
+
+  it("formats diagnostics consistently", () => {
+    expect(
+      formatDiagnostic({ fixtureId: "build-a-product", area: "side quest quality", message: "weak" }),
+    ).toBe("[build-a-product] side quest quality: weak");
+  });
+});
+
+function loadFixtureForRequest(input: Record<string, unknown>) {
+  return parseGenerateAdventureEvalFixture(input, "request.json");
+}

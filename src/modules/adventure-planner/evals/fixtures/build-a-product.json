@@ -1,0 +1,30 @@
+{
+  "id": "build-a-product",
+  "name": "Build a product",
+  "goalText": "Launch a tiny habit-tracking web app prototype for five beta users in six weeks.",
+  "interviewOutputArtifact": {
+    "goalSummary": "Ship a small habit-tracking web app prototype to five beta users.",
+    "coreWhy": "The user wants proof that they can finish and share a useful product instead of endlessly planning ideas.",
+    "successDefinition": "Five beta users can create a habit, mark a check-in, and send feedback after one week.",
+    "currentStage": "The user has sketches and technical ability but keeps expanding scope before shipping.",
+    "blockers": ["Scope creep", "Avoiding user feedback", "Unclear launch checklist"],
+    "constraints": ["Six-week deadline", "Evenings and weekends only", "No paid infrastructure for MVP"],
+    "existingResources": ["Wireframe sketches", "Next.js starter", "Three potential beta users"],
+    "likelyMissingResources": ["MVP scope checklist", "Beta feedback form", "Prototype launch plan"],
+    "safetyBoundaries": ["Developer productivity guidance only"],
+    "preferences": ["Forge and guild flavor", "Milestone boss fights", "Anti-scope-creep reminders"],
+    "compactSourceSummary": "The user needs a narrow prototype path with user research, feedback, and a real beta launch."
+  },
+  "transcript": [
+    { "role": "user", "content": "I want to build a habit tracker, but every idea becomes too big." },
+    { "role": "game_master", "content": "What is the smallest launch that would still count?" },
+    { "role": "user", "content": "Five beta users can track one habit for a week and tell me what confused them." }
+  ],
+  "expectations": {
+    "highStakesSafety": false,
+    "expectedGoalTerms": ["habit", "prototype", "beta"],
+    "expectedSkillThemes": ["scope", "feedback"],
+    "expectedInventoryThemes": ["checklist", "feedback"],
+    "forbiddenAdvicePatterns": ["guaranteed product-market fit"]
+  }
+}

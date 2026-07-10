@@ -14,7 +14,8 @@
     "db:up": "docker compose up -d --wait postgres",
     "db:migrate": "tsx scripts/run-migrations.ts",
     "test": "vitest run",
-    "eval:game-master": "tsx src/modules/game-master-assistant/evals/run-game-master-interview-evals.ts"
+    "eval:game-master": "tsx src/modules/game-master-assistant/evals/run-game-master-interview-evals.ts",
+    "eval:generate-adventure": "tsx src/modules/adventure-planner/evals/run-generate-adventure-evals.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",

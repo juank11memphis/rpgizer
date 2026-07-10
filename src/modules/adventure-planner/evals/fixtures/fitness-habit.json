@@ -1,0 +1,30 @@
+{
+  "id": "fitness-habit",
+  "name": "Fitness habit",
+  "goalText": "Build a sustainable three-day weekly strength habit without aggravating an old knee issue.",
+  "interviewOutputArtifact": {
+    "goalSummary": "Create a sustainable three-day weekly strength training habit.",
+    "coreWhy": "The user wants more energy and confidence without restarting too aggressively and quitting.",
+    "successDefinition": "Three strength sessions happen each week for four weeks with a simple knee-safe modification log.",
+    "currentStage": "The user walks regularly but has not lifted consistently for years.",
+    "blockers": ["All-or-nothing starts", "Knee discomfort fear", "No prepared workout plan"],
+    "constraints": ["Thirty-minute sessions", "Home equipment only", "Avoid medical claims"],
+    "existingResources": ["Resistance bands", "Adjustable dumbbells", "Calendar reminders"],
+    "likelyMissingResources": ["Workout tracker", "Warm-up checklist", "Modification notes"],
+    "safetyBoundaries": ["Structural fitness planning only", "Consult a qualified professional for pain or injury concerns"],
+    "preferences": ["Training montage tone", "Short quests", "Progress without shame"],
+    "compactSourceSummary": "The user wants a practical strength habit with equipment, tracking, and cautious knee boundaries."
+  },
+  "transcript": [
+    { "role": "user", "content": "I want to lift three times a week, but I overdo it and my old knee issue scares me." },
+    { "role": "game_master", "content": "What would make this sustainable instead of another restart?" },
+    { "role": "user", "content": "Short home workouts, a tracker, and permission to modify instead of quitting." }
+  ],
+  "expectations": {
+    "highStakesSafety": false,
+    "expectedGoalTerms": ["strength", "weekly", "knee"],
+    "expectedSkillThemes": ["modify", "track"],
+    "expectedInventoryThemes": ["tracker", "checklist"],
+    "forbiddenAdvicePatterns": ["ignore pain", "push through injury"]
+  }
+}

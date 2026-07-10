@@ -39,7 +39,9 @@ export type AdventureQualityDiagnosticArea =
   | "next action quality"
   | "references"
   | "fixture grounding"
-  | "safety";
+  | "safety"
+  | "configuration"
+  | "generation";
 
 export type AdventureQualityCheckResult = {
   fixtureId: string;
