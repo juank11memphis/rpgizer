@@ -17,7 +17,13 @@ Product semantics:
 - focusedNextActions: the smallest concrete next moves that make starting obvious.
 
 Field quality contract:
-- Quest/Boss `doneCondition`: write one observable proof of completion. Include an artifact/action/result the user can verify, using concrete words like written, listed, chosen, scheduled, practiced, built, tested, reviewed, shared, recorded, delivered, first/one/two/three, or at least. Do not use title-like, command-like, or feeling-only conditions. The doneCondition must be a full past-tense or verifiable evidence sentence, not a renamed title or imperative phrase. The user should be able to answer yes/no from visible evidence.
+- Quest/Boss `doneCondition`: write one observable proof of completion. Include an artifact/action/result the user can verify, using concrete words like written, listed, chosen, scheduled, practiced, built, tested, reviewed, shared, recorded, delivered, first/one/two/three, or at least. Do not use title-like, command-like, or feeling-only conditions. The doneCondition must be a full past-tense or verifiable evidence sentence, not a renamed title or imperative phrase. The user should be able to answer yes/no from visible evidence. If you start writing a doneCondition with an imperative verb such as Build, Check, Clear, Note, Capture, Trace, Draft, Map, Gather, or Pull, rewrite it as a result state.
+  - Bad: “Build the Due-Date Calendar.”
+  - Bad: “Check the Monthly Space.”
+  - Bad: “Clear the Tracker Board.”
+  - Good: “The due-date calendar contains every account, due date, and minimum payment.”
+  - Good: “The monthly budget space is checked and the available payment amount is recorded.”
+  - Good: “The tracker board has columns for backlog, building, testing, and shipped.”
   - Good: “A one-page habit flow is written and reviewed against the no-list.”
   - Good: “The wireframes are traced into one clickable flow and reviewed against the tester script.”
   - Bad: “Map the Habit Run.”
