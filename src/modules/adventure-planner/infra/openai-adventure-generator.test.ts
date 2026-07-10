@@ -76,6 +76,12 @@ describe("OpenAIAdventureGenerator", () => {
       strict: true,
       schema: expect.objectContaining({ additionalProperties: false }),
     });
+    const schemaText = JSON.stringify(request?.text?.format);
+    expect(schemaText).toContain("Full verifiable evidence sentence");
+    expect(schemaText).toContain("Verb-based real-world capability");
+    expect(schemaText).toContain("practical readiness item");
+    expect(schemaText).toContain("Concrete unlock condition");
+    expect(schemaText).toContain("Small immediate next action");
     expect(request?.input).toEqual([
       {
         role: "user",

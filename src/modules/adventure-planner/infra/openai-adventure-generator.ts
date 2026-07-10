@@ -206,7 +206,9 @@ export const GENERATED_ADVENTURE_FORMAT = {
         properties: {
           key: keySchema(),
           name: nonEmptyStringSchema(),
-          description: nonEmptyStringSchema(),
+          description: nonEmptyStringSchema(
+            "Verb-based real-world capability the user can improve; not a decorative RPG stat.",
+          ),
         },
       }),
       inventoryItems: nonEmptyArrayOf({
@@ -216,7 +218,9 @@ export const GENERATED_ADVENTURE_FORMAT = {
         properties: {
           key: keySchema(),
           name: nonEmptyStringSchema(),
-          purpose: nonEmptyStringSchema(),
+          purpose: nonEmptyStringSchema(
+            "How this practical readiness item, tool, resource, routine, or setup will be used in the real world.",
+          ),
         },
       }),
       achievements: nonEmptyArrayOf({
@@ -227,7 +231,9 @@ export const GENERATED_ADVENTURE_FORMAT = {
           key: keySchema(),
           name: nonEmptyStringSchema(),
           description: nonEmptyStringSchema(),
-          unlockCondition: nonEmptyStringSchema(),
+          unlockCondition: nonEmptyStringSchema(
+            "Concrete unlock condition using observable evidence, for example: Unlocked when five testers complete the prototype and feedback is recorded.",
+          ),
         },
       }),
       focusedNextActions: nonEmptyArrayOf({
@@ -236,7 +242,9 @@ export const GENERATED_ADVENTURE_FORMAT = {
         required: ["title", "description"],
         properties: {
           title: nonEmptyStringSchema(),
-          description: nonEmptyStringSchema(),
+          description: nonEmptyStringSchema(
+            "Small immediate next action with a concrete verb and object; avoid vague start/begin/progress language.",
+          ),
         },
       }),
       acts: nonEmptyArrayOf({
@@ -548,9 +556,11 @@ function questSchema() {
     properties: {
       key: keySchema(),
       title: nonEmptyStringSchema(),
-      description: nonEmptyStringSchema(),
-      doneCondition: nonEmptyStringSchema(),
-      rewardIntent: nonEmptyStringSchema(),
+      description: nonEmptyStringSchema("Real-world action, context, and why it matters."),
+      doneCondition: nonEmptyStringSchema(
+        "Full verifiable evidence sentence proving completion; not a title, imperative command, or feeling-only phrase. Good: The due-date calendar contains every account, due date, and minimum payment. Bad: Build the Due-Date Calendar.",
+      ),
+      rewardIntent: nonEmptyStringSchema("Why completion builds the referenced real-world skill rewards."),
       skillRewards: nonEmptyArrayOf(skillRewardSchema()),
       inventoryItemKeys: nonEmptyArrayOf(keySchema()),
     },
@@ -596,8 +606,10 @@ function keySchema() {
   };
 }
 
-function nonEmptyStringSchema() {
-  return { type: "string", minLength: 1 };
+function nonEmptyStringSchema(description?: string) {
+  return description === undefined
+    ? { type: "string", minLength: 1 }
+    : { type: "string", minLength: 1, description };
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
