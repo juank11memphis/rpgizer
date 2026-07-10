@@ -254,6 +254,33 @@ export const adventureAchievements = pgTable(
   ],
 );
 
+export const adventureFocusedNextActions = pgTable(
+  "adventureFocusedNextActions",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    adventureId: text("adventureId")
+      .notNull()
+      .references(() => adventures.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (action) => [
+    unique("adventure_focused_next_actions_adventure_sequence_unique").on(
+      action.adventureId,
+      action.sequenceNumber,
+    ),
+    check(
+      "adventure_focused_next_actions_sequence_number_check",
+      sql`${action.sequenceNumber} > 0`,
+    ),
+  ],
+);
+
 export const adventureQuests = pgTable(
   "adventureQuests",
   {
