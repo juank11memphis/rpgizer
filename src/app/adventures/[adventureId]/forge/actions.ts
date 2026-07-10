@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
-import type { GenerateInterviewOutputArtifactOutput } from "@/modules/game-master-assistant/application/generate-interview-output-artifact/output";
-import { createGameMasterAssistantProduction } from "@/modules/game-master-assistant/infra/game-master-assistant-production";
+import type { ForgeAdventureOutput } from "@/modules/game-master-assistant/application/forge-adventure/output";
+import { createGameMasterAssistantComposition } from "@/modules/game-master-assistant/infra/game-master-assistant-composition";
 import type { RequireCurrentUserResult } from "@/modules/user-identity/application/require-current-user/output";
 import { requireCurrentSessionUser } from "@/modules/user-identity/infra/auth/session";
 import { APPLICATION_LOG_EVENTS } from "@/server/logging/events";
@@ -10,10 +10,10 @@ import { serializeErrorForLog } from "@/server/logging/redaction";
 
 export type RetryForgeActionDependencies = {
   requireCurrentUser: () => Promise<RequireCurrentUserResult>;
-  generateInterviewOutputArtifact: (input: {
+  forgeAdventure: (input: {
     userId: string;
     adventureId: string;
-  }) => Promise<GenerateInterviewOutputArtifactOutput>;
+  }) => Promise<ForgeAdventureOutput>;
   redirectTo: (destination: string) => never;
   logger?: RetryForgeLogger;
 };
@@ -50,7 +50,7 @@ export function createRetryForgeAction(dependencies: RetryForgeActionDependencie
     });
 
     try {
-      const result = await dependencies.generateInterviewOutputArtifact({
+      const result = await dependencies.forgeAdventure({
         userId: currentUser.user.id,
         adventureId,
       });
@@ -66,7 +66,9 @@ export function createRetryForgeAction(dependencies: RetryForgeActionDependencie
         ...(result.status === "ready"
           ? {
               artifactId: result.artifactId,
+              generatedAdventureId: result.generatedAdventureId,
               reusedExistingArtifact: result.reusedExistingArtifact,
+              reusedExistingAdventure: result.reusedExistingAdventure,
             }
           : {}),
       });
@@ -90,10 +92,10 @@ export function createRetryForgeAction(dependencies: RetryForgeActionDependencie
 export async function retryForgeAction(formData: FormData): Promise<void> {
   "use server";
 
-  const gameMasterAssistant = createGameMasterAssistantProduction();
+  const gameMasterAssistant = createGameMasterAssistantComposition();
   const action = createRetryForgeAction({
     requireCurrentUser: requireCurrentSessionUser,
-    generateInterviewOutputArtifact: gameMasterAssistant.generateInterviewOutputArtifact,
+    forgeAdventure: gameMasterAssistant.forgeAdventure,
     redirectTo: redirect,
   });
 

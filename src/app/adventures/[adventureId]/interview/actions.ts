@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { createGameMasterAssistantProduction } from "@/modules/game-master-assistant/infra/game-master-assistant-production";
+import { createGameMasterAssistantComposition } from "@/modules/game-master-assistant/infra/game-master-assistant-composition";
 import { requireCurrentSessionUser } from "@/modules/user-identity/infra/auth/session";
 
 import {
@@ -14,7 +14,7 @@ export async function submitInterviewAnswerAction(
   previousState: InterviewAnswerFormState,
   formData: FormData,
 ): Promise<InterviewAnswerFormState> {
-  const gameMasterAssistant = createGameMasterAssistantProduction();
+  const gameMasterAssistant = createGameMasterAssistantComposition();
   const action = createSubmitInterviewAnswerAction({
     requireCurrentUser: requireCurrentSessionUser,
     answerInterviewQuestion: gameMasterAssistant.answerInterviewQuestion,

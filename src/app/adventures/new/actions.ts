@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { createGameMasterAssistantProduction } from "../../../modules/game-master-assistant/infra/game-master-assistant-production";
+import { createGameMasterAssistantComposition } from "../../../modules/game-master-assistant/infra/game-master-assistant-composition";
 import { requireCurrentSessionUser } from "../../../modules/user-identity/infra/auth/session";
 import {
   createStartAdventureFromGoalAction,
@@ -13,7 +13,7 @@ export async function startAdventureFromGoalAction(
   previousState: StartAdventureFormState,
   formData: FormData,
 ): Promise<StartAdventureFormState> {
-  const gameMasterAssistant = createGameMasterAssistantProduction();
+  const gameMasterAssistant = createGameMasterAssistantComposition();
   const action = createStartAdventureFromGoalAction({
     requireCurrentUser: requireCurrentSessionUser,
     startAdventureInterview: gameMasterAssistant.startAdventureInterview,

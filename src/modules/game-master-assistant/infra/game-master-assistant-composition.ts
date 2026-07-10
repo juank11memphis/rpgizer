@@ -1,5 +1,9 @@
+import { createAdventurePlannerComposition } from "../../adventure-planner/infra/adventure-planner-composition";
 import { answerInterviewQuestion } from "../application/answer-interview-question/usecase";
 import type { AnswerInterviewQuestionInput } from "../application/answer-interview-question/input";
+import { forgeAdventure } from "../application/forge-adventure/usecase";
+import type { ForgeAdventureInput } from "../application/forge-adventure/input";
+import type { ForgeAdventurePlanner } from "../application/forge-adventure/ports";
 import { generateInterviewOutputArtifact } from "../application/generate-interview-output-artifact/usecase";
 import type { GenerateInterviewOutputArtifactInput } from "../application/generate-interview-output-artifact/input";
 import type {
@@ -27,21 +31,22 @@ import {
 import { OpenAIGameMasterInterviewer } from "./openai-game-master-interviewer";
 import { OpenAIInterviewOutputArtifactGenerator } from "./openai-interview-output-artifact-generator";
 
-type ProductionAdventureDraftRepository = DashboardAdventureDraftRepository &
+type CompositionAdventureDraftRepository = DashboardAdventureDraftRepository &
   StartAdventureInterviewRepository &
   AdventureInterviewRepository &
   AnswerInterviewQuestionRepository &
   GenerateInterviewOutputArtifactRepository;
 
-type ProductionDependencies = {
+type GameMasterAssistantCompositionDependencies = {
   db?: GameMasterAssistantDb;
-  adventureDraftRepository?: ProductionAdventureDraftRepository;
+  adventureDraftRepository?: CompositionAdventureDraftRepository;
   gameMasterInterviewer?: GameMasterInterviewer;
   interviewOutputArtifactGenerator?: InterviewOutputArtifactGenerator;
+  adventurePlanner?: ForgeAdventurePlanner;
 };
 
-export function createGameMasterAssistantProduction(
-  dependencies: ProductionDependencies = {},
+export function createGameMasterAssistantComposition(
+  dependencies: GameMasterAssistantCompositionDependencies = {},
 ) {
   const adventureDraftRepository =
     dependencies.adventureDraftRepository ??
@@ -51,6 +56,8 @@ export function createGameMasterAssistantProduction(
   const resolveInterviewOutputArtifactGenerator = () =>
     dependencies.interviewOutputArtifactGenerator ??
     new OpenAIInterviewOutputArtifactGenerator();
+  const resolveAdventurePlanner = () =>
+    dependencies.adventurePlanner ?? createAdventurePlannerComposition({ db: dependencies.db });
 
   return {
     getDashboardAdventureDraft(input: GetDashboardAdventureDraftInput) {
@@ -77,9 +84,16 @@ export function createGameMasterAssistantProduction(
         interviewOutputArtifactGenerator: resolveInterviewOutputArtifactGenerator(),
       });
     },
+    forgeAdventure(input: ForgeAdventureInput) {
+      return forgeAdventure(input, {
+        adventureDraftRepository,
+        interviewOutputArtifactGenerator: resolveInterviewOutputArtifactGenerator(),
+        adventurePlanner: resolveAdventurePlanner(),
+      });
+    },
   };
 }
 
-export type GameMasterAssistantProduction = ReturnType<
-  typeof createGameMasterAssistantProduction
+export type GameMasterAssistantComposition = ReturnType<
+  typeof createGameMasterAssistantComposition
 >;

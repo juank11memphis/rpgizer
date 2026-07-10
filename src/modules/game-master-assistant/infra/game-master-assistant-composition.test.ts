@@ -6,10 +6,10 @@ import {
   FakeInterviewOutputArtifactGenerator,
   validInterviewOutputArtifact,
 } from "../application/test/fake-interview-output-artifact-generator";
-import { createGameMasterAssistantProduction } from "./game-master-assistant-production";
+import { createGameMasterAssistantComposition } from "./game-master-assistant-composition";
 
-describe("createGameMasterAssistantProduction", () => {
-  it("wires start Adventure interview through the production composition seam", async () => {
+describe("createGameMasterAssistantComposition", () => {
+  it("wires start Adventure interview through the composition seam", async () => {
     const repository = new FakeAdventureDraftRepository();
     const interviewer = new FakeGameMasterInterviewer();
     interviewer.queueResult({
@@ -17,12 +17,12 @@ describe("createGameMasterAssistantProduction", () => {
       readinessStatus: "ready_to_generate",
       readinessConfirmation: "not_confirmed",
     });
-    const production = createGameMasterAssistantProduction({
+    const composition = createGameMasterAssistantComposition({
       adventureDraftRepository: repository,
       gameMasterInterviewer: interviewer,
     });
 
-    const result = await production.startAdventureInterview({
+    const result = await composition.startAdventureInterview({
       userId: "user-1",
       goalText: "Become a chef",
     });
@@ -67,12 +67,12 @@ describe("createGameMasterAssistantProduction", () => {
       readinessStatus: "ready_to_generate",
       readinessConfirmation: "not_confirmed",
     });
-    const production = createGameMasterAssistantProduction({
+    const composition = createGameMasterAssistantComposition({
       adventureDraftRepository: repository,
       gameMasterInterviewer: interviewer,
     });
 
-    const result = await production.answerInterviewQuestion({
+    const result = await composition.answerInterviewQuestion({
       userId: "user-1",
       adventureId: "adventure-1",
       answerText: "I can cook eggs and pasta.",
@@ -91,27 +91,27 @@ describe("createGameMasterAssistantProduction", () => {
     });
   });
 
-  it("exposes read use cases from the production composition seam", async () => {
+  it("exposes read use cases from the composition seam", async () => {
     const repository = new FakeAdventureDraftRepository();
     repository.seedDraft({
       id: "adventure-1",
       userId: "user-1",
       goalText: "Become a chef",
     });
-    const production = createGameMasterAssistantProduction({
+    const composition = createGameMasterAssistantComposition({
       adventureDraftRepository: repository,
       gameMasterInterviewer: new FakeGameMasterInterviewer(),
     });
 
     await expect(
-      production.getDashboardAdventureDraft({ userId: "user-1" }),
+      composition.getDashboardAdventureDraft({ userId: "user-1" }),
     ).resolves.toMatchObject({ draft: { id: "adventure-1" } });
     await expect(
-      production.getAdventureInterview({ userId: "user-1", adventureId: "adventure-1" }),
+      composition.getAdventureInterview({ userId: "user-1", adventureId: "adventure-1" }),
     ).resolves.toMatchObject({ interview: { draft: { id: "adventure-1" } } });
   });
 
-  it("wires interview output artifact generation through injectable production dependencies", async () => {
+  it("wires interview output artifact generation through injectable composition dependencies", async () => {
     const repository = new FakeAdventureDraftRepository();
     repository.seedDraft({
       id: "adventure-1",
@@ -122,13 +122,13 @@ describe("createGameMasterAssistantProduction", () => {
     });
     const generator = new FakeInterviewOutputArtifactGenerator();
     generator.queueArtifact(validInterviewOutputArtifact());
-    const production = createGameMasterAssistantProduction({
+    const composition = createGameMasterAssistantComposition({
       adventureDraftRepository: repository,
       gameMasterInterviewer: new FakeGameMasterInterviewer(),
       interviewOutputArtifactGenerator: generator,
     });
 
-    const result = await production.generateInterviewOutputArtifact({
+    const result = await composition.generateInterviewOutputArtifact({
       userId: "user-1",
       adventureId: "adventure-1",
     });
@@ -140,4 +140,55 @@ describe("createGameMasterAssistantProduction", () => {
     expect(generator.requests).toHaveLength(1);
     expect(repository.savedArtifacts).toHaveLength(1);
   });
+  it("wires forge Adventure orchestration with an injected Adventure Planner boundary", async () => {
+    const repository = new FakeAdventureDraftRepository();
+    repository.seedDraft({
+      id: "adventure-1",
+      userId: "user-1",
+      goalText: "Become a chef",
+      readinessStatus: "ready_to_generate",
+      interviewStatus: "confirmed",
+    });
+    const generator = new FakeInterviewOutputArtifactGenerator();
+    generator.queueArtifact(validInterviewOutputArtifact());
+    const adventurePlanner = {
+      requests: [] as unknown[],
+      async generateAdventure(input: unknown) {
+        this.requests.push(input);
+        return {
+          status: "ready" as const,
+          adventureId: "adventure-1",
+          generatedAdventureId: "generated-adventure-1",
+          reusedExistingAdventure: false,
+          adventure: null as never,
+        };
+      },
+    };
+    const composition = createGameMasterAssistantComposition({
+      adventureDraftRepository: repository,
+      gameMasterInterviewer: new FakeGameMasterInterviewer(),
+      interviewOutputArtifactGenerator: generator,
+      adventurePlanner,
+    });
+
+    const result = await composition.forgeAdventure({
+      userId: "user-1",
+      adventureId: "adventure-1",
+    });
+
+    expect(result).toMatchObject({
+      status: "ready",
+      generatedAdventureId: "generated-adventure-1",
+      reusedExistingArtifact: false,
+      reusedExistingAdventure: false,
+    });
+    expect(adventurePlanner.requests).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        adventureId: "adventure-1",
+        interviewOutputArtifactId: "artifact-1",
+      }),
+    ]);
+  });
+
 });

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 
-import { createGameMasterAssistantProduction } from "@/modules/game-master-assistant/infra/game-master-assistant-production";
+import { createGameMasterAssistantComposition } from "@/modules/game-master-assistant/infra/game-master-assistant-composition";
 import { requireCurrentSessionUser } from "@/modules/user-identity/infra/auth/session";
 
 import { ForgeFailure } from "./forge-failure";
@@ -27,7 +27,7 @@ export default async function ForgeAdventurePage({
     redirect(`/login?next=${nextPath}`);
   }
 
-  const gameMasterAssistant = createGameMasterAssistantProduction();
+  const gameMasterAssistant = createGameMasterAssistantComposition();
   const result = await gameMasterAssistant.generateInterviewOutputArtifact({
     userId: currentUser.user.id,
     adventureId,

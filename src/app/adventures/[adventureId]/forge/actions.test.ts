@@ -22,7 +22,7 @@ describe("retryForgeAction", () => {
     const logger = createLoggerMock();
     const action = createRetryForgeAction({
       requireCurrentUser: async () => authenticatedUser(),
-      generateInterviewOutputArtifact: vi.fn(),
+      forgeAdventure: vi.fn(),
       redirectTo,
       logger,
     });
@@ -39,10 +39,10 @@ describe("retryForgeAction", () => {
 
   it("redirects unauthenticated Users through login", async () => {
     const logger = createLoggerMock();
-    const generateInterviewOutputArtifact = vi.fn();
+    const forgeAdventure = vi.fn();
     const action = createRetryForgeAction({
       requireCurrentUser: async () => ({ status: "unauthenticated" }),
-      generateInterviewOutputArtifact,
+      forgeAdventure,
       redirectTo,
       logger,
     });
@@ -50,7 +50,7 @@ describe("retryForgeAction", () => {
     await expect(action(buildFormData("adventure-1"))).rejects.toThrow(
       "NEXT_REDIRECT:/login?next=%2Fadventures%2Fadventure-1%2Fforge",
     );
-    expect(generateInterviewOutputArtifact).not.toHaveBeenCalled();
+    expect(forgeAdventure).not.toHaveBeenCalled();
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event:
@@ -64,15 +64,17 @@ describe("retryForgeAction", () => {
 
   it("retries generation through the application boundary and redirects back to forge", async () => {
     const logger = createLoggerMock();
-    const generateInterviewOutputArtifact = vi.fn().mockResolvedValue({
+    const forgeAdventure = vi.fn().mockResolvedValue({
       status: "ready",
       adventureId: "adventure-1",
       artifactId: "artifact-1",
+      generatedAdventureId: "generated-adventure-1",
       reusedExistingArtifact: false,
+      reusedExistingAdventure: false,
     });
     const action = createRetryForgeAction({
       requireCurrentUser: async () => authenticatedUser(),
-      generateInterviewOutputArtifact,
+      forgeAdventure,
       redirectTo,
       logger,
     });
@@ -80,7 +82,7 @@ describe("retryForgeAction", () => {
     await expect(action(buildFormData(" adventure-1 "))).rejects.toThrow(
       "NEXT_REDIRECT:/adventures/adventure-1/forge",
     );
-    expect(generateInterviewOutputArtifact).toHaveBeenCalledWith({
+    expect(forgeAdventure).toHaveBeenCalledWith({
       userId: "user-1",
       adventureId: "adventure-1",
     });
@@ -96,7 +98,9 @@ describe("retryForgeAction", () => {
         event: APPLICATION_LOG_EVENTS.SERVER_ACTION_FORGE_RETRY_SUCCESS,
         outputStatus: "ready",
         artifactId: "artifact-1",
+        generatedAdventureId: "generated-adventure-1",
         reusedExistingArtifact: false,
+        reusedExistingAdventure: false,
       }),
     );
   });
@@ -106,7 +110,7 @@ describe("retryForgeAction", () => {
     const failure = new Error("provider unavailable");
     const action = createRetryForgeAction({
       requireCurrentUser: async () => authenticatedUser(),
-      generateInterviewOutputArtifact: vi.fn().mockRejectedValue(failure),
+      forgeAdventure: vi.fn().mockRejectedValue(failure),
       redirectTo,
       logger,
     });
