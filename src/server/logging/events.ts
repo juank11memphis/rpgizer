@@ -51,6 +51,14 @@ export const APPLICATION_LOG_EVENTS = {
     "forge.generate_adventure.dependency_linking.failed",
   FORGE_GENERATE_ADVENTURE_DEPENDENCY_LINKING_INVALID:
     "forge.generate_adventure.dependency_linking.invalid",
+  FORGE_GENERATE_ADVENTURE_XP_BALANCING_STARTED:
+    "forge.generate_adventure.xp_balancing.started",
+  FORGE_GENERATE_ADVENTURE_XP_BALANCING_COMPLETED:
+    "forge.generate_adventure.xp_balancing.completed",
+  FORGE_GENERATE_ADVENTURE_XP_BALANCING_FAILED:
+    "forge.generate_adventure.xp_balancing.failed",
+  FORGE_GENERATE_ADVENTURE_XP_BALANCING_INVALID:
+    "forge.generate_adventure.xp_balancing.invalid",
   AI_OPENAI_REQUEST_COMPLETED: "ai.openai.request.completed",
   AI_OPENAI_REQUEST_FAILED: "ai.openai.request.failed",
   AI_OPENAI_OUTPUT_INVALID: "ai.openai.output.invalid",

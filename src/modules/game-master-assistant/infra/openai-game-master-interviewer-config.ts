@@ -14,6 +14,7 @@ export type OpenAIGameMasterInterviewerEnvironment = {
   OPENAI_ADVENTURE_GENERATION_MODEL?: string;
   OPENAI_ADVENTURE_CONTENT_MODEL?: string;
   OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL?: string;
+  OPENAI_ADVENTURE_XP_BALANCER_MODEL?: string;
 };
 
 export function loadOpenAIGameMasterInterviewerConfig(
@@ -46,6 +47,12 @@ export function loadOpenAIAdventureDependencyLinkerConfig(
   return loadOpenAIAdventureStepConfig(environment, "OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL");
 }
 
+export function loadOpenAIAdventureXpBalancerConfig(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
+): OpenAIGameMasterInterviewerConfig {
+  return loadOpenAIAdventureStepConfig(environment, "OPENAI_ADVENTURE_XP_BALANCER_MODEL");
+}
+
 function loadOpenAIModelConfig(
   environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv,
   modelEnvironmentVariableName: keyof Pick<
@@ -55,6 +62,7 @@ function loadOpenAIModelConfig(
     | "OPENAI_ADVENTURE_GENERATION_MODEL"
     | "OPENAI_ADVENTURE_CONTENT_MODEL"
     | "OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL"
+    | "OPENAI_ADVENTURE_XP_BALANCER_MODEL"
   >,
 ): OpenAIGameMasterInterviewerConfig {
   const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
@@ -67,7 +75,9 @@ function loadOpenAIAdventureStepConfig(
   environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv,
   modelEnvironmentVariableName: keyof Pick<
     OpenAIGameMasterInterviewerEnvironment,
-    "OPENAI_ADVENTURE_CONTENT_MODEL" | "OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL"
+    | "OPENAI_ADVENTURE_CONTENT_MODEL"
+    | "OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL"
+    | "OPENAI_ADVENTURE_XP_BALANCER_MODEL"
   >,
 ): OpenAIGameMasterInterviewerConfig {
   const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
