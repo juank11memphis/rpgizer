@@ -15,6 +15,7 @@ export class FakeGeneratedAdventureRepository implements GeneratedAdventureRepos
   private readonly ownedAdventures = new Map<string, StoredAdventure>();
   private readonly generatedAdventures = new Map<string, PersistedGeneratedAdventure>();
   private nextGeneratedAdventureNumber = 1;
+  readonly saveGeneratedAdventureInputs: SaveGeneratedAdventureInput[] = [];
 
   seedAdventure(input: { adventureId: string; userId: string }): void {
     this.ownedAdventures.set(input.adventureId, {
@@ -49,6 +50,7 @@ export class FakeGeneratedAdventureRepository implements GeneratedAdventureRepos
   }
 
   async saveGeneratedAdventure(input: SaveGeneratedAdventureInput): Promise<SaveGeneratedAdventureResult> {
+    this.saveGeneratedAdventureInputs.push(input);
     this.ensureOwnedAdventure(input);
 
     const existing = this.generatedAdventures.get(input.adventureId);

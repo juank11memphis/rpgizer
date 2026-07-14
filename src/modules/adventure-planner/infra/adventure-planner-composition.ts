@@ -9,7 +9,7 @@ import type {
   GeneratedAdventureRepository,
 } from "../application/generate-adventure/ports";
 import { DrizzleGeneratedAdventureRepository } from "./drizzle-generated-adventure-repository";
-import { OpenAIAdventureGenerator } from "./openai-adventure-generator";
+import { OpenAIMultiStepAdventureGenerator } from "./openai-multi-step-adventure-generator";
 
 export type AdventurePlannerDb = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -28,7 +28,7 @@ export function createAdventurePlannerComposition(
     dependencies.generatedAdventureRepository ??
     new DrizzleGeneratedAdventureRepository(dependencies.db ?? getAdventurePlannerDb());
   const resolveAdventureGenerator = () =>
-    dependencies.adventureGenerator ?? new OpenAIAdventureGenerator();
+    dependencies.adventureGenerator ?? new OpenAIMultiStepAdventureGenerator();
 
   return {
     createAdventureGenerator(): AdventureGenerator {

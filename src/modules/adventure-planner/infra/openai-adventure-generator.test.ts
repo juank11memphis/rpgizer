@@ -170,7 +170,7 @@ describe("OpenAIAdventureGenerator", () => {
   });
 
 
-  it("retries once with repair instructions when generated references are invalid", async () => {
+  it("fails invalid one-shot output after one call because broad repair retry is intentionally removed", async () => {
     const badReferences = buildGeneratedAdventureBoundaryPayload({
       acts: [
         {
@@ -184,22 +184,14 @@ describe("OpenAIAdventureGenerator", () => {
         },
       ],
     });
-    const client = createMockClientSequence([
-      responseWithOutput(JSON.stringify(badReferences)),
-      responseWithOutput(JSON.stringify(validPayload)),
-    ]);
+    const client = createMockClient(responseWithOutput(JSON.stringify(badReferences)));
 
-    const result = await createGenerator(client).generateAdventure(baseRequest());
+    await expect(createGenerator(client).generateAdventure(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
 
-    expect(result.title).toBe(validPayload.title);
-    expect(client.responses.create).toHaveBeenCalledTimes(2);
-    const repairRequest = client.responses.create.mock.calls[1]?.[0];
-    expect(JSON.stringify(repairRequest?.input)).toContain(
-      "skillRewards[0].skillKey references unknown skill: communicate",
-    );
-    expect(JSON.stringify(repairRequest?.input)).toContain(
-      "Every skillRewards.skillKey must match an existing top-level skills[].key.",
-    );
+    expect(client.responses.create).toHaveBeenCalledTimes(1);
+    expect(serializedLogPayloads()).not.toContain('"retrying"');
   });
 
   it("normalizes provider request failures", async () => {
@@ -328,16 +320,6 @@ function createMockClient(response: Response | Promise<Response>): MockOpenAICli
       ),
     },
   };
-}
-
-function createMockClientSequence(responses: Response[]): MockOpenAIClient {
-  const create = vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>();
-
-  for (const response of responses) {
-    create.mockResolvedValueOnce(response);
-  }
-
-  return { responses: { create } };
 }
 
 function responseWithOutput(outputText: string): Response {

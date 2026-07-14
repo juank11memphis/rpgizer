@@ -32,7 +32,6 @@ const PROMPT_PATH = path.join(
 
 const OPERATION = "generate_adventure";
 const MAX_OUTPUT_TOKENS = 6_000;
-const MAX_REPAIR_OUTPUT_PREVIEW_CHARS = 16_000;
 
 type OpenAIResponsesClient = {
   responses: {
@@ -81,7 +80,7 @@ export class OpenAIAdventureGenerator implements AdventureGenerator {
       const instructions = await this.loadInstructions();
       const request = buildOpenAIRequest(instructions, input, buildResponseInput(input), this.config.model);
       const response = await this.createResponse(request, input);
-      const adventure = await this.parseOrRepairGeneratedAdventure(response, request, input);
+      const adventure = parseGeneratedAdventureResponse(response);
       const counts = countGeneratedAdventureContent(adventure);
 
       serverLogger.info(
@@ -129,31 +128,6 @@ export class OpenAIAdventureGenerator implements AdventureGenerator {
         "OpenAI Adventure generation request failed.",
         { cause: error },
       );
-    }
-  }
-
-  private async parseOrRepairGeneratedAdventure(
-    response: Response,
-    originalRequest: ResponseCreateParamsNonStreaming,
-    input: AdventureGeneratorRequest,
-  ): Promise<GeneratedAdventure> {
-    try {
-      return parseGeneratedAdventureResponse(response);
-    } catch (error) {
-      if (!shouldRetryInvalidOutput(error)) {
-        throw error;
-      }
-
-      logProviderRepairAttempt(error, input, this.config.model);
-
-      const repairRequest = buildOpenAIRequest(
-        originalRequest.instructions ?? "",
-        input,
-        buildRepairResponseInput(originalRequest.input, response, error),
-        this.config.model,
-      );
-      const repairedResponse = await this.createResponse(repairRequest, input);
-      return parseGeneratedAdventureResponse(repairedResponse);
     }
   }
 
@@ -317,58 +291,6 @@ function toOpenAIInputMessage(message: AdventureGeneratorRequest["transcript"][n
   };
 }
 
-function buildRepairResponseInput(
-  originalInput: ResponseCreateParamsNonStreaming["input"] | undefined,
-  response: Response,
-  error: AdventureGeneratorError,
-): ResponseCreateParamsNonStreaming["input"] {
-  const priorOutput = typeof response.output_text === "string" ? response.output_text : "";
-  const truncatedOutput = priorOutput.slice(0, MAX_REPAIR_OUTPUT_PREVIEW_CHARS);
-  const causeMessage = error.cause instanceof Error ? error.cause.message : error.message;
-
-  return [
-    ...asResponseInputArray(originalInput),
-    {
-      role: "user",
-      content: [
-        "Your previous JSON failed RPGizer validation.",
-        `Validation error: ${causeMessage}`,
-        "Return corrected JSON only, matching the same schema.",
-        "Every skillRewards.skillKey must match an existing top-level skills[].key.",
-        "Every inventoryItemKeys entry must match an existing top-level inventoryItems[].key.",
-        "Do not add commentary or markdown.",
-        `Previous JSON: ${truncatedOutput}`,
-      ].join("\n"),
-    },
-  ];
-}
-
-function asResponseInputArray(
-  input: ResponseCreateParamsNonStreaming["input"] | undefined,
-): Exclude<NonNullable<ResponseCreateParamsNonStreaming["input"]>, string> {
-  if (input === undefined) {
-    return [];
-  }
-
-  if (typeof input === "string") {
-    return [{ role: "user", content: input }];
-  }
-
-  return input;
-}
-
-function shouldRetryInvalidOutput(error: unknown): error is AdventureGeneratorError {
-  if (!(error instanceof AdventureGeneratorError) || error.code !== "provider_output_invalid") {
-    return false;
-  }
-
-  if (!(error.cause instanceof Error)) {
-    return false;
-  }
-
-  return /references unknown|duplicate key/iu.test(error.cause.message);
-}
-
 function parseGeneratedAdventureResponse(response: unknown): GeneratedAdventure {
   if (!isObject(response)) {
     throw invalidOutput("OpenAI response was not an object.");
@@ -422,29 +344,6 @@ function hasProviderRefusal(response: Record<string, unknown>): boolean {
 
 function invalidOutput(message: string, cause?: unknown): AdventureGeneratorError {
   return new AdventureGeneratorError("provider_output_invalid", message, { cause });
-}
-
-function logProviderRepairAttempt(
-  error: AdventureGeneratorError,
-  input: AdventureGeneratorRequest,
-  model: string,
-): void {
-  serverLogger.warn(
-    {
-      event: APPLICATION_LOG_EVENTS.FORGE_GENERATE_ADVENTURE_OUTPUT_INVALID,
-      flow: "ai_provider",
-      operation: OPERATION,
-      result: "retrying",
-      userId: input.userId,
-      adventureId: input.adventureId,
-      artifactId: input.interviewOutputArtifactId,
-      model,
-      providerErrorCode: error.code,
-      providerErrorCategory: "invalid_output",
-      error: serializeErrorForLog(error),
-    },
-    "OpenAI Adventure generation returned invalid output; retrying with repair instructions.",
-  );
 }
 
 function logProviderError(

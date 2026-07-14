@@ -39,6 +39,21 @@ export const APPLICATION_LOG_EVENTS = {
   FORGE_GENERATE_ADVENTURE_PROVIDER_COMPLETED: "forge.generate_adventure.provider_completed",
   FORGE_GENERATE_ADVENTURE_PROVIDER_FAILED: "forge.generate_adventure.provider_failed",
   FORGE_GENERATE_ADVENTURE_OUTPUT_INVALID: "forge.generate_adventure.output_invalid",
+  FORGE_GENERATE_ADVENTURE_WORKFLOW_STARTED: "forge.generate_adventure.workflow.started",
+  FORGE_GENERATE_ADVENTURE_WORKFLOW_STEP_COMPLETED:
+    "forge.generate_adventure.workflow.step_completed",
+  FORGE_GENERATE_ADVENTURE_WORKFLOW_FAILED: "forge.generate_adventure.workflow.failed",
+  FORGE_GENERATE_ADVENTURE_WORKFLOW_COMPLETED: "forge.generate_adventure.workflow.completed",
+  FORGE_GENERATE_ADVENTURE_FINAL_ASSEMBLY_STARTED:
+    "forge.generate_adventure.final_assembly.started",
+  FORGE_GENERATE_ADVENTURE_FINAL_ASSEMBLY_COMPLETED:
+    "forge.generate_adventure.final_assembly.completed",
+  FORGE_GENERATE_ADVENTURE_FINAL_ASSEMBLY_FAILED:
+    "forge.generate_adventure.final_assembly.failed",
+  FORGE_GENERATE_ADVENTURE_FINAL_VALIDATION_COMPLETED:
+    "forge.generate_adventure.final_validation.completed",
+  FORGE_GENERATE_ADVENTURE_FINAL_VALIDATION_FAILED:
+    "forge.generate_adventure.final_validation.failed",
   FORGE_GENERATE_ADVENTURE_CONTENT_STARTED: "forge.generate_adventure.content.started",
   FORGE_GENERATE_ADVENTURE_CONTENT_COMPLETED: "forge.generate_adventure.content.completed",
   FORGE_GENERATE_ADVENTURE_CONTENT_FAILED: "forge.generate_adventure.content.failed",

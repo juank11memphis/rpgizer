@@ -140,6 +140,43 @@ describe("generateAdventure", () => {
       message: ADVENTURE_GENERATOR_FAILURE_USER_MESSAGE,
     });
   });
+
+  it("persists the exact final Adventure returned by the generator", async () => {
+    const repository = new FakeGeneratedAdventureRepository();
+    repository.seedAdventure({ adventureId: "adventure-1", userId: "user-1" });
+    const finalAdventure = validGeneratedAdventure();
+    const generator = new FakeAdventureGenerator();
+    generator.queueAdventure(finalAdventure);
+
+    await generateAdventure(input, {
+      generatedAdventureRepository: repository,
+      adventureGenerator: generator,
+    });
+
+    expect(repository.saveGeneratedAdventureInputs).toEqual([
+      expect.objectContaining({
+        userId: "user-1",
+        adventureId: "adventure-1",
+        interviewOutputArtifactId: "artifact-1",
+        adventure: finalAdventure,
+      }),
+    ]);
+  });
+
+  it("does not persist when Adventure generation fails before a final Adventure exists", async () => {
+    const repository = new FakeGeneratedAdventureRepository();
+    repository.seedAdventure({ adventureId: "adventure-1", userId: "user-1" });
+    const generator = new FakeAdventureGenerator();
+    generator.queueError(new AdventureGeneratorError("provider_output_invalid", "generation failed"));
+
+    await generateAdventure(input, {
+      generatedAdventureRepository: repository,
+      adventureGenerator: generator,
+    });
+
+    expect(repository.saveGeneratedAdventureInputs).toEqual([]);
+  });
+
 });
 
 function infoPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {

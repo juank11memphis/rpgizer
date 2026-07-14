@@ -4,6 +4,7 @@ import { validInterviewOutputArtifact } from "../../game-master-assistant/applic
 import { FakeAdventureGenerator, validGeneratedAdventure } from "../application/test/fake-adventure-generator";
 import { FakeGeneratedAdventureRepository } from "../application/test/fake-generated-adventure-repository";
 import { createAdventurePlannerComposition } from "./adventure-planner-composition";
+import { OpenAIMultiStepAdventureGenerator } from "./openai-multi-step-adventure-generator";
 
 describe("createAdventurePlannerComposition", () => {
   it("delegates generation through injectable application dependencies", async () => {
@@ -32,4 +33,17 @@ describe("createAdventurePlannerComposition", () => {
     });
     expect(generator.requests).toHaveLength(1);
   });
+
+  it("uses the multi-step OpenAI generator by default", () => {
+    process.env.OPENAI_API_KEY = "sk-test";
+
+    try {
+      const composition = createAdventurePlannerComposition();
+
+      expect(composition.createAdventureGenerator()).toBeInstanceOf(OpenAIMultiStepAdventureGenerator);
+    } finally {
+      delete process.env.OPENAI_API_KEY;
+    }
+  });
+
 });
