@@ -13,6 +13,7 @@ export type OpenAIGameMasterInterviewerEnvironment = {
   OPENAI_INTERVIEW_SUMMARY_MODEL?: string;
   OPENAI_ADVENTURE_GENERATION_MODEL?: string;
   OPENAI_ADVENTURE_CONTENT_MODEL?: string;
+  OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL?: string;
 };
 
 export function loadOpenAIGameMasterInterviewerConfig(
@@ -36,12 +37,13 @@ export function loadOpenAIAdventureGenerationConfig(
 export function loadOpenAIAdventureContentConfig(
   environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
 ): OpenAIGameMasterInterviewerConfig {
-  const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
-  const model = readModelEnvironmentValue(
-    environment.OPENAI_ADVENTURE_CONTENT_MODEL ?? environment.OPENAI_ADVENTURE_GENERATION_MODEL,
-  );
+  return loadOpenAIAdventureStepConfig(environment, "OPENAI_ADVENTURE_CONTENT_MODEL");
+}
 
-  return { apiKey, model };
+export function loadOpenAIAdventureDependencyLinkerConfig(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
+): OpenAIGameMasterInterviewerConfig {
+  return loadOpenAIAdventureStepConfig(environment, "OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL");
 }
 
 function loadOpenAIModelConfig(
@@ -52,10 +54,26 @@ function loadOpenAIModelConfig(
     | "OPENAI_INTERVIEW_SUMMARY_MODEL"
     | "OPENAI_ADVENTURE_GENERATION_MODEL"
     | "OPENAI_ADVENTURE_CONTENT_MODEL"
+    | "OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL"
   >,
 ): OpenAIGameMasterInterviewerConfig {
   const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
   const model = readModelEnvironmentValue(environment[modelEnvironmentVariableName]);
+
+  return { apiKey, model };
+}
+
+function loadOpenAIAdventureStepConfig(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv,
+  modelEnvironmentVariableName: keyof Pick<
+    OpenAIGameMasterInterviewerEnvironment,
+    "OPENAI_ADVENTURE_CONTENT_MODEL" | "OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL"
+  >,
+): OpenAIGameMasterInterviewerConfig {
+  const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
+  const model = readModelEnvironmentValue(
+    environment[modelEnvironmentVariableName] ?? environment.OPENAI_ADVENTURE_GENERATION_MODEL,
+  );
 
   return { apiKey, model };
 }
