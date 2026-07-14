@@ -35,11 +35,20 @@ Keep responses concise by default, but spend the context needed for correctness,
 - Ask focused questions when needed; otherwise make reasonable assumptions and proceed.
 - If the user wants more detail, they can ask follow-up questions.
 
+## Judgment and honesty
+
+- Be direct and respectful. Avoid patronizing praise, performative agreement, and over-reassurance.
+- Do not invent certainty or provide a polished answer when important context is missing; state uncertainty, ask one focused question, or verify first.
+- Make low-risk assumptions only when they are clearly labeled.
+- Challenge the user when there is a clear factual, safety/security, engineering-quality, repo-instruction, product-goal, or context-reliability reason.
+- When challenging, give a short reason and a better alternative. Do not argue preferences or nitpick style; preserve user control after material tradeoffs are acknowledged unless safety or project rules require refusal.
+
 ## Skill routing
 
 For planned product/feature work, use this pipeline: product vision -> business domain model -> capabilities map -> deep module map / feature brief -> technical design -> optional UX -> epics/stories -> AI executor. Business Domain Model work sits after Product Vision and before the Capabilities Map. Deep Module Map and Feature Brief work are sibling downstream artifacts from Product Vision, Business Domain Model, and Capabilities Map. Technical Design remains downstream of both Feature Brief and Deep Module Map, with Scrum planning and AI executor flows after Technical Design. Narrow code fixes and small local changes do not require the full pipeline unless product scope, module ownership, or architecture direction is unclear.
 
 - For any code-writing task, use `clean-code`.
+- For code-writing tasks that introduce or modify logging, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior, also use `structured-logging`.
 - For requests to create, revise, or clarify a product vision, product strategy narrative, product north star, positioning, product principles, product voice, target user definition, product boundaries, or success signals, use `product-vision-writer`.
 - For requests to create, revise, or clarify a Business Domain Model, `docs/business-domain-model.md`, business/domain vocabulary, ubiquitous language, domain concepts, relationships, rules, lifecycles, workflows, domain events, boundaries, or hard parts, use `business-domain-model-writer`.
 - For requests to create, revise, or clarify a Deep Module Map, deep, complexity-hiding implementation modules, module boundaries, suggested implementation modules, or `docs/deep-module-map.md`, use `deep-module-map-writer`.

@@ -50,6 +50,48 @@ type GeneratedAdventureBoundarySkillRewardPayload = {
   xp: number;
 };
 
+export type GeneratedAdventureContentBoundaryPayload = Omit<GeneratedAdventureBoundaryPayload, "acts"> & {
+  acts: Array<{
+    key: string;
+    title: string;
+    summary: string;
+    mainQuests: GeneratedAdventureContentBoundaryQuestPayload[];
+    sideQuests: GeneratedAdventureContentBoundaryQuestPayload[];
+    bossFights: GeneratedAdventureContentBoundaryBossFightPayload[];
+  }>;
+};
+
+type GeneratedAdventureContentBoundaryQuestPayload = Omit<
+  GeneratedAdventureBoundaryQuestPayload,
+  "skillRewards" | "inventoryItemKeys"
+>;
+
+type GeneratedAdventureContentBoundaryBossFightPayload = GeneratedAdventureContentBoundaryQuestPayload;
+
+export type GeneratedAdventureDependencyLinksBoundaryPayload = {
+  questLinks: Array<{
+    questKey: string;
+    skillKeys: string[];
+    inventoryItemKeys: string[];
+  }>;
+  bossFightLinks: Array<{
+    bossFightKey: string;
+    skillKeys: string[];
+    inventoryItemKeys: string[];
+  }>;
+};
+
+export type GeneratedAdventureXpBalanceBoundaryPayload = {
+  questXp: Array<{
+    questKey: string;
+    skillRewards: GeneratedAdventureBoundarySkillRewardPayload[];
+  }>;
+  bossFightXp: Array<{
+    bossFightKey: string;
+    skillRewards: GeneratedAdventureBoundarySkillRewardPayload[];
+  }>;
+};
+
 export function buildGeneratedAdventureBoundaryPayload(
   overrides: Partial<GeneratedAdventureBoundaryPayload> = {},
 ): GeneratedAdventureBoundaryPayload {
@@ -140,5 +182,85 @@ export function buildGeneratedAdventureBoundaryPayload(
       },
     ],
     ...overrides,
+  };
+}
+
+
+export function buildGeneratedAdventureContentBoundaryPayload(
+  overrides: Partial<GeneratedAdventureContentBoundaryPayload> = {},
+): GeneratedAdventureContentBoundaryPayload {
+  const finalPayload = buildGeneratedAdventureBoundaryPayload();
+
+  return {
+    ...finalPayload,
+    acts: finalPayload.acts.map((act) => ({
+      key: act.key,
+      title: act.title,
+      summary: act.summary,
+      mainQuests: act.mainQuests.map(stripQuestLinks),
+      sideQuests: act.sideQuests.map(stripQuestLinks),
+      bossFights: act.bossFights.map(stripQuestLinks),
+    })),
+    ...overrides,
+  };
+}
+
+export function buildGeneratedAdventureDependencyLinksBoundaryPayload(
+  overrides: Partial<GeneratedAdventureDependencyLinksBoundaryPayload> = {},
+): GeneratedAdventureDependencyLinksBoundaryPayload {
+  return {
+    questLinks: [
+      {
+        questKey: "plan-first-menu",
+        skillKeys: ["meal-planning"],
+        inventoryItemKeys: ["weekly-menu-template"],
+      },
+      {
+        questKey: "prep-station-reset",
+        skillKeys: ["knife-basics"],
+        inventoryItemKeys: ["sharp-chefs-knife"],
+      },
+    ],
+    bossFightLinks: [
+      {
+        bossFightKey: "first-weeknight-service",
+        skillKeys: ["meal-planning", "knife-basics"],
+        inventoryItemKeys: ["weekly-menu-template", "sharp-chefs-knife"],
+      },
+    ],
+    ...overrides,
+  };
+}
+
+export function buildGeneratedAdventureXpBalanceBoundaryPayload(
+  overrides: Partial<GeneratedAdventureXpBalanceBoundaryPayload> = {},
+): GeneratedAdventureXpBalanceBoundaryPayload {
+  return {
+    questXp: [
+      { questKey: "plan-first-menu", skillRewards: [{ skillKey: "meal-planning", xp: 25 }] },
+      { questKey: "prep-station-reset", skillRewards: [{ skillKey: "knife-basics", xp: 10 }] },
+    ],
+    bossFightXp: [
+      {
+        bossFightKey: "first-weeknight-service",
+        skillRewards: [
+          { skillKey: "meal-planning", xp: 40 },
+          { skillKey: "knife-basics", xp: 20 },
+        ],
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function stripQuestLinks(
+  quest: GeneratedAdventureBoundaryQuestPayload,
+): GeneratedAdventureContentBoundaryQuestPayload {
+  return {
+    key: quest.key,
+    title: quest.title,
+    description: quest.description,
+    doneCondition: quest.doneCondition,
+    rewardIntent: quest.rewardIntent,
   };
 }

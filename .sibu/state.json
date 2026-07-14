@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.17.1",
-  "templateVersion": "132",
+  "templateVersion": "136",
   "generatedAt": "2026-06-29T18:44:44.969Z",
-  "updatedAt": "2026-06-29T18:44:44.969Z",
+  "updatedAt": "2026-07-13T20:58:14.841Z",
   "selectedAgents": [
     "codex"
   ],
@@ -25,8 +25,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "33",
-      "sha256": "99e0cbb8882bf09be849d71421da839e45cac72d2ddfe142c43135aa305e552c",
+      "templateVersion": "35",
+      "sha256": "490f533a2b3e59910841653165cfe3a7e251e1373e1273f2a214dbd5e8a1f4d2",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -37,8 +37,8 @@
     },
     ".agents/skills/clean-code/SKILL.md": {
       "template": "skills/clean-code/SKILL.md",
-      "templateVersion": "5",
-      "sha256": "6b28f182a67d79f19010298b9b8dcffb36089cbbb2b75ce02f4340ab108f802d",
+      "templateVersion": "6",
+      "sha256": "2100a24fd5e828fe1e4dc5a2b20edbe852e5d4a41a75591ca4f7beda3e8498e8",
       "status": "managed"
     },
     ".agents/skills/product-vision-writer/SKILL.md": {
@@ -103,14 +103,14 @@
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "24",
-      "sha256": "4d9fcf9e8f7684343d79808b17baf538674bbc0f9e06fa5b4cc0003b4686aa38",
+      "templateVersion": "25",
+      "sha256": "1b7467a1552652e116f5521c6797556e79f2be182c963c649488ca4160f46498",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "4b59a7a2f6685cdf760a5e32eb7e0065d7cd586d23543693899c59b1cd232655",
+      "templateVersion": "2",
+      "sha256": "5e47a99fe360b223956cdaa619cf7c10def145623023445b11e60703c19bd0c1",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
@@ -127,14 +127,14 @@
     },
     ".agents/skills/typescript/SKILL.md": {
       "template": "skills/typescript/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "1d0c05af8482918e0d01dec88b9f0af1f89adcea341339e190bc69bd352081bd",
+      "templateVersion": "2",
+      "sha256": "532043bb2665efc0da3600cf40ba5b746309ef9fdccdf9b1502e3f6e01f4df2c",
       "status": "managed"
     },
     ".agents/skills/react/SKILL.md": {
       "template": "skills/react/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "b2f40aaa4f77e21fb8722d92c5ad99ca9cd8c3367bc48b23a04fd2b1511a703d",
+      "templateVersion": "4",
+      "sha256": "c53674d29d3d121b008c10e6e829d51a7d0b345f9b25321f3e252219f07c0e18",
       "status": "managed"
     },
     ".agents/skills/nextjs/SKILL.md": {
@@ -171,6 +171,12 @@
       "template": ".codex/hooks.json",
       "templateVersion": "1",
       "sha256": "a5ca5ad5d2432ee01509ac8bcbc3a39674617e08d737889088a62d6673263f01",
+      "status": "managed"
+    },
+    ".agents/skills/structured-logging/SKILL.md": {
+      "template": "skills/structured-logging/SKILL.md",
+      "templateVersion": "1",
+      "sha256": "b3654c2c5b16e73c479fa3d542a17afeed7ca414c81431a2763255917f282ef6",
       "status": "managed"
     }
   }
