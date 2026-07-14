@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { GameMasterInterviewerError } from "../application/start-adventure-interview/provider-error";
 import {
+  loadOpenAIAdventureContentConfig,
   loadOpenAIAdventureGenerationConfig,
   loadOpenAIGameMasterInterviewerConfig,
   loadOpenAIInterviewSummaryConfig,
@@ -45,10 +46,27 @@ describe("loadOpenAIGameMasterInterviewerConfig", () => {
       OPENAI_GAME_MASTER_MODEL: "gpt-interview",
       OPENAI_INTERVIEW_SUMMARY_MODEL: "gpt-summary",
       OPENAI_ADVENTURE_GENERATION_MODEL: "gpt-adventure",
+      OPENAI_ADVENTURE_CONTENT_MODEL: "gpt-content",
     };
 
     expect(loadOpenAIGameMasterInterviewerConfig(environment).model).toBe("gpt-interview");
     expect(loadOpenAIInterviewSummaryConfig(environment).model).toBe("gpt-summary");
     expect(loadOpenAIAdventureGenerationConfig(environment).model).toBe("gpt-adventure");
+    expect(loadOpenAIAdventureContentConfig(environment).model).toBe("gpt-content");
+  });
+
+  it("keeps Adventure content model defaults aligned with Adventure generation", () => {
+    expect(
+      loadOpenAIAdventureContentConfig({
+        OPENAI_API_KEY: "sk-test",
+        OPENAI_ADVENTURE_GENERATION_MODEL: "gpt-adventure",
+      }),
+    ).toEqual({ apiKey: "sk-test", model: "gpt-adventure" });
+
+    expect(
+      loadOpenAIAdventureContentConfig({
+        OPENAI_API_KEY: "sk-test",
+      }),
+    ).toEqual({ apiKey: "sk-test", model: "gpt-5.4-mini" });
   });
 });

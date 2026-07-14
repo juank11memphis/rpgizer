@@ -206,9 +206,12 @@ function parseFocusedNextAction(input: unknown, index: number): GeneratedAdventu
 }
 
 function rejectDependencyFields(input: Record<string, unknown>, path: string): void {
-  if ("skillRewards" in input || "inventoryItemKeys" in input) {
+  const forbiddenFields = ["skillRewards", "inventoryItemKeys", "skillKeys", "xp", "experience"];
+  const presentForbiddenFields = forbiddenFields.filter((field) => field in input);
+
+  if (presentForbiddenFields.length > 0) {
     throw new Error(
-      `${path} must not include skillRewards or inventoryItemKeys before dependency linking.`,
+      `${path} must not include dependency or XP fields before dependency linking: ${presentForbiddenFields.join(", ")}.`,
     );
   }
 }

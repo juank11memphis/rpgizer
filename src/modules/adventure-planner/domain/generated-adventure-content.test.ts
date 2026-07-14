@@ -62,7 +62,7 @@ describe("parseGeneratedAdventureContent", () => {
           },
         ],
       }),
-    ).toThrow("must not include skillRewards or inventoryItemKeys");
+    ).toThrow("must not include dependency or XP fields");
 
     expect(() =>
       parseGeneratedAdventureContent({
@@ -79,7 +79,7 @@ describe("parseGeneratedAdventureContent", () => {
           },
         ],
       }),
-    ).toThrow("must not include skillRewards or inventoryItemKeys");
+    ).toThrow("must not include dependency or XP fields");
   });
 
   it("rejects blank Quest and Boss Fight done conditions", () => {

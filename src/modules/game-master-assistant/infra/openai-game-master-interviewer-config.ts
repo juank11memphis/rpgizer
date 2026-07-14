@@ -12,6 +12,7 @@ export type OpenAIGameMasterInterviewerEnvironment = {
   OPENAI_GAME_MASTER_MODEL?: string;
   OPENAI_INTERVIEW_SUMMARY_MODEL?: string;
   OPENAI_ADVENTURE_GENERATION_MODEL?: string;
+  OPENAI_ADVENTURE_CONTENT_MODEL?: string;
 };
 
 export function loadOpenAIGameMasterInterviewerConfig(
@@ -32,6 +33,17 @@ export function loadOpenAIAdventureGenerationConfig(
   return loadOpenAIModelConfig(environment, "OPENAI_ADVENTURE_GENERATION_MODEL");
 }
 
+export function loadOpenAIAdventureContentConfig(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
+): OpenAIGameMasterInterviewerConfig {
+  const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
+  const model = readModelEnvironmentValue(
+    environment.OPENAI_ADVENTURE_CONTENT_MODEL ?? environment.OPENAI_ADVENTURE_GENERATION_MODEL,
+  );
+
+  return { apiKey, model };
+}
+
 function loadOpenAIModelConfig(
   environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv,
   modelEnvironmentVariableName: keyof Pick<
@@ -39,6 +51,7 @@ function loadOpenAIModelConfig(
     | "OPENAI_GAME_MASTER_MODEL"
     | "OPENAI_INTERVIEW_SUMMARY_MODEL"
     | "OPENAI_ADVENTURE_GENERATION_MODEL"
+    | "OPENAI_ADVENTURE_CONTENT_MODEL"
   >,
 ): OpenAIGameMasterInterviewerConfig {
   const apiKey = readRequiredEnvironmentValue(environment.OPENAI_API_KEY, "OPENAI_API_KEY");
