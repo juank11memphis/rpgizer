@@ -15,7 +15,10 @@
     "db:migrate": "tsx scripts/run-migrations.ts",
     "test": "vitest run",
     "eval:game-master": "tsx src/modules/game-master-assistant/evals/run-game-master-interview-evals.ts",
-    "eval:generate-adventure": "tsx src/modules/adventure-planner/evals/run-generate-adventure-evals.ts"
+    "eval:generate-adventure": "tsx src/modules/adventure-planner/evals/run-generate-adventure-evals.ts",
+    "eval:adventure-content": "tsx src/modules/adventure-planner/evals/run-adventure-content-evals.ts",
+    "eval:adventure-linking": "tsx src/modules/adventure-planner/evals/run-adventure-linking-evals.ts",
+    "eval:adventure-xp": "tsx src/modules/adventure-planner/evals/run-adventure-xp-evals.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",

@@ -1,76 +1,60 @@
 # Generate Adventure evals
 
-Generate Adventure evals are local, developer-facing checks for the live Adventure generator. They call OpenAI through the production Adventure generation path, then run deterministic quality checks against the generated Adventure output.
+Adventure evals are local, developer-facing checks for live Adventure generation. They call OpenAI through production providers, then run deterministic quality checks against generated output. Ordinary tests use injected fakes and must not call OpenAI.
 
-Use them after changing the Adventure prompt, schema/parser, model configuration, or generator code. They complement ordinary tests; they do not replace typecheck, lint, or unit tests.
-
-## Run the evals
+## Aggregate eval
 
 ```bash
 pnpm run eval:generate-adventure
 ```
 
-The command reads fixtures from `src/modules/adventure-planner/evals/fixtures/`, loads the production prompt from `src/modules/adventure-planner/infra/prompts/generate-adventure.md`, calls the live Adventure generator once per fixture, and exits nonzero when configuration, generation, parsing, or deterministic quality checks fail.
-
-A passing run prints one concise summary:
-
-```txt
-Generate Adventure evals passed: build-a-product, fitness-habit, high-stakes-boundary, learn-a-skill
-```
-
-Failures print one diagnostic line per issue:
-
-```txt
-[build-a-product] side quest quality: expected generated Adventure to mention user research.
-[runner] configuration: OPENAI_API_KEY is required to run Generate Adventure evals.
-```
-
-## Required OpenAI configuration
-
-This eval command intentionally uses live OpenAI and loads Next-style environment files such as `.env.local` before reading the same runtime configuration used by the Adventure generator:
+This exercises the full Adventure generator with fixtures from `src/modules/adventure-planner/evals/fixtures/` and the aggregate prompt. It uses:
 
 - `OPENAI_API_KEY`
 - `OPENAI_ADVENTURE_GENERATION_MODEL` (optional; defaults to the shared runtime default)
 
-Missing, blank, or placeholder `OPENAI_API_KEY` values fail the eval command clearly. `OPENAI_ADVENTURE_GENERATION_MODEL` uses the runtime default when unset, and fails only when set to a placeholder value. Failures are not treated as a skip because the purpose of this command is to verify live generation behavior.
+## Focused step evals
 
-Do not paste or commit secret values in docs, fixtures, logs, or review notes.
+Run these when diagnosing a specific multi-step generation interaction:
+
+```bash
+pnpm run eval:adventure-content
+pnpm run eval:adventure-linking
+pnpm run eval:adventure-xp
+```
+
+Each command loads `.env.local` before reading the same runtime configuration as production providers:
+
+- `eval:adventure-content` uses `OPENAI_ADVENTURE_CONTENT_MODEL`, falling back to `OPENAI_ADVENTURE_GENERATION_MODEL`, then the shared default.
+- `eval:adventure-linking` uses `OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL`, falling back to `OPENAI_ADVENTURE_GENERATION_MODEL`, then the shared default.
+- `eval:adventure-xp` uses `OPENAI_ADVENTURE_XP_BALANCER_MODEL`, falling back to `OPENAI_ADVENTURE_GENERATION_MODEL`, then the shared default.
+
+All focused evals require `OPENAI_API_KEY`. Missing, blank, or placeholder config fails clearly before provider creation. Live runs may incur OpenAI cost.
+
+## Focused diagnostic areas
+
+- Content diagnostics cover required unlinked structure, Acts, Quests, Boss Fights, Skills, Inventory, Achievements, focused next actions, fixture grounding, high-stakes safety, and accidental dependency/XP fields.
+- Linking diagnostics cover Quest/Boss coverage, duplicate rows, unknown Skill/Inventory references, missing Skill links, weak expected Inventory coverage, and accidental XP fields.
+- XP diagnostics cover Quest/Boss coverage, duplicate rewards, unlinked Skill XP, XP bounds, Boss Fight rewards, proportionality, and accidental content/link rewrites.
+
+Failures print one concise diagnostic per issue:
+
+```txt
+[spanish-coffee-chat] references: questLinks is missing coverage for quest-speaking-sprint.
+[runner] configuration: OPENAI_API_KEY is required to run Adventure content generation evals.
+```
 
 ## Fixture coverage
 
-The initial fixture set is intentionally small and representative:
+- Aggregate/content evals use `src/modules/adventure-planner/evals/fixtures/*.json` request fixtures.
+- Dependency-linking evals use representative unlinked content fixtures in `fixtures/linking/*.json`.
+- XP evals use linked content fixtures in `fixtures/xp/*.json`.
 
-- `learn-a-skill.json` — learning/skill-building goal: Spanish conversation practice.
-- `build-a-product.json` — creative/product-building goal: habit-tracking prototype and beta feedback.
-- `fitness-habit.json` — fitness/habit goal: sustainable strength routine with a knee constraint.
-- `high-stakes-boundary.json` — high-stakes boundary goal: debt-paydown structure with non-authoritative financial guidance.
-
-Each fixture includes the goal text, compact interview output artifact, transcript context, expected grounding terms, expected Skill and Inventory themes, and forbidden advice patterns.
-
-## Deterministic checks
-
-The checks are conservative heuristics that catch obvious regressions. They verify:
-
-- required Adventure structure: title, theme summary, goal summary, Acts, Skills, Inventory, Achievements, and focused next actions
-- each Act includes Main Quests, Side Quests, and Boss Fights
-- Quest and Boss Fight done conditions are observable rather than vague
-- Side Quests are goal-connected and not obvious filler
-- Boss Fights read like milestones, proof points, or challenges
-- Inventory Items are practical readiness items rather than random fantasy loot
-- Skills describe real capabilities rather than decorative stats
-- Achievements have concrete unlock conditions
-- Skill rewards and Inventory links reference generated items correctly
-- focused next actions are small and concrete
-- fixture-specific goal, Skill, and Inventory terms appear in relevant generated content
-- high-stakes fixtures include non-authoritative safety notes and avoid configured forbidden advice patterns
-
-The live generator/parser enforces parser-valid Adventure output before these quality checks run. Invalid provider output is reported as a fixture failure.
+Do not paste or commit secret values in docs, fixtures, logs, or review notes.
 
 ## Relationship to ordinary tests
 
-`pnpm run test` does not call live OpenAI. The automated eval tests use injected generators, in-memory fixtures, fixture parsing, and deterministic helper checks.
-
-Run the normal development validation separately:
+Run normal validation separately:
 
 ```bash
 pnpm run lint
@@ -78,11 +62,11 @@ pnpm run typecheck
 pnpm run test
 ```
 
-These commands should pass without OpenAI credentials. Only `pnpm run eval:generate-adventure` requires live OpenAI configuration.
+These commands should pass without OpenAI credentials. The eval runner tests use injected providers, temporary fixtures, and deterministic checks only.
 
 ## Known limitations
 
 - Deterministic checks cannot fully judge subjective Adventure quality.
 - Live evals depend on credentials, network availability, model behavior, and possible cost.
 - Model nondeterminism may occasionally require fixture or prompt tuning.
-- The current workflow has no hosted dashboard, persistence, Forge orchestration, UI, LLM-as-judge layer, or automated prompt optimization.
+- There is no hosted dashboard, persistence, LLM-as-judge layer, or automated prompt optimization.
