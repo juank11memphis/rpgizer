@@ -303,6 +303,13 @@ describe("OpenAIAdventureXpBalancer", () => {
 
     expect(warnPayloadsFor(APPLICATION_LOG_EVENTS.FORGE_GENERATE_ADVENTURE_XP_BALANCING_INVALID)).toEqual([
       expect.objectContaining({
+        result: "retrying",
+        providerErrorCategory: "invalid_output",
+        step: "xp_balancing",
+        error: expect.objectContaining({ name: "AdventureGeneratorError" }),
+      }),
+      expect.objectContaining({
+        result: "failure",
         providerErrorCategory: "invalid_output",
         step: "xp_balancing",
         error: expect.objectContaining({ name: "AdventureGeneratorError" }),
@@ -388,7 +395,7 @@ describe("OpenAIAdventureXpBalancer", () => {
     }
   });
 
-  it("fails fast without broad repair retry for invalid output or provider request failures", async () => {
+  it("retries invalid XP output once but still fails fast for provider request failures", async () => {
     const invalidClient = createMockClient(
       responseWithOutput(
         JSON.stringify(
@@ -410,10 +417,38 @@ describe("OpenAIAdventureXpBalancer", () => {
       code: "provider_request_failed",
     });
 
-    expect(invalidClient.responses.create).toHaveBeenCalledTimes(1);
+    expect(invalidClient.responses.create).toHaveBeenCalledTimes(2);
     expect(failedClient.responses.create).toHaveBeenCalledTimes(1);
-    expect(serializedLogPayloads()).not.toContain("retried");
+    expect(serializedLogPayloads()).toContain("retrying");
     expect(JSON.stringify(APPLICATION_LOG_EVENTS)).not.toContain("XP_BALANCING_RETRIED");
+  });
+
+  it("recovers when the second XP output attempt is valid", async () => {
+    const client = createMockClientSequence([
+      responseWithOutput(
+        JSON.stringify(
+          buildGeneratedAdventureXpBalanceBoundaryPayload({
+            questXp: [
+              { questKey: "unknown-quest", skillRewards: [{ skillKey: "meal-planning", xp: 20 }] },
+              { questKey: "prep-station-reset", skillRewards: [{ skillKey: "knife-basics", xp: 10 }] },
+            ],
+          }),
+        ),
+      ),
+      responseWithOutput(JSON.stringify(validXpPayload)),
+    ]);
+
+    await expect(createBalancer(client).balanceAdventureXp(validContent(), validDependencies(), baseContext())).resolves.toEqual(validXpPayload);
+
+    expect(client.responses.create).toHaveBeenCalledTimes(2);
+    expect(warnPayloadsFor(APPLICATION_LOG_EVENTS.FORGE_GENERATE_ADVENTURE_XP_BALANCING_INVALID)).toEqual([
+      expect.objectContaining({
+        result: "retrying",
+        attempt: 1,
+        nextAttempt: 2,
+        maxAttempts: 2,
+      }),
+    ]);
   });
 });
 
@@ -431,6 +466,16 @@ function createMockClient(response: Response | Promise<Response>): MockOpenAICli
       create: vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>().mockReturnValue(
         response instanceof Promise ? response : Promise.resolve(response),
       ),
+    },
+  };
+}
+
+function createMockClientSequence(responses: Response[]): MockOpenAIClient {
+  return {
+    responses: {
+      create: vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>()
+        .mockImplementationOnce(() => Promise.resolve(responses[0] as Response))
+        .mockImplementationOnce(() => Promise.resolve(responses[1] as Response)),
     },
   };
 }

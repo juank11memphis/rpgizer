@@ -264,7 +264,7 @@ function readInventoryItemReferences(
   input: Record<string, unknown>,
   inventoryItemKeys: ReadonlySet<string>,
 ): string[] {
-  return readRequiredArray(input, "inventoryItemKeys", (item, index) => {
+  return readArray(input, "inventoryItemKeys", (item, index) => {
     if (typeof item !== "string" || item.trim().length === 0) {
       throw new Error(`inventoryItemKeys[${index}] must be a non-empty string.`);
     }
@@ -325,6 +325,19 @@ function readRequiredArray<T>(
   const value = input[field];
   if (!Array.isArray(value) || value.length === 0) {
     throw new Error(`Generated adventure field ${field} must be a non-empty array.`);
+  }
+
+  return value.map(parseItem);
+}
+
+function readArray<T>(
+  input: Record<string, unknown>,
+  field: string,
+  parseItem: (item: unknown, index: number) => T,
+): T[] {
+  const value = input[field];
+  if (!Array.isArray(value)) {
+    throw new Error(`Generated adventure field ${field} must be an array.`);
   }
 
   return value.map(parseItem);

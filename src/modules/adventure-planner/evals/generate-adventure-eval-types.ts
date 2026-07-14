@@ -41,6 +41,11 @@ export type AdventureQualityDiagnosticArea =
   | "fixture grounding"
   | "safety"
   | "configuration"
+  | "content generation"
+  | "dependency linking"
+  | "xp balancing"
+  | "final assembly"
+  | "final validation"
   | "generation";
 
 export type AdventureQualityCheckResult = {

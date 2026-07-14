@@ -79,4 +79,19 @@ describe("assembleGeneratedAdventure", () => {
       }),
     ).toThrow("Missing XP balance");
   });
+
+  it("assembles final Adventures with empty inventory links when the linker finds no relevant item", () => {
+    const input = buildValidAssemblyInput();
+    const adventure = assembleGeneratedAdventure({
+      ...input,
+      dependencies: {
+        ...input.dependencies,
+        questLinks: input.dependencies.questLinks.map((link) =>
+          link.questKey === "prep-station-reset" ? { ...link, inventoryItemKeys: [] } : link,
+        ),
+      },
+    });
+
+    expect(adventure.acts[0].sideQuests[0].inventoryItemKeys).toEqual([]);
+  });
 });

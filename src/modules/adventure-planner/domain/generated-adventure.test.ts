@@ -230,6 +230,22 @@ describe("parseGeneratedAdventure", () => {
     ).toThrow("unknown inventory item");
   });
 
+  it("accepts empty inventory references when no practical item is relevant", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+
+    const adventure = parseGeneratedAdventure({
+      ...payload,
+      acts: [
+        {
+          ...payload.acts[0],
+          sideQuests: [{ ...payload.acts[0].sideQuests[0], inventoryItemKeys: [] }],
+        },
+      ],
+    });
+
+    expect(adventure.acts[0].sideQuests[0].inventoryItemKeys).toEqual([]);
+  });
+
   it("rejects missing, zero, negative, or non-integer XP rewards", () => {
     const payload = buildGeneratedAdventureBoundaryPayload();
 

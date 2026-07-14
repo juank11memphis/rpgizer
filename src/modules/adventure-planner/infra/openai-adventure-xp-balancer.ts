@@ -33,6 +33,7 @@ const PROMPT_PATH = path.join(
 const OPERATION = "balance_adventure_xp";
 const STEP = "xp_balancing";
 const MAX_OUTPUT_TOKENS = 2_000;
+const MAX_INVALID_OUTPUT_ATTEMPTS = 2;
 
 type OpenAIResponsesClient = {
   responses: {
@@ -82,8 +83,7 @@ export class OpenAIAdventureXpBalancer {
         this.config.model,
         context.userId,
       );
-      const response = await this.createResponse(request, context);
-      const xpBalance = parseGeneratedAdventureXpBalanceResponse(response, dependencies);
+      const xpBalance = await this.createValidXpBalance(request, dependencies, context, startedAt);
 
       logCompleted(context, this.config.model, startedAt, {
         ...countXpBalancingInput(content, dependencies),
@@ -115,6 +115,36 @@ export class OpenAIAdventureXpBalancer {
     const response = await this.client.responses.create(request);
     logAiPayloadDebug(context, { direction: "response", payload: response });
     return response;
+  }
+
+  private async createValidXpBalance(
+    request: ResponseCreateParamsNonStreaming,
+    dependencies: GeneratedAdventureDependencyLinks,
+    context: AdventureXpBalancingContext,
+    startedAt: number,
+  ): Promise<GeneratedAdventureXpBalance> {
+    let lastInvalidOutputError: AdventureGeneratorError | null = null;
+
+    for (let attempt = 1; attempt <= MAX_INVALID_OUTPUT_ATTEMPTS; attempt += 1) {
+      const response = await this.createResponse(request, context);
+
+      try {
+        return parseGeneratedAdventureXpBalanceResponse(response, dependencies);
+      } catch (error) {
+        if (!(error instanceof AdventureGeneratorError) || error.code !== "provider_output_invalid") {
+          throw error;
+        }
+
+        lastInvalidOutputError = error;
+        if (attempt >= MAX_INVALID_OUTPUT_ATTEMPTS) {
+          break;
+        }
+
+        logInvalidOutputRetry(error, context, this.config.model, startedAt, attempt);
+      }
+    }
+
+    throw lastInvalidOutputError ?? invalidOutput("OpenAI structured output was not valid Adventure XP balance.");
   }
 
   private async loadInstructions(): Promise<string> {
@@ -384,6 +414,34 @@ function logProviderError(
   }
 
   serverLogger.error(payload, "OpenAI Adventure XP balancing request failed.");
+}
+
+function logInvalidOutputRetry(
+  error: AdventureGeneratorError,
+  context: AdventureXpBalancingContext,
+  model: string,
+  startedAt: number,
+  attempt: number,
+): void {
+  serverLogger.warn(
+    {
+      event: APPLICATION_LOG_EVENTS.FORGE_GENERATE_ADVENTURE_XP_BALANCING_INVALID,
+      flow: "ai_provider",
+      operation: OPERATION,
+      result: "retrying",
+      ...context,
+      model,
+      step: STEP,
+      attempt,
+      nextAttempt: attempt + 1,
+      maxAttempts: MAX_INVALID_OUTPUT_ATTEMPTS,
+      providerErrorCode: error.code,
+      providerErrorCategory: "invalid_output",
+      error: serializeErrorForLog(error),
+      durationMs: Date.now() - startedAt,
+    },
+    "OpenAI Adventure XP balancing returned invalid output; retrying once.",
+  );
 }
 
 function logAiPayloadDebug(

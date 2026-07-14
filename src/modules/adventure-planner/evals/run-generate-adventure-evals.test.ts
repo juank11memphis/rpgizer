@@ -101,6 +101,21 @@ describe("Generate Adventure eval runner", () => {
         buildEnvironment({ OPENAI_ADVENTURE_GENERATION_MODEL: "replace-with-model" }),
       ),
     ).toBe("OPENAI_ADVENTURE_GENERATION_MODEL appears to be a placeholder value.");
+    expect(
+      validateOpenAIConfiguration(
+        buildEnvironment({ OPENAI_ADVENTURE_CONTENT_MODEL: "replace-with-content-model" }),
+      ),
+    ).toBe("OPENAI_ADVENTURE_CONTENT_MODEL appears to be a placeholder value.");
+    expect(
+      validateOpenAIConfiguration(
+        buildEnvironment({ OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL: "replace-with-linker-model" }),
+      ),
+    ).toBe("OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL appears to be a placeholder value.");
+    expect(
+      validateOpenAIConfiguration(
+        buildEnvironment({ OPENAI_ADVENTURE_XP_BALANCER_MODEL: "replace-with-xp-model" }),
+      ),
+    ).toBe("OPENAI_ADVENTURE_XP_BALANCER_MODEL appears to be a placeholder value.");
     expect(validateOpenAIConfiguration(buildEnvironment())).toBeNull();
   });
 
@@ -138,9 +153,6 @@ describe("Generate Adventure eval runner", () => {
 
   it("runs fixtures through an injected generator and prints a pass summary", async () => {
     const directory = await createFixtureDirectory([buildFixture()]);
-    const promptPath = path.join(directory, "prompt.md");
-    await writeFile(promptPath, "Generate an Adventure.");
-
     const output = createOutputCollector();
     const errorOutput = createOutputCollector();
     const seenRequests: string[] = [];
@@ -153,7 +165,6 @@ describe("Generate Adventure eval runner", () => {
 
     const result = await runGenerateAdventureEvals({
       fixturesDirectory: directory,
-      promptPath,
       environment: buildEnvironment(),
       createGenerator: () => generator,
       output: output.stream,
@@ -168,13 +179,10 @@ describe("Generate Adventure eval runner", () => {
 
   it("formats generation failures without leaking SDK internals", async () => {
     const directory = await createFixtureDirectory([buildFixture()]);
-    const promptPath = path.join(directory, "prompt.md");
-    await writeFile(promptPath, "Generate an Adventure.");
     const errorOutput = createOutputCollector();
 
     const result = await runGenerateAdventureEvals({
       fixturesDirectory: directory,
-      promptPath,
       environment: buildEnvironment(),
       createGenerator: () => ({
         async generateAdventure() {
@@ -197,6 +205,71 @@ describe("Generate Adventure eval runner", () => {
       },
     ]);
     expect(errorOutput.output()).toContain("[cooking-eval] generation:");
+  });
+
+  it("includes safe validation details for invalid provider output", async () => {
+    const directory = await createFixtureDirectory([buildFixture()]);
+    const errorOutput = createOutputCollector();
+
+    const result = await runGenerateAdventureEvals({
+      fixturesDirectory: directory,
+      environment: buildEnvironment(),
+      createGenerator: () => ({
+        async generateAdventure() {
+          throw new AdventureGeneratorError(
+            "provider_output_invalid",
+            "Multi-step Adventure final assembly failed.",
+            { cause: new Error("Generated adventure field inventoryItemKeys must be an array.") },
+          );
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: errorOutput.stream,
+    });
+
+    expect(result.diagnostics[0]).toMatchObject({
+      fixtureId: "cooking-eval",
+      area: "final assembly",
+      message:
+        "OpenAI Adventure output was invalid: Multi-step Adventure final assembly failed. Validation detail: Generated adventure field inventoryItemKeys must be an array.",
+    });
+    expect(errorOutput.output()).not.toContain("sk-test");
+    expect(errorOutput.output()).not.toContain("I want to cook dinner more often");
+  });
+
+
+  it("classifies step-aware generation failures without leaking sensitive payloads", async () => {
+    const directory = await createFixtureDirectory([buildFixture()]);
+    const errorOutput = createOutputCollector();
+
+    const result = await runGenerateAdventureEvals({
+      fixturesDirectory: directory,
+      environment: buildEnvironment(),
+      createGenerator: () => ({
+        async generateAdventure() {
+          throw new AdventureGeneratorError(
+            "provider_output_invalid",
+            "OpenAI Adventure dependency linking request failed.",
+            { cause: new Error("raw prompt/output must stay hidden") },
+          );
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: errorOutput.stream,
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.diagnostics).toEqual([
+      {
+        fixtureId: "cooking-eval",
+        area: "dependency linking",
+        message: "OpenAI Adventure output was invalid: OpenAI Adventure dependency linking request failed.",
+      },
+    ]);
+    expect(errorOutput.output()).toContain("[cooking-eval] dependency linking:");
+    expect(errorOutput.output()).not.toContain("raw prompt/output must stay hidden");
+    expect(errorOutput.output()).not.toContain("sk-test");
+    expect(errorOutput.output()).not.toContain("I want to cook dinner more often");
   });
 
   it("formats diagnostics consistently", () => {

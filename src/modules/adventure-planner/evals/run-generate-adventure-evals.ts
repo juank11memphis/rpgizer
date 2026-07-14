@@ -7,7 +7,15 @@ import { loadEnvConfig } from "@next/env";
 import type { AdventureGeneratorRequest } from "../application/generate-adventure/ports";
 import { AdventureGeneratorError } from "../application/generate-adventure/ports";
 import type { GeneratedAdventure } from "../domain/generated-adventure";
-import { loadOpenAIAdventureGenerationConfig } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
+import { APPLICATION_LOG_EVENTS } from "../../../server/logging/events";
+import { serverLogger } from "../../../server/logging/logger";
+import { serializeErrorForLog } from "../../../server/logging/redaction";
+import {
+  loadOpenAIAdventureContentConfig,
+  loadOpenAIAdventureDependencyLinkerConfig,
+  loadOpenAIAdventureGenerationConfig,
+  loadOpenAIAdventureXpBalancerConfig,
+} from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
 import { checkGeneratedAdventureQuality } from "./adventure-quality-checks";
 import { parseGenerateAdventureEvalFixture } from "./generate-adventure-eval-fixture-parser";
 import type {
@@ -19,10 +27,6 @@ const DEFAULT_FIXTURES_DIRECTORY = path.join(
   process.cwd(),
   "src/modules/adventure-planner/evals/fixtures",
 );
-const DEFAULT_PROMPT_PATH = path.join(
-  process.cwd(),
-  "src/modules/adventure-planner/infra/prompts/generate-adventure.md",
-);
 const EVAL_CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
 
 export type GenerateAdventureEvalGenerator = {
@@ -31,9 +35,8 @@ export type GenerateAdventureEvalGenerator = {
 
 export type GenerateAdventureEvalRunOptions = {
   fixturesDirectory?: string;
-  promptPath?: string;
   environment?: NodeJS.ProcessEnv;
-  createGenerator?: (instructions: string) => Promise<GenerateAdventureEvalGenerator> | GenerateAdventureEvalGenerator;
+  createGenerator?: () => Promise<GenerateAdventureEvalGenerator> | GenerateAdventureEvalGenerator;
   output?: Pick<NodeJS.WriteStream, "write">;
   errorOutput?: Pick<NodeJS.WriteStream, "write">;
 };
@@ -70,8 +73,7 @@ export async function runGenerateAdventureEvals(
     fixtures = await loadGenerateAdventureEvalFixtures(
       options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY,
     );
-    const instructions = await readFile(options.promptPath ?? DEFAULT_PROMPT_PATH, "utf8");
-    generator = await (options.createGenerator ?? createOpenAIAdventureGenerator)(instructions);
+    generator = await (options.createGenerator ?? createProductionAdventureGenerator)();
   } catch (error) {
     const diagnostic = buildRunDiagnostic("configuration", formatEvalError(error));
     writeDiagnostic(errorOutput, diagnostic);
@@ -79,6 +81,7 @@ export async function runGenerateAdventureEvals(
   }
 
   const diagnostics: GenerateAdventureEvalFailureDiagnostic[] = [];
+  logEvalStarted(fixtures.map((fixture) => fixture.id));
 
   for (const fixture of fixtures) {
     try {
@@ -91,7 +94,7 @@ export async function runGenerateAdventureEvals(
     } catch (error) {
       diagnostics.push({
         fixtureId: fixture.id,
-        area: "generation",
+        area: classifyGenerationFailureArea(error),
         message: formatGenerationError(error),
       });
     }
@@ -102,6 +105,8 @@ export async function runGenerateAdventureEvals(
       writeDiagnostic(errorOutput, diagnostic);
     }
 
+    logEvalCompleted("failure", fixtures.map((fixture) => fixture.id), diagnostics);
+
     return {
       passed: false,
       fixtureIds: fixtures.map((fixture) => fixture.id),
@@ -110,6 +115,7 @@ export async function runGenerateAdventureEvals(
   }
 
   output.write(`Generate Adventure evals passed: ${fixtures.map((fixture) => fixture.id).join(", ")}\n`);
+  logEvalCompleted("success", fixtures.map((fixture) => fixture.id), []);
 
   return {
     passed: true,
@@ -164,13 +170,33 @@ export function validateOpenAIConfiguration(
       return "OPENAI_API_KEY appears to be a placeholder value.";
     }
 
-    if (isPlaceholderValue(config.model)) {
-      return "OPENAI_ADVENTURE_GENERATION_MODEL appears to be a placeholder value.";
+    const modelChecks = [
+      ["OPENAI_ADVENTURE_GENERATION_MODEL", config.model],
+      ["OPENAI_ADVENTURE_CONTENT_MODEL", loadOpenAIAdventureContentConfig(environment).model],
+      ["OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL", loadOpenAIAdventureDependencyLinkerConfig(environment).model],
+      ["OPENAI_ADVENTURE_XP_BALANCER_MODEL", loadOpenAIAdventureXpBalancerConfig(environment).model],
+    ] as const;
+
+    for (const [name, model] of modelChecks) {
+      if (isPlaceholderValue(model)) {
+        return `${name} appears to be a placeholder value.`;
+      }
     }
 
     return null;
   } catch (error) {
-    return formatConfigurationError(error);
+    const message = formatConfigurationError(error);
+    serverLogger.warn(
+      {
+        event: APPLICATION_LOG_EVENTS.GENERATE_ADVENTURE_EVAL_CONFIG_BLOCKED,
+        flow: "generate_adventure_eval",
+        operation: "eval_generate_adventure",
+        result: "configuration_blocked",
+        error: serializeErrorForLog(error),
+      },
+      "Generate Adventure eval configuration is unavailable.",
+    );
+    return message;
   }
 }
 
@@ -197,11 +223,9 @@ export function formatDiagnostic(diagnostic: GenerateAdventureEvalFailureDiagnos
   return `[${diagnostic.fixtureId}] ${diagnostic.area}: ${diagnostic.message}`;
 }
 
-async function createOpenAIAdventureGenerator(
-  instructions: string,
-): Promise<GenerateAdventureEvalGenerator> {
-  const { OpenAIAdventureGenerator } = await import("../infra/openai-adventure-generator");
-  return new OpenAIAdventureGenerator({ instructions });
+async function createProductionAdventureGenerator(): Promise<GenerateAdventureEvalGenerator> {
+  const { createAdventurePlannerComposition } = await import("../infra/adventure-planner-composition");
+  return createAdventurePlannerComposition().createAdventureGenerator();
 }
 
 function buildRunDiagnostic(
@@ -216,6 +240,36 @@ function writeDiagnostic(
   diagnostic: GenerateAdventureEvalFailureDiagnostic,
 ): void {
   output.write(`${formatDiagnostic(diagnostic)}\n`);
+}
+
+function classifyGenerationFailureArea(error: unknown): GenerateAdventureEvalFailureDiagnostic["area"] {
+  if (error instanceof AdventureGeneratorError && error.code === "configuration_missing") {
+    return "configuration";
+  }
+
+  const message = collectErrorMessages(error).join(" ").toLowerCase();
+
+  if (message.includes("content generation") || message.includes("adventure content")) {
+    return "content generation";
+  }
+
+  if (message.includes("dependency linking") || message.includes("dependency linker")) {
+    return "dependency linking";
+  }
+
+  if (message.includes("xp balancing") || message.includes("xp balancer")) {
+    return "xp balancing";
+  }
+
+  if (message.includes("final assembly")) {
+    return "final assembly";
+  }
+
+  if (message.includes("final validation")) {
+    return "final validation";
+  }
+
+  return "generation";
 }
 
 function formatConfigurationError(error: unknown): string {
@@ -244,24 +298,108 @@ function formatGenerationError(error: unknown): string {
   return `Adventure generation failed: ${formatEvalError(error)}`;
 }
 
-function formatInvalidProviderOutputError(error: AdventureGeneratorError): string {
-  const causeMessage = getErrorCauseMessage(error);
-
-  if (causeMessage === null) {
-    return `OpenAI Adventure output was invalid: ${error.message}`;
-  }
-
-  return `OpenAI Adventure output was invalid: ${error.message} Cause: ${causeMessage}`;
+function logEvalStarted(fixtureIds: string[]): void {
+  serverLogger.info(
+    {
+      event: APPLICATION_LOG_EVENTS.GENERATE_ADVENTURE_EVAL_STARTED,
+      flow: "generate_adventure_eval",
+      operation: "eval_generate_adventure",
+      result: "started",
+      fixtureCount: fixtureIds.length,
+      fixtureIds,
+    },
+    "Generate Adventure eval run started.",
+  );
 }
 
-function getErrorCauseMessage(error: Error): string | null {
-  const cause = error.cause;
+function logEvalCompleted(
+  result: "success" | "failure",
+  fixtureIds: string[],
+  diagnostics: GenerateAdventureEvalFailureDiagnostic[],
+): void {
+  const log = result === "success" ? serverLogger.info.bind(serverLogger) : serverLogger.warn.bind(serverLogger);
+  log(
+    {
+      event: result === "success"
+        ? APPLICATION_LOG_EVENTS.GENERATE_ADVENTURE_EVAL_COMPLETED
+        : APPLICATION_LOG_EVENTS.GENERATE_ADVENTURE_EVAL_FAILED,
+      flow: "generate_adventure_eval",
+      operation: "eval_generate_adventure",
+      result,
+      fixtureCount: fixtureIds.length,
+      fixtureIds,
+      diagnosticCount: diagnostics.length,
+      diagnosticAreas: [...new Set(diagnostics.map((diagnostic) => diagnostic.area))],
+    },
+    result === "success" ? "Generate Adventure eval run completed." : "Generate Adventure eval run failed.",
+  );
+}
 
-  if (cause instanceof Error && cause.message.trim().length > 0) {
-    return cause.message;
+function formatInvalidProviderOutputError(error: AdventureGeneratorError): string {
+  const validationDetails = collectSafeValidationDetails(error);
+
+  return [
+    `OpenAI Adventure output was invalid: ${error.message}`,
+    ...(validationDetails.length > 0 ? [`Validation detail: ${validationDetails.join(" -> ")}`] : []),
+  ].join(" ");
+}
+
+function collectErrorMessages(error: unknown): string[] {
+  if (!(error instanceof Error)) {
+    return [];
   }
 
-  return null;
+  const messages = [error.message];
+  const cause = error.cause;
+
+  if (cause instanceof Error) {
+    messages.push(...collectErrorMessages(cause));
+  }
+
+  return messages;
+}
+
+function collectSafeValidationDetails(error: unknown): string[] {
+  if (!(error instanceof Error)) {
+    return [];
+  }
+
+  return unique(
+    collectErrorMessages(error)
+      .slice(1)
+      .map((message) => message.trim())
+      .filter((message) => isSafeValidationMessage(message))
+      .map(truncateDiagnosticDetail),
+  );
+}
+
+function isSafeValidationMessage(message: string): boolean {
+  if (message.length === 0 || message.length > 240) {
+    return false;
+  }
+
+  if (/sk-[a-z0-9_-]+/iu.test(message) || /api[_ -]?key/iu.test(message)) {
+    return false;
+  }
+
+  return [
+    "must be",
+    "missing",
+    "unknown",
+    "duplicate",
+    "references",
+    "did not complete",
+    "was refused",
+    "structured output",
+    "field",
+    "array",
+    "object",
+  ].some((safeSignal) => message.toLowerCase().includes(safeSignal));
+}
+
+function truncateDiagnosticDetail(message: string): string {
+  const maxLength = 180;
+  return message.length > maxLength ? `${message.slice(0, maxLength)}…` : message;
 }
 
 function formatEvalError(error: unknown): string {
@@ -274,6 +412,10 @@ function formatEvalError(error: unknown): string {
 
 function isPlaceholderValue(value: string): boolean {
   return /^(changeme|change-me|placeholder|todo|your-|replace-me|replace-with-|example)/iu.test(value.trim());
+}
+
+function unique(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 async function main(): Promise<void> {

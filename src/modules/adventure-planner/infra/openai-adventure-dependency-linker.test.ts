@@ -265,6 +265,13 @@ describe("OpenAIAdventureDependencyLinker", () => {
 
     expect(warnPayloadsFor(APPLICATION_LOG_EVENTS.FORGE_GENERATE_ADVENTURE_DEPENDENCY_LINKING_INVALID)).toEqual([
       expect.objectContaining({
+        result: "retrying",
+        providerErrorCategory: "invalid_output",
+        step: "dependency_linking",
+        error: expect.objectContaining({ name: "AdventureGeneratorError" }),
+      }),
+      expect.objectContaining({
+        result: "failure",
         providerErrorCategory: "invalid_output",
         step: "dependency_linking",
         error: expect.objectContaining({ name: "AdventureGeneratorError" }),
@@ -345,7 +352,7 @@ describe("OpenAIAdventureDependencyLinker", () => {
     }
   });
 
-  it("fails fast without repair retry for invalid output or provider request failures", async () => {
+  it("retries invalid dependency output once but still fails fast for provider request failures", async () => {
     const invalidClient = createMockClient(
       responseWithOutput(
         JSON.stringify(
@@ -367,9 +374,37 @@ describe("OpenAIAdventureDependencyLinker", () => {
       code: "provider_request_failed",
     });
 
-    expect(invalidClient.responses.create).toHaveBeenCalledTimes(1);
+    expect(invalidClient.responses.create).toHaveBeenCalledTimes(2);
     expect(failedClient.responses.create).toHaveBeenCalledTimes(1);
-    expect(serializedLogPayloads()).not.toContain("retried");
+    expect(serializedLogPayloads()).toContain("retrying");
+  });
+
+  it("recovers when the second dependency linking output attempt is valid", async () => {
+    const client = createMockClientSequence([
+      responseWithOutput(
+        JSON.stringify(
+          buildGeneratedAdventureDependencyLinksBoundaryPayload({
+            questLinks: [
+              { questKey: "unknown-quest", skillKeys: ["meal-planning"], inventoryItemKeys: [] },
+              { questKey: "prep-station-reset", skillKeys: ["knife-basics"], inventoryItemKeys: [] },
+            ],
+          }),
+        ),
+      ),
+      responseWithOutput(JSON.stringify(validLinksPayload)),
+    ]);
+
+    await expect(createLinker(client).linkAdventureDependencies(validContent(), baseContext())).resolves.toEqual(validLinksPayload);
+
+    expect(client.responses.create).toHaveBeenCalledTimes(2);
+    expect(warnPayloadsFor(APPLICATION_LOG_EVENTS.FORGE_GENERATE_ADVENTURE_DEPENDENCY_LINKING_INVALID)).toEqual([
+      expect.objectContaining({
+        result: "retrying",
+        attempt: 1,
+        nextAttempt: 2,
+        maxAttempts: 2,
+      }),
+    ]);
   });
 });
 
@@ -387,6 +422,16 @@ function createMockClient(response: Response | Promise<Response>): MockOpenAICli
       create: vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>().mockReturnValue(
         response instanceof Promise ? response : Promise.resolve(response),
       ),
+    },
+  };
+}
+
+function createMockClientSequence(responses: Response[]): MockOpenAIClient {
+  return {
+    responses: {
+      create: vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>()
+        .mockImplementationOnce(() => Promise.resolve(responses[0] as Response))
+        .mockImplementationOnce(() => Promise.resolve(responses[1] as Response)),
     },
   };
 }

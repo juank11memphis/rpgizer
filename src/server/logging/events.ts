@@ -74,6 +74,10 @@ export const APPLICATION_LOG_EVENTS = {
     "forge.generate_adventure.xp_balancing.failed",
   FORGE_GENERATE_ADVENTURE_XP_BALANCING_INVALID:
     "forge.generate_adventure.xp_balancing.invalid",
+  GENERATE_ADVENTURE_EVAL_STARTED: "eval.generate_adventure.started",
+  GENERATE_ADVENTURE_EVAL_COMPLETED: "eval.generate_adventure.completed",
+  GENERATE_ADVENTURE_EVAL_FAILED: "eval.generate_adventure.failed",
+  GENERATE_ADVENTURE_EVAL_CONFIG_BLOCKED: "eval.generate_adventure.config_blocked",
   AI_OPENAI_REQUEST_COMPLETED: "ai.openai.request.completed",
   AI_OPENAI_REQUEST_FAILED: "ai.openai.request.failed",
   AI_OPENAI_OUTPUT_INVALID: "ai.openai.output.invalid",

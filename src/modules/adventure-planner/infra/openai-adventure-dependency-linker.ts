@@ -30,6 +30,7 @@ const PROMPT_PATH = path.join(
 const OPERATION = "link_adventure_dependencies";
 const STEP = "dependency_linking";
 const MAX_OUTPUT_TOKENS = 2_000;
+const MAX_INVALID_OUTPUT_ATTEMPTS = 2;
 
 type OpenAIResponsesClient = {
   responses: {
@@ -72,8 +73,7 @@ export class OpenAIAdventureDependencyLinker {
     try {
       const instructions = await this.loadInstructions();
       const request = buildOpenAIRequest(instructions, content, this.config.model, context.userId);
-      const response = await this.createResponse(request, context);
-      const links = parseGeneratedAdventureDependencyLinksResponse(response, content);
+      const links = await this.createValidDependencyLinks(request, content, context, startedAt);
 
       logCompleted(context, this.config.model, startedAt, {
         ...countLinkingInput(content),
@@ -105,6 +105,36 @@ export class OpenAIAdventureDependencyLinker {
     const response = await this.client.responses.create(request);
     logAiPayloadDebug(context, { direction: "response", payload: response });
     return response;
+  }
+
+  private async createValidDependencyLinks(
+    request: ResponseCreateParamsNonStreaming,
+    content: GeneratedAdventureContent,
+    context: AdventureDependencyLinkingContext,
+    startedAt: number,
+  ): Promise<GeneratedAdventureDependencyLinks> {
+    let lastInvalidOutputError: AdventureGeneratorError | null = null;
+
+    for (let attempt = 1; attempt <= MAX_INVALID_OUTPUT_ATTEMPTS; attempt += 1) {
+      const response = await this.createResponse(request, context);
+
+      try {
+        return parseGeneratedAdventureDependencyLinksResponse(response, content);
+      } catch (error) {
+        if (!(error instanceof AdventureGeneratorError) || error.code !== "provider_output_invalid") {
+          throw error;
+        }
+
+        lastInvalidOutputError = error;
+        if (attempt >= MAX_INVALID_OUTPUT_ATTEMPTS) {
+          break;
+        }
+
+        logInvalidOutputRetry(error, context, this.config.model, startedAt, attempt);
+      }
+    }
+
+    throw lastInvalidOutputError ?? invalidOutput("OpenAI structured output was not valid Adventure dependency links.");
   }
 
   private async loadInstructions(): Promise<string> {
@@ -346,6 +376,34 @@ function logProviderError(
   }
 
   serverLogger.error(payload, "OpenAI Adventure dependency linking request failed.");
+}
+
+function logInvalidOutputRetry(
+  error: AdventureGeneratorError,
+  context: AdventureDependencyLinkingContext,
+  model: string,
+  startedAt: number,
+  attempt: number,
+): void {
+  serverLogger.warn(
+    {
+      event: APPLICATION_LOG_EVENTS.FORGE_GENERATE_ADVENTURE_DEPENDENCY_LINKING_INVALID,
+      flow: "ai_provider",
+      operation: OPERATION,
+      result: "retrying",
+      ...context,
+      model,
+      step: STEP,
+      attempt,
+      nextAttempt: attempt + 1,
+      maxAttempts: MAX_INVALID_OUTPUT_ATTEMPTS,
+      providerErrorCode: error.code,
+      providerErrorCategory: "invalid_output",
+      error: serializeErrorForLog(error),
+      durationMs: Date.now() - startedAt,
+    },
+    "OpenAI Adventure dependency linking returned invalid output; retrying once.",
+  );
 }
 
 function logAiPayloadDebug(

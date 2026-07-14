@@ -18,6 +18,13 @@ import { OpenAIAdventureXpBalancer } from "./openai-adventure-xp-balancer";
 const FLOW = "multi_step_adventure_generation";
 const OPERATION = "generate_adventure";
 
+type MultiStepAdventureGenerationStep =
+  | "content_generation"
+  | "dependency_linking"
+  | "xp_balancing"
+  | "final_assembly"
+  | "final_validation";
+
 type AdventureContentGenerator = {
   generateAdventureContent(input: AdventureGeneratorRequest): Promise<GeneratedAdventureContent>;
 };
@@ -86,7 +93,7 @@ export class OpenAIMultiStepAdventureGenerator implements AdventureGenerator {
       return finalAdventure;
     } catch (error) {
       const normalizedError = normalizeWorkflowError(error);
-      logWorkflowFailed(input, normalizedError, startedAt);
+      logWorkflowFailed(input, normalizedError, startedAt, inferFailureStep(normalizedError));
       throw normalizedError;
     }
   }
@@ -124,7 +131,11 @@ function assembleFinalAdventure(
     );
     return adventure;
   } catch (error) {
-    const normalizedError = normalizeWorkflowError(error);
+    const normalizedError = normalizeStepError(
+      error,
+      "final_assembly",
+      "Multi-step Adventure final assembly failed.",
+    );
     serverLogger.warn(
       {
         ...baseLogPayload(input),
@@ -163,7 +174,11 @@ function validateFinalAdventure(
     );
     return validatedAdventure;
   } catch (error) {
-    const normalizedError = normalizeWorkflowError(error);
+    const normalizedError = normalizeStepError(
+      error,
+      "final_validation",
+      "Multi-step Adventure final validation failed.",
+    );
     serverLogger.warn(
       {
         ...baseLogPayload(input),
@@ -186,9 +201,25 @@ function normalizeWorkflowError(error: unknown): AdventureGeneratorError {
     return error;
   }
 
-  return new AdventureGeneratorError("provider_output_invalid", "Multi-step Adventure generation workflow produced invalid output.", {
-    cause: error,
-  });
+  return new AdventureGeneratorError(
+    "provider_output_invalid",
+    "Multi-step Adventure generation workflow produced invalid output.",
+    { cause: error },
+  );
+}
+
+function normalizeStepError(
+  error: unknown,
+  step: MultiStepAdventureGenerationStep,
+  fallbackMessage: string,
+): AdventureGeneratorError {
+  const normalizedError = normalizeWorkflowError(error);
+
+  if (inferFailureStep(normalizedError) === step) {
+    return normalizedError;
+  }
+
+  return new AdventureGeneratorError(normalizedError.code, fallbackMessage, { cause: normalizedError });
 }
 
 function logWorkflowStarted(input: AdventureGeneratorRequest): void {
@@ -204,7 +235,7 @@ function logWorkflowStarted(input: AdventureGeneratorRequest): void {
 
 function logStepCompleted(
   input: AdventureGeneratorRequest,
-  step: "content_generation" | "dependency_linking" | "xp_balancing",
+  step: Extract<MultiStepAdventureGenerationStep, "content_generation" | "dependency_linking" | "xp_balancing">,
   counts: Record<string, number>,
 ): void {
   serverLogger.info(
@@ -223,6 +254,7 @@ function logWorkflowFailed(
   input: AdventureGeneratorRequest,
   error: AdventureGeneratorError,
   startedAt: number,
+  step: MultiStepAdventureGenerationStep | null,
 ): void {
   serverLogger.warn(
     {
@@ -231,11 +263,49 @@ function logWorkflowFailed(
       result: "failure",
       providerErrorCode: error.code,
       providerErrorCategory: error.code === "provider_request_failed" ? "request_failed" : "invalid_output",
+      ...(step !== null ? { step } : {}),
       error: serializeErrorForLog(error),
       durationMs: Date.now() - startedAt,
     },
     "Multi-step Adventure generation workflow failed.",
   );
+}
+
+function inferFailureStep(error: Error): MultiStepAdventureGenerationStep | null {
+  const message = collectErrorMessages(error).join(" ").toLowerCase();
+
+  if (message.includes("content generation") || message.includes("adventure content")) {
+    return "content_generation";
+  }
+
+  if (message.includes("dependency linking") || message.includes("dependency linker")) {
+    return "dependency_linking";
+  }
+
+  if (message.includes("xp balancing") || message.includes("xp balancer")) {
+    return "xp_balancing";
+  }
+
+  if (message.includes("final assembly")) {
+    return "final_assembly";
+  }
+
+  if (message.includes("final validation")) {
+    return "final_validation";
+  }
+
+  return null;
+}
+
+function collectErrorMessages(error: Error): string[] {
+  const messages = [error.message];
+  const cause = error.cause;
+
+  if (cause instanceof Error) {
+    messages.push(...collectErrorMessages(cause));
+  }
+
+  return messages;
 }
 
 function baseLogPayload(input: AdventureGeneratorRequest) {
