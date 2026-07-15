@@ -287,8 +287,54 @@ The map is derived from the Product Vision, Business Domain Model, Capabilities 
   - It should hide view-model and experience-shaping decisions from feature code.
   - If it changes roadmap content, that belongs to Adventure Planner; if it reframes existing content for display and action, it belongs here.
 
+### Product Quality Evaluation
+
+- Suggested module slug: `product-quality-evaluation`
+- Simple interface / outside promise: Run a local product-quality Eval Suite and return a safe, maintainer-facing Eval Result.
+- Hidden complexity:
+  - Discovering and describing available Eval Suites without exposing implementation commands as the public abstraction.
+  - Checking local credentials, model settings, and runtime configuration before treating a run as a product-quality signal.
+  - Distinguishing Configuration Blockers from actual product-quality failures.
+  - Orchestrating fixture execution for Game Master interviews, Adventure content, dependency linking, XP balancing, and full Adventure generation.
+  - Normalizing suite-level and fixture-level outcomes into passed, failed with diagnostics, or blocked by configuration.
+  - Producing concise, safe diagnostics that avoid secrets, raw prompts, raw provider responses, and full generated Adventure payloads.
+  - Keeping the workflow local-only and maintainer-facing while leaving room for future history, CI, prompt comparison, or judge workflows.
+- Owns:
+  - Eval Suite discovery and selection semantics.
+  - Eval Run lifecycle and outcome classification.
+  - Configuration Blocker detection and reporting.
+  - Fixture execution orchestration.
+  - Safe diagnostic shaping for maintainers.
+  - The local-only boundary for MVP eval feedback.
+- Does not own:
+  - The product behavior being evaluated.
+  - The definition of a good Quest, Side Quest, Boss Fight, Inventory Item, Skill, Achievement, or Roadmap.
+  - Game Master conversation policy or readiness semantics.
+  - RPG semantic meaning.
+  - Safety and high-stakes guidance rules.
+  - Hosted dashboards, persistent run history, production monitoring, CI governance, prompt comparison, or LLM-as-judge workflows in the MVP.
+- Key scenarios:
+  - A Maintainer sees which Eval Suites can be run locally.
+  - A Maintainer starts one Eval Run for a selected suite.
+  - The run stops as blocked because required local configuration is missing or placeholder.
+  - The run executes fixtures and reports passed when all expectations hold.
+  - The run executes fixtures and reports failed with actionable diagnostics when product-quality expectations are not met.
+  - A Maintainer uses diagnostics to decide whether Game Master, Adventure Planner, RPG Metaphor System, or Safety & Trust behavior needs attention.
+- Related modules:
+  - Exercises Game Master Assistant behavior for interview quality and safe conversational guidance.
+  - Exercises Adventure Planner behavior for Roadmap generation, content, linking, XP, and quality checks.
+  - Relies on RPG Metaphor System meaning when interpreting RPG-native coherence.
+  - Must respect Safety & Trust rules for high-stakes boundaries and safe diagnostic output.
+  - May inform future work in Adventure Experience Presenter if presentation-oriented evals are added later.
+- Boundary notes:
+  - This module owns eval orchestration and feedback, not the underlying product-quality meaning.
+  - Product-quality expectations should point back to the module that owns the behavior being judged.
+  - If eval history, dashboards, CI trend reporting, prompt/model comparison, or LLM-as-judge workflows become real needs, this module can expand or spawn a separate deeper module; the MVP should not pre-commit to those responsibilities.
+
 ## Cross-Module Rules
 
+- **Product Quality Evaluation reports, it does not redefine product behavior**: Eval orchestration, run outcomes, configuration blockers, and safe diagnostics belong to Product Quality Evaluation; the quality meanings being checked stay with Game Master Assistant, Adventure Planner, RPG Metaphor System, Safety & Trust, or the relevant owning module.
+- **Local eval feedback is maintainer-facing**: Product Quality Evaluation must remain local-only in the MVP and must not leak secrets, raw prompts, raw provider responses, or full generated Adventure payloads through diagnostics.
 - **Visitor and User boundaries are different**: Public Product Introduction serves Visitors before authentication or Adventure ownership; modules that read, present, generate for, update, or progress real Adventures must operate within the current User's ownership boundary.
 - **User ownership applies everywhere after authentication**: Any module that reads, presents, generates for, updates, or progresses a real Adventure must operate within the current User's ownership boundary.
 - **No generic persistence module**: Each module owns its own persistence needs internally. Database details should not leak across module interfaces, and there should not be a central “repository module” for all Adventure data.

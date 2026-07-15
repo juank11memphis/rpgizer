@@ -23,6 +23,7 @@ In scope for the business model:
 - Achievements unlocked automatically from meaningful progress.
 - Targeted roadmap updates through the Game Master.
 - A public entry point that explains the RPGizer promise, shows the RPG-native value, and invites Visitors to start an Adventure.
+- Local Product Quality Evaluation that helps maintainers run evals against Game Master behavior and Adventure generation quality before changes ship.
 
 Out of scope for the initial domain model:
 
@@ -30,6 +31,7 @@ Out of scope for the initial domain model:
 - A generic regenerate button for whole-roadmap replacement.
 - Corporate project management, OKRs, team workflows, or task assignment.
 - Expert medical, legal, financial, or safety advice.
+- Hosted eval dashboards, persistent eval history, CI trend reporting, prompt comparison labs, or production monitoring.
 
 ## Ubiquitous Language
 
@@ -59,6 +61,14 @@ Out of scope for the initial domain model:
 | Adventure Detail Page | The place where the User reviews, follows, edits, and discusses an Adventure after generation. |
 | Roadmap Update | A targeted change to an Adventure made by the Game Master after the User asks for help adjusting a specific part. |
 | Landing Page | The public entry point that introduces RPGizer, communicates the playable-goal promise, and invites a Visitor to start an Adventure. |
+| Maintainer | A project team member who checks whether RPGizer's AI-assisted product behavior still meets quality expectations before changes ship. |
+| Product Quality Evaluation | The local maintainer workflow for running evals that check Game Master and Adventure generation behavior against product-quality expectations. |
+| Eval Suite | A named group of eval checks for one product-quality area, such as Game Master interviews, Adventure content, dependency linking, XP balancing, or full Adventure generation. |
+| Eval Fixture | A representative scenario or input used by an Eval Suite to exercise expected RPGizer behavior. |
+| Eval Run | One maintainer-triggered execution of an Eval Suite against its fixtures. |
+| Eval Result | The outcome of an Eval Run: passed, failed with diagnostics, or blocked by configuration. |
+| Diagnostic | A concise, safe explanation of a product-quality failure that helps the Maintainer understand what needs attention without exposing secrets, raw prompts, or full generated payloads. |
+| Configuration Blocker | A missing, placeholder, or invalid local setting, credential, or model configuration that prevents an Eval Run from executing meaningfully. |
 
 ### Synonym Clarification
 
@@ -68,6 +78,8 @@ Out of scope for the initial domain model:
 - “Inventory” means real-world readiness items, not random fantasy loot.
 - “Game Master” is the AI assistant role, not a human coach or expert advisor.
 - “Visitor” is a pre-auth/public-site role; “User” is an authenticated Adventure owner.
+- “Product Quality Evaluation” is internal maintainer tooling, not user analytics, production monitoring, or a public quality score.
+- “Eval Result” describes one local run outcome; it is not a persistent product metric in the MVP.
 
 ## Bounded Contexts & Subdomains
 
@@ -85,6 +97,7 @@ Supporting subdomains:
 - **User Identity**: Google-authenticated Users who own Adventures.
 - **Adventure Presentation**: Adventure Detail Page concepts that make the generated roadmap reviewable and actionable.
 - **Safety & Trust**: boundaries around high-stakes goals and AI-generated guidance.
+- **Product Quality Evaluation**: local maintainer evaluation of Game Master and Adventure generation behavior against product-quality expectations.
 
 Generic or external domains:
 
@@ -110,6 +123,7 @@ flowchart TB
       Identity["User Identity"]
       Presentation["Adventure Presentation"]
       Trust["Safety & Trust"]
+      QualityEval["Product Quality Evaluation"]
     end
   end
 
@@ -118,6 +132,7 @@ flowchart TB
     Adventure["Adventure"]
     Roadmap["RPG Roadmap"]
     Progress["Progress State"]
+    EvalFeedback["Eval Feedback"]
   end
 
   subgraph External["External / Generic Domains"]
@@ -136,6 +151,9 @@ flowchart TB
   Presentation --> Adventure
   Trust -. constrains .-> Creation
   Trust -. constrains .-> Adaptation
+  QualityEval -. checks .-> Creation
+  QualityEval -. checks .-> Adaptation
+  QualityEval --> EvalFeedback
   Google --> Identity
   LLM --> Creation
   LLM --> Adaptation
@@ -160,6 +178,12 @@ flowchart TB
 - **Inventory Item** belongs to one Adventure and may be referenced by Quests or Boss Fights.
 - **Achievement** belongs to one Adventure and unlocks automatically from progress patterns.
 - **Game Master Conversation** belongs to one Adventure and can produce targeted Roadmap Updates.
+- **Maintainer** can run Product Quality Evaluation locally before changes ship.
+- **Product Quality Evaluation** organizes Eval Suites that check product behavior rather than implementation correctness.
+- **Eval Suite** contains one or more Eval Fixtures for a focused quality area.
+- **Eval Run** executes one Eval Suite and produces an Eval Result.
+- **Diagnostic** explains why an Eval Run or fixture failed in safe, actionable terms.
+- **Configuration Blocker** prevents an Eval Run from executing when required local credentials or model settings are unavailable.
 
 ```mermaid
 flowchart TB
@@ -188,6 +212,12 @@ flowchart TB
   Achievement -. unlocks from .-> Boss
   Achievement -. unlocks from .-> Skill
   Achievement -. unlocks from .-> Item
+  Maintainer["Maintainer"] -->|runs locally| EvalRun["Eval Run"]
+  EvalRun -->|executes| EvalSuite["Eval Suite"]
+  EvalSuite -->|uses| EvalFixture["Eval Fixtures"]
+  EvalRun -->|produces| EvalResult["Eval Result"]
+  EvalResult --> Diagnostic["Diagnostics"]
+  EvalResult --> ConfigBlocker["Configuration Blockers"]
 ```
 
 ### Attributes / Characteristics
@@ -201,6 +231,11 @@ flowchart TB
 - Skill: name, real-world capability meaning, XP, level, progress explanation.
 - Inventory Item: name, practical purpose, required/recommended status, acquired state, linked Quests or Boss Fights.
 - Achievement: name, unlock condition, unlocked state, progress meaning.
+- Maintainer: internal project role, local evaluation intent, product-quality judgment responsibility.
+- Eval Suite: quality area, fixture set, expected product behavior, safe output expectations.
+- Eval Fixture: representative scenario, input context, expectations, quality boundary being exercised.
+- Eval Run: selected suite, run status, fixture outcomes, diagnostics, configuration blockers, run-time feedback.
+- Diagnostic: affected fixture or run area, safe concise message, quality concern category.
 
 ### Relationships & Cardinality
 
@@ -214,6 +249,11 @@ flowchart TB
 - One Skill can receive XP from many Quests and Boss Fights.
 - One Inventory Item can support many Quests or Boss Fights.
 - One Achievement can depend on multiple progress signals.
+- One Maintainer can start many local Eval Runs.
+- One Eval Suite can include many Eval Fixtures.
+- One Eval Run executes one Eval Suite at a time in the MVP.
+- One Eval Run can produce many fixture-level Diagnostics.
+- One Configuration Blocker can stop an Eval Run before fixture execution.
 
 ## Domain Invariants & Business Rules
 
@@ -239,6 +279,10 @@ flowchart TB
 - Roadmap Updates through the Game Master should be targeted by default and preserve the larger Adventure unless the User asks for a broader rethink.
 - RPG flavor must not obscure actionability.
 - RPGizer must not present high-stakes guidance as expert advice.
+- Product Quality Evaluation must remain maintainer-facing and local-only in the MVP.
+- Product Quality Evaluation must evaluate product behavior and output quality, not become a substitute for ordinary implementation tests.
+- Eval Diagnostics must be safe and concise; they must not expose secrets, raw prompts, raw provider responses, or full generated Adventure payloads.
+- Configuration Blockers must be reported as blockers, not as product-quality failures.
 
 ### Policies
 
@@ -253,6 +297,10 @@ flowchart TB
 - When an Inventory Item is acquired, the Adventure records readiness progress and may unlock an Achievement.
 - When the User asks to change part of a Roadmap, the Game Master proposes or applies a targeted update.
 - When the User’s goal touches expert or high-stakes domains, the Game Master should keep guidance structural, safe, and non-authoritative.
+- When a Maintainer wants to check AI-assisted product behavior, they choose an Eval Suite and start a local Eval Run.
+- When required local configuration is missing, placeholder, or invalid, the Eval Run should stop with a Configuration Blocker.
+- When fixture expectations are not met, the Eval Run should fail with actionable Diagnostics.
+- When all fixture expectations pass, the Eval Run should report success for the selected Eval Suite.
 
 ## Domain Events & Behaviors
 
@@ -265,6 +313,12 @@ Adventure states:
 - **In Progress**: The User has started completing Quests, Boss Fights, or acquiring Inventory.
 - **Completed**: The Adventure’s Goal has been reached or the final Boss Fight is complete.
 - **Archived**: The User no longer wants the Adventure active.
+
+Product Quality Evaluation run outcomes:
+
+- **Blocked by Configuration**: Required local credentials, model settings, or runtime configuration are missing, placeholder, or invalid.
+- **Failed with Diagnostics**: The Eval Run executed but one or more fixtures did not meet product-quality expectations.
+- **Passed**: The Eval Run executed and all fixture expectations passed.
 
 ### Domain Events
 
@@ -285,6 +339,13 @@ Adventure states:
 - Roadmap Updated by Game Master
 - Adventure Completed
 - Adventure Archived
+- Eval Suite Selected
+- Eval Run Started
+- Eval Run Blocked by Configuration
+- Eval Fixture Evaluated
+- Eval Diagnostic Reported
+- Eval Run Passed
+- Eval Run Failed
 
 The most important momentum event is **Quest Completed**. It proves RPGizer is helping a User turn a plan into action.
 
@@ -299,6 +360,8 @@ The most important momentum event is **Quest Completed**. It proves RPGizer is h
 - Whole-roadmap regeneration is not an MVP concept; roadmap changes happen through user-triggered Game Master conversation.
 - Skill XP values and leveling can be generated and adjusted by the system, but the User-facing meaning matters more than perfect numerical balance.
 - Inventory contributes to readiness and may unlock Achievements, but should not replace Quest and Boss completion as the main progress loop.
+- Product Quality Evaluation is local-only maintainer tooling for now.
+- Eval Runs are viewed in the moment in the MVP; persistent run history is future evolution.
 
 ### Known Variations / Debt
 
@@ -308,3 +371,4 @@ The most important momentum event is **Quest Completed**. It proves RPGizer is h
 - The Game Master role may later need a stronger character identity, name, or lore.
 - High-stakes goals will require clear safety policies and disclaimers.
 - Inventory could evolve into richer readiness tracking, shopping/checklists, or integrations, but should remain grounded in real-world usefulness.
+- Product Quality Evaluation may later evolve into persisted history, trend reports, CI integration, prompt/model comparison, richer fixture management, or LLM-as-judge workflows, but those are outside the local MVP.

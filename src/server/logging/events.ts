@@ -78,6 +78,12 @@ export const APPLICATION_LOG_EVENTS = {
   GENERATE_ADVENTURE_EVAL_COMPLETED: "eval.generate_adventure.completed",
   GENERATE_ADVENTURE_EVAL_FAILED: "eval.generate_adventure.failed",
   GENERATE_ADVENTURE_EVAL_CONFIG_BLOCKED: "eval.generate_adventure.config_blocked",
+  GAME_MASTER_INTERVIEW_EVAL_STARTED: "eval.game_master_interview.started",
+  GAME_MASTER_INTERVIEW_EVAL_COMPLETED: "eval.game_master_interview.completed",
+  GAME_MASTER_INTERVIEW_EVAL_FAILED: "eval.game_master_interview.failed",
+  GAME_MASTER_INTERVIEW_EVAL_CONFIG_BLOCKED: "eval.game_master_interview.config_blocked",
+  GAME_MASTER_INTERVIEW_EVAL_UNEXPECTED_ERROR:
+    "eval.game_master_interview.unexpected_error",
   AI_OPENAI_REQUEST_COMPLETED: "ai.openai.request.completed",
   AI_OPENAI_REQUEST_FAILED: "ai.openai.request.failed",
   AI_OPENAI_OUTPUT_INVALID: "ai.openai.output.invalid",

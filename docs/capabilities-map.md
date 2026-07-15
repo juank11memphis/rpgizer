@@ -4,7 +4,7 @@
 
 This Capabilities Map translates RPGizer's Product Vision and Business Domain Model into business/product abilities. It describes what the product must be able to do, organized by subdomain, without prescribing implementation structure.
 
-RPGizer's core capability is turning a real-life goal into a playable Adventure that helps the User take action through RPG-style progression. Public product introduction supports that loop by helping Visitors understand the promise and choose to start.
+RPGizer's core capability is turning a real-life goal into a playable Adventure that helps the User take action through RPG-style progression. Public product introduction supports that loop by helping Visitors understand the promise and choose to start. Product Quality Evaluation supports that promise internally by helping maintainers check AI-assisted product behavior before changes ship.
 
 ## Capability Map
 
@@ -76,10 +76,20 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 - **Communicate Plan Limits**: Make it clear that RPGizer provides a motivating first path, not a guarantee of success.
 - **Protect User Agency**: Keep the User in control of decisions, progress, and adaptation.
 
+#### Product Quality Evaluation
+
+- **Identify Available Eval Suites**: Let a Maintainer see the local eval suites available for checking Game Master interviews, Adventure content, dependency linking, XP balancing, or full Adventure generation.
+- **Run a Selected Eval Suite Locally**: Let a Maintainer trigger one local Eval Run for a selected suite without turning the workflow into hosted reporting or production monitoring.
+- **Check Eval Configuration**: Detect missing, placeholder, or invalid local credentials and model settings so a blocked Eval Run is reported as a Configuration Blocker rather than a product-quality failure.
+- **Evaluate Fixtures Against Product Expectations**: Use representative Eval Fixtures to check whether AI-assisted behavior still matches RPGizer's quality expectations for useful interviews, actionable roadmaps, coherent RPG semantics, safe boundaries, and grounded real-world progress.
+- **Report Eval Run Outcomes**: Show whether an Eval Run passed, failed with diagnostics, or was blocked by configuration so the Maintainer can quickly understand the run state.
+- **Surface Safe Actionable Diagnostics**: Provide concise failure feedback that points to the affected fixture or quality area without exposing secrets, raw prompts, raw provider responses, or full generated Adventure payloads.
+- **Keep Eval Feedback Maintainer-Facing**: Keep Product Quality Evaluation local and internal in the MVP, separate from user-facing analytics, production monitoring, CI trend reporting, or public quality scores.
+
 ### Generic / External Capabilities
 
 - **Google Authentication**: External identity provider capability used by User Identity.
-- **LLM Conversation and Generation**: External AI capability used by the Game Master Assistant for interviews, roadmap generation, explanation, and chat-based updates.
+- **LLM Conversation and Generation**: External AI capability used by the Game Master Assistant for interviews, roadmap generation, explanation, chat-based updates, and live Product Quality Evaluation runs.
 - **Expert Advice Domains**: External knowledge and professional judgment domains that RPGizer must not claim to replace.
 
 ## Capability Dependencies / Sequencing
@@ -95,6 +105,7 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 9. **Adventure Progression** capabilities let the User complete Quests, acquire Inventory, gain XP, level Skills, unlock Achievements, and build momentum.
 10. **Game Master Assistant roadmap updates** let the User adapt the Adventure through chat without direct manual content editing.
 11. **Safety & Trust** constrains public claims, generation, and update capabilities, especially for high-stakes Goals.
+12. **Product Quality Evaluation** supports maintainers before changes ship by selecting an Eval Suite, checking local configuration, running fixtures, reporting passed/failed/blocked outcomes, and surfacing safe diagnostics.
 
 ## Known Gaps / Evolution Notes
 
@@ -107,3 +118,4 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 - Boss Fight design must feel challenging and fun without discouraging the User.
 - Inventory may later evolve into richer readiness workflows, shopping/checklists, or integrations, but should remain practical and goal-connected.
 - The Game Master may later need a stronger character identity, name, voice, or lore.
+- Product Quality Evaluation is local-only in the MVP; hosted dashboards, persistent run history, CI trend reporting, prompt/model comparison, richer fixture management, and LLM-as-judge workflows are future evolution.
