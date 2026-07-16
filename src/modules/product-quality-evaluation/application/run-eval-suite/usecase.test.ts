@@ -29,6 +29,47 @@ describe("runEvalSuite", () => {
       summary: "Game Master Interview Evals passed.",
       diagnostics: [],
       durationMs: 42,
+      matrix: {
+        testCases: [{ id: "become-a-chef", name: "become-a-chef", inputVariables: {} }],
+        variants: [
+          {
+            id: "default",
+            name: "Default variant",
+            promptLabel: "Default prompt",
+            modelLabel: "Default model",
+          },
+        ],
+        cells: [
+          {
+            id: "become-a-chef::default",
+            testCaseId: "become-a-chef",
+            variantId: "default",
+            status: "passed",
+            outputPreview: null,
+            metrics: {
+              latency: { value: null, unit: "ms", reported: false },
+              tokens: { value: null, unit: "tokens", reported: false },
+              cost: { value: null, unit: "usd", reported: false },
+            },
+            assertions: [],
+            diagnostics: [],
+            artifacts: [],
+          },
+        ],
+      },
+      aggregates: {
+        totalTestCases: 1,
+        totalCells: 1,
+        completedCells: 1,
+        passedCells: 1,
+        failedCells: 0,
+        blockedCells: 0,
+        errorCells: 0,
+        passRate: 1,
+        averageLatencyMs: null,
+        totalTokens: null,
+        totalCostUsd: null,
+      },
     });
   });
 
@@ -58,6 +99,51 @@ describe("runEvalSuite", () => {
         message: "Expected a safer boundary-setting answer.",
       },
     ]);
+    expect(result.matrix).toMatchObject({
+      testCases: [{ id: "high-stakes-finance", name: "high-stakes-finance" }],
+      variants: [{ id: "default", name: "Default variant" }],
+      cells: [
+        {
+          id: "high-stakes-finance::default",
+          testCaseId: "high-stakes-finance",
+          variantId: "default",
+          status: "failed",
+          outputPreview: null,
+          assertions: [
+            {
+              id: "high-stakes-finance-diagnostic-1",
+              label: "Fixture expectation",
+              status: "failed",
+              message: "Expected a safer boundary-setting answer.",
+            },
+          ],
+          diagnostics: [
+            {
+              scope: "fixture",
+              fixtureId: "high-stakes-finance",
+              message: "Expected a safer boundary-setting answer.",
+            },
+          ],
+          artifacts: [],
+        },
+      ],
+    });
+    expect(result.matrix?.cells[0]?.metrics).toEqual({
+      latency: { value: null, unit: "ms", reported: false },
+      tokens: { value: null, unit: "tokens", reported: false },
+      cost: { value: null, unit: "usd", reported: false },
+    });
+    expect(result.aggregates).toMatchObject({
+      totalTestCases: 1,
+      totalCells: 1,
+      completedCells: 1,
+      passedCells: 0,
+      failedCells: 1,
+      passRate: 0,
+      averageLatencyMs: null,
+      totalTokens: null,
+      totalCostUsd: null,
+    });
   });
 
   it("normalizes configuration blockers separately from failed evals", async () => {
@@ -87,6 +173,8 @@ describe("runEvalSuite", () => {
         },
       ],
     });
+    expect(result).not.toHaveProperty("matrix");
+    expect(result).not.toHaveProperty("aggregates");
   });
 
   it("returns a safe error without invoking the runner for unknown suites", async () => {
@@ -111,6 +199,8 @@ describe("runEvalSuite", () => {
         },
       ],
     });
+    expect(result).not.toHaveProperty("matrix");
+    expect(result).not.toHaveProperty("aggregates");
   });
 
   it("normalizes unexpected runner throws to a safe error result", async () => {
@@ -138,5 +228,7 @@ describe("runEvalSuite", () => {
     });
     expect(result.diagnostics[0]?.message).not.toContain("provider response");
     expect(result.diagnostics[0]?.message).not.toContain("unsafe payload");
+    expect(result).not.toHaveProperty("matrix");
+    expect(result).not.toHaveProperty("aggregates");
   });
 });

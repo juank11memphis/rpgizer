@@ -1,13 +1,25 @@
 import type { EvalSuiteId } from "../../domain/eval-suite";
+import type {
+  EvalDiagnostic,
+  EvalMatrix,
+  EvalRunAggregates,
+} from "../../domain/eval-matrix";
+
+export type {
+  EvalAssertion,
+  EvalCell,
+  EvalCellArtifact,
+  EvalCellMetrics,
+  EvalCellStatus,
+  EvalDiagnostic,
+  EvalMatrix,
+  EvalMetricValue,
+  EvalPromptModelVariant,
+  EvalRunAggregates,
+  EvalTestCase,
+} from "../../domain/eval-matrix";
 
 export type EvalRunStatus = "passed" | "failed" | "blocked" | "error";
-
-export type EvalDiagnostic = {
-  scope: "fixture" | "configuration" | "run";
-  message: string;
-  fixtureId?: string;
-  code?: string;
-};
 
 export type EvalRunResult =
   | EvalRunPassedResult
@@ -21,6 +33,8 @@ export type EvalRunPassedResult = {
   summary: string;
   diagnostics: [];
   durationMs: number;
+  matrix?: EvalMatrix;
+  aggregates?: EvalRunAggregates;
 };
 
 export type EvalRunFailedResult = {
@@ -29,6 +43,8 @@ export type EvalRunFailedResult = {
   summary: string;
   diagnostics: EvalDiagnostic[];
   durationMs: number;
+  matrix?: EvalMatrix;
+  aggregates?: EvalRunAggregates;
 };
 
 export type EvalRunBlockedResult = {
@@ -38,6 +54,8 @@ export type EvalRunBlockedResult = {
   diagnostics: EvalDiagnostic[];
   blocker: string;
   durationMs: number;
+  matrix?: EvalMatrix;
+  aggregates?: EvalRunAggregates;
 };
 
 export type EvalRunErrorResult = {
@@ -48,4 +66,6 @@ export type EvalRunErrorResult = {
   durationMs: number;
   errorName?: string;
   errorCode?: string;
+  matrix?: EvalMatrix;
+  aggregates?: EvalRunAggregates;
 };
