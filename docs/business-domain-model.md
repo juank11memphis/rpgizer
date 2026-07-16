@@ -23,7 +23,7 @@ In scope for the business model:
 - Achievements unlocked automatically from meaningful progress.
 - Targeted roadmap updates through the Game Master.
 - A public entry point that explains the RPGizer promise, shows the RPG-native value, and invites Visitors to start an Adventure.
-- Local Product Quality Evaluation that helps maintainers run evals against Game Master behavior and Adventure generation quality before changes ship.
+- Local Product Quality Evaluation that helps maintainers run and analyze evals against Game Master behavior and Adventure generation quality before changes ship, including dense current-run inspection, test-case matrices, prompt/model variants, metrics, assertions, and local-only raw debugging details.
 
 Out of scope for the initial domain model:
 
@@ -31,7 +31,7 @@ Out of scope for the initial domain model:
 - A generic regenerate button for whole-roadmap replacement.
 - Corporate project management, OKRs, team workflows, or task assignment.
 - Expert medical, legal, financial, or safety advice.
-- Hosted eval dashboards, persistent eval history, CI trend reporting, prompt comparison labs, or production monitoring.
+- Hosted eval dashboards, persistent eval history, CI trend reporting, production monitoring, or user-facing quality scores.
 
 ## Ubiquitous Language
 
@@ -62,12 +62,19 @@ Out of scope for the initial domain model:
 | Roadmap Update | A targeted change to an Adventure made by the Game Master after the User asks for help adjusting a specific part. |
 | Landing Page | The public entry point that introduces RPGizer, communicates the playable-goal promise, and invites a Visitor to start an Adventure. |
 | Maintainer | A project team member who checks whether RPGizer's AI-assisted product behavior still meets quality expectations before changes ship. |
-| Product Quality Evaluation | The local maintainer workflow for running evals that check Game Master and Adventure generation behavior against product-quality expectations. |
+| Product Quality Evaluation | The local maintainer workflow for running and analyzing evals that check Game Master and Adventure generation behavior against product-quality expectations. |
 | Eval Suite | A named group of eval checks for one product-quality area, such as Game Master interviews, Adventure content, dependency linking, XP balancing, or full Adventure generation. |
-| Eval Fixture | A representative scenario or input used by an Eval Suite to exercise expected RPGizer behavior. |
-| Eval Run | One maintainer-triggered execution of an Eval Suite against its fixtures. |
+| Eval Test Case | A representative scenario used by an Eval Suite. It includes input variables, context, and assertions that define expected RPGizer behavior. |
+| Eval Fixture | A synonym for Eval Test Case in older docs and implementation notes. New product language should prefer Eval Test Case when discussing the analysis UI. |
+| Prompt / Model Variant | A named evaluation column that combines a prompt version, model choice, or equivalent AI behavior variant being compared in a local Eval Run. |
+| Eval Matrix | A dense current-run analysis view where rows are Eval Test Cases, columns are Prompt / Model Variants, and cells show per-case output, metrics, and assertions. |
+| Eval Cell | The result of one Eval Test Case executed against one Prompt / Model Variant. |
+| Eval Metric | A per-cell or aggregate measurement such as latency, token count, and cost. Metrics may be exact, estimated, or unavailable depending on provider reporting. |
+| Eval Assertion | A product-quality expectation checked against an Eval Cell, producing pass/fail feedback and failure details. |
+| Eval Run | One maintainer-triggered execution of an Eval Suite against its Test Cases and selected Prompt / Model Variants. |
 | Eval Result | The outcome of an Eval Run: passed, failed with diagnostics, or blocked by configuration. |
-| Diagnostic | A concise, safe explanation of a product-quality failure that helps the Maintainer understand what needs attention without exposing secrets, raw prompts, or full generated payloads. |
+| Diagnostic | An explanation of a product-quality failure that helps the Maintainer understand what needs attention. Diagnostics may include local-only output snippets or assertion details, but must not expose secrets, credentials, API keys, session tokens, or unrelated sensitive data. |
+| Raw Eval Artifact | Local-only debugging material for an Eval Cell, such as the full prompt, raw provider request/response payload, generated output, or comparison against an expected/golden output. |
 | Configuration Blocker | A missing, placeholder, or invalid local setting, credential, or model configuration that prevents an Eval Run from executing meaningfully. |
 
 ### Synonym Clarification
@@ -79,7 +86,9 @@ Out of scope for the initial domain model:
 - “Game Master” is the AI assistant role, not a human coach or expert advisor.
 - “Visitor” is a pre-auth/public-site role; “User” is an authenticated Adventure owner.
 - “Product Quality Evaluation” is internal maintainer tooling, not user analytics, production monitoring, or a public quality score.
-- “Eval Result” describes one local run outcome; it is not a persistent product metric in the MVP.
+- “Eval Fixture” and “Eval Test Case” describe the same business idea for now; “Test Case” is preferred for matrix-style analysis because it maps directly to rows.
+- “Eval Result” describes one local run outcome; it is not a production metric or user-visible quality score.
+- “Raw Eval Artifact” is local maintainer debugging context, not hosted reporting data or persistent history in the current scope.
 
 ## Bounded Contexts & Subdomains
 
@@ -97,7 +106,7 @@ Supporting subdomains:
 - **User Identity**: Google-authenticated Users who own Adventures.
 - **Adventure Presentation**: Adventure Detail Page concepts that make the generated roadmap reviewable and actionable.
 - **Safety & Trust**: boundaries around high-stakes goals and AI-generated guidance.
-- **Product Quality Evaluation**: local maintainer evaluation of Game Master and Adventure generation behavior against product-quality expectations.
+- **Product Quality Evaluation**: local maintainer evaluation and analysis of Game Master and Adventure generation behavior against product-quality expectations.
 
 Generic or external domains:
 
@@ -151,8 +160,8 @@ flowchart TB
   Presentation --> Adventure
   Trust -. constrains .-> Creation
   Trust -. constrains .-> Adaptation
-  QualityEval -. checks .-> Creation
-  QualityEval -. checks .-> Adaptation
+  QualityEval -. evaluates and compares .-> Creation
+  QualityEval -. evaluates and compares .-> Adaptation
   QualityEval --> EvalFeedback
   Google --> Identity
   LLM --> Creation
@@ -178,11 +187,15 @@ flowchart TB
 - **Inventory Item** belongs to one Adventure and may be referenced by Quests or Boss Fights.
 - **Achievement** belongs to one Adventure and unlocks automatically from progress patterns.
 - **Game Master Conversation** belongs to one Adventure and can produce targeted Roadmap Updates.
-- **Maintainer** can run Product Quality Evaluation locally before changes ship.
-- **Product Quality Evaluation** organizes Eval Suites that check product behavior rather than implementation correctness.
-- **Eval Suite** contains one or more Eval Fixtures for a focused quality area.
-- **Eval Run** executes one Eval Suite and produces an Eval Result.
-- **Diagnostic** explains why an Eval Run or fixture failed in safe, actionable terms.
+- **Maintainer** can run and analyze Product Quality Evaluation locally before changes ship.
+- **Product Quality Evaluation** organizes Eval Suites, Test Cases, Prompt / Model Variants, Eval Matrix views, Metrics, Assertions, Diagnostics, and local-only Raw Eval Artifacts that check product behavior rather than implementation correctness.
+- **Eval Suite** contains one or more Eval Test Cases for a focused quality area.
+- **Eval Test Case** contains input variables, scenario context, and assertions.
+- **Prompt / Model Variant** defines one prompt version, model choice, or equivalent behavior variant to evaluate.
+- **Eval Run** executes one Eval Suite against one or more Prompt / Model Variants and produces an Eval Result.
+- **Eval Matrix** presents the current Eval Run with Test Cases as rows and Prompt / Model Variants as columns.
+- **Eval Cell** contains the output, Metrics, Assertion outcomes, Diagnostics, and optional Raw Eval Artifacts for one Test Case / Variant pairing.
+- **Diagnostic** explains why an Eval Run, Test Case, or Eval Cell failed in safe, actionable terms.
 - **Configuration Blocker** prevents an Eval Run from executing when required local credentials or model settings are unavailable.
 
 ```mermaid
@@ -212,9 +225,15 @@ flowchart TB
   Achievement -. unlocks from .-> Boss
   Achievement -. unlocks from .-> Skill
   Achievement -. unlocks from .-> Item
-  Maintainer["Maintainer"] -->|runs locally| EvalRun["Eval Run"]
+  Maintainer["Maintainer"] -->|runs and analyzes locally| EvalRun["Eval Run"]
   EvalRun -->|executes| EvalSuite["Eval Suite"]
-  EvalSuite -->|uses| EvalFixture["Eval Fixtures"]
+  EvalSuite -->|uses| EvalFixture["Eval Test Cases"]
+  EvalRun -->|compares| Variant["Prompt / Model Variants"]
+  EvalRun -->|renders| Matrix["Eval Matrix"]
+  Matrix -->|contains| Cell["Eval Cells"]
+  Cell --> Metrics["Metrics"]
+  Cell --> Assertions["Assertions"]
+  Cell --> RawArtifact["Raw Eval Artifacts"]
   EvalRun -->|produces| EvalResult["Eval Result"]
   EvalResult --> Diagnostic["Diagnostics"]
   EvalResult --> ConfigBlocker["Configuration Blockers"]
@@ -232,10 +251,13 @@ flowchart TB
 - Inventory Item: name, practical purpose, required/recommended status, acquired state, linked Quests or Boss Fights.
 - Achievement: name, unlock condition, unlocked state, progress meaning.
 - Maintainer: internal project role, local evaluation intent, product-quality judgment responsibility.
-- Eval Suite: quality area, fixture set, expected product behavior, safe output expectations.
-- Eval Fixture: representative scenario, input context, expectations, quality boundary being exercised.
-- Eval Run: selected suite, run status, fixture outcomes, diagnostics, configuration blockers, run-time feedback.
-- Diagnostic: affected fixture or run area, safe concise message, quality concern category.
+- Eval Suite: quality area, Test Case set, supported Prompt / Model Variants, expected product behavior, and safe/local artifact expectations.
+- Eval Test Case: representative scenario, input variables, input context, assertions, expected or golden output when useful, and quality boundary being exercised.
+- Prompt / Model Variant: variant name, prompt/model identity, comparison purpose, and local availability.
+- Eval Run: selected suite, run status, Test Case outcomes, matrix cells, diagnostics, configuration blockers, metrics, and run-time feedback.
+- Eval Cell: generated output, latency, token count, cost, assertion badges, failure details, and local-only raw artifacts where available.
+- Eval Metric: latency, token count, and cost; may be exact, estimated, or unavailable.
+- Diagnostic: affected Test Case, Eval Cell, assertion, or run area; safe message; quality concern category; and local-only detail where appropriate.
 
 ### Relationships & Cardinality
 
@@ -250,9 +272,13 @@ flowchart TB
 - One Inventory Item can support many Quests or Boss Fights.
 - One Achievement can depend on multiple progress signals.
 - One Maintainer can start many local Eval Runs.
-- One Eval Suite can include many Eval Fixtures.
-- One Eval Run executes one Eval Suite at a time in the MVP.
-- One Eval Run can produce many fixture-level Diagnostics.
+- One Eval Suite can include many Eval Test Cases.
+- One Eval Suite can define or support many Prompt / Model Variants.
+- One Eval Run executes one Eval Suite at a time in the MVP, but may compare multiple Prompt / Model Variants inside that suite.
+- One Eval Run can produce many Eval Cells: one for each evaluated Test Case / Prompt Model Variant pairing.
+- One Eval Cell can include many Assertion outcomes and Metrics.
+- One Eval Cell may expose Raw Eval Artifacts for local maintainer debugging only.
+- One Eval Run can produce many Test Case-, Eval Cell-, assertion-, or run-level Diagnostics.
 - One Configuration Blocker can stop an Eval Run before fixture execution.
 
 ## Domain Invariants & Business Rules
@@ -281,7 +307,13 @@ flowchart TB
 - RPGizer must not present high-stakes guidance as expert advice.
 - Product Quality Evaluation must remain maintainer-facing and local-only in the MVP.
 - Product Quality Evaluation must evaluate product behavior and output quality, not become a substitute for ordinary implementation tests.
-- Eval Diagnostics must be safe and concise; they must not expose secrets, raw prompts, raw provider responses, or full generated Adventure payloads.
+- Product Quality Evaluation may expose raw prompts, raw provider requests/responses, generated outputs, and expected/golden comparisons only as local maintainer debugging artifacts.
+- Raw Eval Artifacts must never expose secrets, credentials, API keys, session tokens, or unrelated sensitive data.
+- Raw Eval Artifacts are current-run debugging context, not persistent history in the MVP.
+- Eval Test Cases are the primary row concept for matrix analysis.
+- Prompt / Model Variants are the primary column concept for matrix analysis.
+- Eval Cells must make assertion pass/fail status visible for each Test Case / Variant pairing.
+- Latency, token count, and cost are expected Eval Metrics when provider data is available; unavailable metrics must be shown as unavailable rather than treated as quality failures.
 - Configuration Blockers must be reported as blockers, not as product-quality failures.
 
 ### Policies
@@ -299,8 +331,10 @@ flowchart TB
 - When the User’s goal touches expert or high-stakes domains, the Game Master should keep guidance structural, safe, and non-authoritative.
 - When a Maintainer wants to check AI-assisted product behavior, they choose an Eval Suite and start a local Eval Run.
 - When required local configuration is missing, placeholder, or invalid, the Eval Run should stop with a Configuration Blocker.
-- When fixture expectations are not met, the Eval Run should fail with actionable Diagnostics.
-- When all fixture expectations pass, the Eval Run should report success for the selected Eval Suite.
+- When a Maintainer compares Prompt / Model Variants, the Eval Run should organize the comparison by Test Case and Variant so differences are easy to inspect.
+- When Test Case assertions are not met, the Eval Run should fail with actionable Diagnostics and per-cell assertion failure details.
+- When provider metric data is missing, the Eval Cell should show the metric as unavailable while preserving the rest of the result.
+- When all Test Case expectations pass, the Eval Run should report success for the selected Eval Suite.
 
 ## Domain Events & Behaviors
 
@@ -317,8 +351,8 @@ Adventure states:
 Product Quality Evaluation run outcomes:
 
 - **Blocked by Configuration**: Required local credentials, model settings, or runtime configuration are missing, placeholder, or invalid.
-- **Failed with Diagnostics**: The Eval Run executed but one or more fixtures did not meet product-quality expectations.
-- **Passed**: The Eval Run executed and all fixture expectations passed.
+- **Failed with Diagnostics**: The Eval Run executed but one or more Test Cases, Eval Cells, or Assertions did not meet product-quality expectations.
+- **Passed**: The Eval Run executed and all Test Case expectations passed.
 
 ### Domain Events
 
@@ -342,7 +376,9 @@ Product Quality Evaluation run outcomes:
 - Eval Suite Selected
 - Eval Run Started
 - Eval Run Blocked by Configuration
-- Eval Fixture Evaluated
+- Eval Test Case Evaluated
+- Eval Cell Completed
+- Eval Assertion Failed
 - Eval Diagnostic Reported
 - Eval Run Passed
 - Eval Run Failed
@@ -362,6 +398,8 @@ The most important momentum event is **Quest Completed**. It proves RPGizer is h
 - Inventory contributes to readiness and may unlock Achievements, but should not replace Quest and Boss completion as the main progress loop.
 - Product Quality Evaluation is local-only maintainer tooling for now.
 - Eval Runs are viewed in the moment in the MVP; persistent run history is future evolution.
+- Prompt / Model comparison is part of local Product Quality Evaluation, but it remains a maintainer debugging workflow rather than a public benchmark.
+- Raw Eval Artifacts may be inspected locally during a run, but are not persisted beyond the current local workflow unless a future feature explicitly adds export or history.
 
 ### Known Variations / Debt
 
@@ -371,4 +409,4 @@ The most important momentum event is **Quest Completed**. It proves RPGizer is h
 - The Game Master role may later need a stronger character identity, name, or lore.
 - High-stakes goals will require clear safety policies and disclaimers.
 - Inventory could evolve into richer readiness tracking, shopping/checklists, or integrations, but should remain grounded in real-world usefulness.
-- Product Quality Evaluation may later evolve into persisted history, trend reports, CI integration, prompt/model comparison, richer fixture management, or LLM-as-judge workflows, but those are outside the local MVP.
+- Product Quality Evaluation may later evolve into persisted history, trend reports, CI integration, richer Test Case management, artifact export, or LLM-as-judge workflows, but those are outside the local MVP.

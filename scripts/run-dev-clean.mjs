@@ -2,9 +2,10 @@ import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
 import { resolve } from "node:path";
 
-import { loadEnvConfig } from "@next/env";
+import nextEnv from "@next/env";
 
 const projectRoot = process.cwd();
+const { loadEnvConfig } = nextEnv;
 const shouldLogToFile = process.env.LOG_TO_FILE === "1";
 const logFile = shouldLogToFile
   ? createWriteStream(resolve(projectRoot, "app.log"), { flags: "w" })

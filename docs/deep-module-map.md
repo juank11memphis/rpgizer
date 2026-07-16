@@ -290,51 +290,72 @@ The map is derived from the Product Vision, Business Domain Model, Capabilities 
 ### Product Quality Evaluation
 
 - Suggested module slug: `product-quality-evaluation`
-- Simple interface / outside promise: Run a local product-quality Eval Suite and return a safe, maintainer-facing Eval Result.
+- Simple interface / outside promise: Run and analyze local product-quality evals as a current-run maintainer workspace, returning clear outcomes, matrix results, assertions, metrics, diagnostics, and local-only debugging artifacts.
 - Hidden complexity:
   - Discovering and describing available Eval Suites without exposing implementation commands as the public abstraction.
   - Checking local credentials, model settings, and runtime configuration before treating a run as a product-quality signal.
   - Distinguishing Configuration Blockers from actual product-quality failures.
-  - Orchestrating fixture execution for Game Master interviews, Adventure content, dependency linking, XP balancing, and full Adventure generation.
-  - Normalizing suite-level and fixture-level outcomes into passed, failed with diagnostics, or blocked by configuration.
-  - Producing concise, safe diagnostics that avoid secrets, raw prompts, raw provider responses, and full generated Adventure payloads.
-  - Keeping the workflow local-only and maintainer-facing while leaving room for future history, CI, prompt comparison, or judge workflows.
+  - Orchestrating Eval Test Case execution for Game Master interviews, Adventure content, dependency linking, XP balancing, and full Adventure generation.
+  - Supporting Prompt / Model Variant comparison without making callers understand prompt versioning, model selection, provider differences, or run fan-out.
+  - Shaping current-run results into an Eval Matrix where rows are Test Cases, columns are Prompt / Model Variants, and cells are the unit of output, metrics, assertions, diagnostics, and artifacts.
+  - Normalizing suite-, test-case-, variant-, cell-, and assertion-level outcomes into passed, failed with diagnostics, or blocked by configuration.
+  - Normalizing latency, token count, and cost metrics while handling unavailable or partial provider data without treating missing metrics as quality failures.
+  - Preserving assertion pass/fail details in a way that is fast to scan and still traceable to the affected Test Case and Eval Cell.
+  - Supporting focused analysis such as failures-only views, variable search, and selected Prompt / Model Variant display without leaking filtering details to eval runners.
+  - Preparing detail-inspection data for a selected Eval Cell, including generated output, prompt/model context, assertion details, and expected/golden comparisons when available.
+  - Handling Raw Eval Artifacts such as prompts, provider request/response payloads, generated outputs, and comparison artifacts under local-only maintainer rules.
+  - Redacting or excluding secrets, credentials, API keys, session tokens, and unrelated sensitive data from diagnostics and raw artifact inspection.
+  - Keeping the workflow local-only and maintainer-facing while leaving room for future history, CI, artifact export, richer Test Case management, or judge workflows.
 - Owns:
   - Eval Suite discovery and selection semantics.
   - Eval Run lifecycle and outcome classification.
   - Configuration Blocker detection and reporting.
-  - Fixture execution orchestration.
+  - Eval Test Case execution orchestration.
+  - Prompt / Model Variant comparison orchestration.
+  - Current-run Eval Matrix shaping.
+  - Eval Cell result modeling for outputs, metrics, assertions, diagnostics, and local-only artifacts.
+  - Eval Metric normalization for latency, token count, and cost.
+  - Assertion outcome presentation data and failure-detail shaping.
+  - Focused analysis semantics for failure filtering, variable search, and visible variant selection.
+  - Local-only Raw Eval Artifact inspection boundaries for eval debugging.
   - Safe diagnostic shaping for maintainers.
   - The local-only boundary for MVP eval feedback.
 - Does not own:
   - The product behavior being evaluated.
-  - The definition of a good Quest, Side Quest, Boss Fight, Inventory Item, Skill, Achievement, or Roadmap.
+  - The definition of a good Quest, Side Quest, Boss Fight, Inventory Item, Skill, Achievement, Roadmap, interview turn, or safety response.
   - Game Master conversation policy or readiness semantics.
+  - Adventure generation quality rules.
   - RPG semantic meaning.
   - Safety and high-stakes guidance rules.
-  - Hosted dashboards, persistent run history, production monitoring, CI governance, prompt comparison, or LLM-as-judge workflows in the MVP.
+  - Persistent eval history, hosted dashboards, production monitoring, CI governance, artifact export, or LLM-as-judge workflows in the MVP.
+  - Generic secret management outside eval artifacts.
 - Key scenarios:
   - A Maintainer sees which Eval Suites can be run locally.
   - A Maintainer starts one Eval Run for a selected suite.
   - The run stops as blocked because required local configuration is missing or placeholder.
-  - The run executes fixtures and reports passed when all expectations hold.
-  - The run executes fixtures and reports failed with actionable diagnostics when product-quality expectations are not met.
-  - A Maintainer uses diagnostics to decide whether Game Master, Adventure Planner, RPG Metaphor System, or Safety & Trust behavior needs attention.
+  - The run executes Test Cases against one Prompt / Model Variant and reports passed when all expectations hold.
+  - The run executes Test Cases against multiple Prompt / Model Variants and presents side-by-side Eval Cells.
+  - The run reports failed with actionable assertion diagnostics when product-quality expectations are not met.
+  - A Maintainer filters to failures only or searches by input variable to find the relevant Test Cases quickly.
+  - A Maintainer selects visible Prompt / Model Variants to compare outputs and metrics side by side.
+  - A Maintainer opens one Eval Cell to inspect generated output, assertion details, prompt/model context, raw request/response payloads, and expected/golden comparisons when available.
+  - A Maintainer uses diagnostics and local-only artifacts to decide whether Game Master, Adventure Planner, RPG Metaphor System, or Safety & Trust behavior needs attention.
 - Related modules:
   - Exercises Game Master Assistant behavior for interview quality and safe conversational guidance.
   - Exercises Adventure Planner behavior for Roadmap generation, content, linking, XP, and quality checks.
   - Relies on RPG Metaphor System meaning when interpreting RPG-native coherence.
-  - Must respect Safety & Trust rules for high-stakes boundaries and safe diagnostic output.
+  - Must respect Safety & Trust rules for high-stakes boundaries and safe diagnostic or artifact output.
   - May inform future work in Adventure Experience Presenter if presentation-oriented evals are added later.
 - Boundary notes:
-  - This module owns eval orchestration and feedback, not the underlying product-quality meaning.
+  - This module owns eval orchestration, current-run analysis, artifact shaping, and feedback; it does not own the underlying product-quality meaning.
   - Product-quality expectations should point back to the module that owns the behavior being judged.
-  - If eval history, dashboards, CI trend reporting, prompt/model comparison, or LLM-as-judge workflows become real needs, this module can expand or spawn a separate deeper module; the MVP should not pre-commit to those responsibilities.
+  - Raw Eval Artifact handling stays inside this module for now because the artifacts and local-only policies are eval-specific.
+  - If persistent history, hosted dashboards, CI trend reporting, artifact export, or LLM-as-judge workflows become real needs, this module can expand or spawn a separate deeper module; the current map should not pre-commit to those responsibilities.
 
 ## Cross-Module Rules
 
-- **Product Quality Evaluation reports, it does not redefine product behavior**: Eval orchestration, run outcomes, configuration blockers, and safe diagnostics belong to Product Quality Evaluation; the quality meanings being checked stay with Game Master Assistant, Adventure Planner, RPG Metaphor System, Safety & Trust, or the relevant owning module.
-- **Local eval feedback is maintainer-facing**: Product Quality Evaluation must remain local-only in the MVP and must not leak secrets, raw prompts, raw provider responses, or full generated Adventure payloads through diagnostics.
+- **Product Quality Evaluation analyzes, it does not redefine product behavior**: Eval orchestration, current-run matrix analysis, run outcomes, configuration blockers, metrics, assertions, diagnostics, and artifact shaping belong to Product Quality Evaluation; the quality meanings being checked stay with Game Master Assistant, Adventure Planner, RPG Metaphor System, Safety & Trust, or the relevant owning module.
+- **Local eval feedback is maintainer-facing**: Product Quality Evaluation must remain local-only in the MVP. It may expose raw prompts, provider request/response payloads, generated outputs, and expected/golden comparisons only for local maintainer debugging, and it must not leak secrets, credentials, API keys, session tokens, or unrelated sensitive data through diagnostics or raw artifact inspection.
 - **Visitor and User boundaries are different**: Public Product Introduction serves Visitors before authentication or Adventure ownership; modules that read, present, generate for, update, or progress real Adventures must operate within the current User's ownership boundary.
 - **User ownership applies everywhere after authentication**: Any module that reads, presents, generates for, updates, or progresses a real Adventure must operate within the current User's ownership boundary.
 - **No generic persistence module**: Each module owns its own persistence needs internally. Database details should not leak across module interfaces, and there should not be a central “repository module” for all Adventure data.
