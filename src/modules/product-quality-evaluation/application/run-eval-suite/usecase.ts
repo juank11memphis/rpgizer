@@ -4,16 +4,20 @@ import {
 } from "../../domain/eval-suite";
 import {
   buildEvalRunAggregates,
-  createUnreportedEvalCellMetrics,
+  createUnreportedMetricValue,
   type EvalCell,
-  type EvalDiagnostic,
+  type EvalCellArtifact,
+  type EvalCellMetrics,
   type EvalMatrix,
   type EvalPromptModelVariant,
   type EvalTestCase,
 } from "../../domain/eval-matrix";
 import type { RunEvalSuiteInput } from "./input";
 import type { EvalRunResult } from "./output";
-import type { GameMasterInterviewEvalRunResult } from "@/modules/game-master-assistant/evals/run-game-master-interview-evals";
+import type {
+  GameMasterInterviewEvalCell,
+  GameMasterInterviewEvalRunResult,
+} from "@/modules/game-master-assistant/evals/run-game-master-interview-evals";
 
 export type GameMasterInterviewEvalRunner = () => Promise<GameMasterInterviewEvalRunResult>;
 
@@ -64,7 +68,7 @@ function normalizeGameMasterInterviewResult(
   result: GameMasterInterviewEvalRunResult,
 ): EvalRunResult {
   if (result.status === "passed") {
-    const matrix = buildMatrix(result.fixtureIds, []);
+    const matrix = buildMatrixFromStructuredCells(result.cells);
 
     return {
       suiteId,
@@ -83,7 +87,7 @@ function normalizeGameMasterInterviewResult(
       fixtureId: diagnostic.fixtureId,
       message: sanitizeDiagnosticMessage(diagnostic.message),
     }));
-    const matrix = buildMatrix(result.fixtureIds, diagnostics);
+    const matrix = buildMatrixFromStructuredCells(result.cells);
 
     return {
       suiteId,
@@ -148,52 +152,69 @@ function normalizeUnexpectedError(
   };
 }
 
-function buildMatrix(fixtureIds: string[], diagnostics: EvalDiagnostic[]): EvalMatrix {
-  const testCases = buildTestCases(fixtureIds, diagnostics);
-
+function buildMatrixFromStructuredCells(cells: GameMasterInterviewEvalCell[]): EvalMatrix {
   return {
-    testCases,
+    testCases: cells.map(buildTestCase),
     variants: [DEFAULT_VARIANT],
-    cells: testCases.map((testCase) => buildCell(testCase, diagnostics)),
+    cells: cells.map(buildCell),
   };
 }
 
-function buildTestCases(fixtureIds: string[], diagnostics: EvalDiagnostic[]): EvalTestCase[] {
-  const diagnosticFixtureIds = diagnostics
-    .map((diagnostic) => diagnostic.fixtureId)
-    .filter((fixtureId): fixtureId is string => fixtureId !== undefined && fixtureId.length > 0);
-  const testCaseIds = uniquePreservingOrder([...fixtureIds, ...diagnosticFixtureIds]);
-
-  return testCaseIds.map((fixtureId) => ({
-    id: fixtureId,
-    name: fixtureId,
-    inputVariables: {},
-  }));
-}
-
-function buildCell(testCase: EvalTestCase, diagnostics: EvalDiagnostic[]): EvalCell {
-  const cellDiagnostics = diagnostics.filter((diagnostic) => diagnostic.fixtureId === testCase.id);
-
+function buildTestCase(cell: GameMasterInterviewEvalCell): EvalTestCase {
   return {
-    id: `${testCase.id}::${DEFAULT_VARIANT.id}`,
-    testCaseId: testCase.id,
-    variantId: DEFAULT_VARIANT.id,
-    status: cellDiagnostics.length > 0 ? "failed" : "passed",
-    outputPreview: null,
-    metrics: createUnreportedEvalCellMetrics(),
-    assertions: cellDiagnostics.map((diagnostic, index) => ({
-      id: `${testCase.id}-diagnostic-${index + 1}`,
-      label: "Fixture expectation",
-      status: "failed",
-      message: diagnostic.message,
-    })),
-    diagnostics: cellDiagnostics,
-    artifacts: [],
+    id: cell.testCaseId,
+    name: cell.testCaseName,
+    inputVariables: cell.inputVariables,
   };
 }
 
-function uniquePreservingOrder(values: string[]): string[] {
-  return [...new Set(values)];
+function buildCell(cell: GameMasterInterviewEvalCell): EvalCell {
+  return {
+    id: cell.id,
+    testCaseId: cell.testCaseId,
+    variantId: cell.variantId,
+    status: cell.status,
+    outputPreview: cell.outputPreview,
+    outputMarkdown: cell.output,
+    metrics: buildCellMetrics(cell),
+    assertions: cell.assertions.map((assertion) => ({
+      id: assertion.id,
+      label: assertion.label,
+      status: assertion.status,
+      message: assertion.message === undefined ? undefined : sanitizeDiagnosticMessage(assertion.message),
+    })),
+    diagnostics: cell.diagnostics.map((diagnostic) => ({
+      scope: "fixture" as const,
+      fixtureId: diagnostic.fixtureId,
+      message: sanitizeDiagnosticMessage(diagnostic.message),
+    })),
+    artifacts: cell.artifacts.map(buildArtifact),
+  };
+}
+
+function buildCellMetrics(cell: GameMasterInterviewEvalCell): EvalCellMetrics {
+  return {
+    latency: cell.metrics.latencyMs.reported && cell.metrics.latencyMs.value !== null
+      ? { value: cell.metrics.latencyMs.value, unit: "ms", reported: true }
+      : createUnreportedMetricValue("ms"),
+    tokens: cell.metrics.tokenCount.reported && cell.metrics.tokenCount.value !== null
+      ? { value: cell.metrics.tokenCount.value, unit: "tokens", reported: true }
+      : createUnreportedMetricValue("tokens"),
+    cost: cell.metrics.costUsd.reported && cell.metrics.costUsd.value !== null
+      ? { value: cell.metrics.costUsd.value, unit: "usd", reported: true }
+      : createUnreportedMetricValue("usd"),
+  };
+}
+
+function buildArtifact(artifact: GameMasterInterviewEvalCell["artifacts"][number]): EvalCellArtifact {
+  return {
+    id: artifact.id,
+    label: artifact.label,
+    localOnly: true,
+    redactionState: artifact.redactionState,
+    value: artifact.value,
+    preview: artifact.preview,
+  };
 }
 
 function sanitizeDiagnosticMessage(message: string): string {

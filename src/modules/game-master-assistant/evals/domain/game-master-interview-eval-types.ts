@@ -25,6 +25,13 @@ export type GameMasterInterviewEvalFixture = {
   }>;
 };
 
+export type GameMasterInterviewEvalAssertion = {
+  id: string;
+  label: string;
+  status: "passed" | "failed";
+  message?: string;
+};
+
 export type GameMasterInterviewEvalExpectations = {
   requiredCoveredSignals: GameMasterInterviewEvalCoveredSignalKey[];
   mustAskOneQuestion: boolean;

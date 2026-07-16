@@ -43,6 +43,37 @@ describe("runGameMasterInterviewEvals", () => {
     expect(result.status).toBe("passed");
     expect(result.fixtureIds).toEqual(["become-a-chef"]);
     expect(result.diagnostics).toEqual([]);
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+    expect(result.cells).toHaveLength(1);
+    expect(result.cells[0]).toMatchObject({
+      id: "become-a-chef::default",
+      fixtureId: "become-a-chef",
+      testCaseId: "become-a-chef",
+      testCaseName: "Fixture",
+      variantId: "default",
+      variantName: "Default variant",
+      status: "passed",
+      output: "Which dinner would you like to cook first?",
+      outputPreview: "Which dinner would you like to cook first?",
+      metrics: {
+        tokenCount: { value: null, reported: false },
+        costUsd: { value: null, reported: false },
+      },
+    });
+    expect(result.cells[0]?.metrics.latencyMs.reported).toBe(true);
+    expect(result.cells[0]?.assertions).toEqual(
+      expect.arrayContaining([
+        { id: "asks-one-question", label: "asks one focused question", status: "passed" },
+      ]),
+    );
+    expect(result.cells[0]?.artifacts.map((artifact) => artifact.id)).toEqual([
+      "prompt",
+      "request",
+      "response",
+      "expected",
+    ]);
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({
       userId: "eval-user-become-a-chef",
@@ -153,7 +184,48 @@ describe("runGameMasterInterviewEvals", () => {
         message: "expected exactly one question mark for one-question-at-a-time behavior, got 2.",
       },
     ]);
+    if (result.status !== "failed") {
+      throw new Error(`Expected failed result, received ${result.status}.`);
+    }
+    expect(result.cells[0]?.status).toBe("failed");
+    expect(result.cells[0]?.assertions).toEqual(
+      expect.arrayContaining([
+        { id: "covered-signal-motivation", label: "covers motivation", status: "passed" },
+        {
+          id: "covered-signal-currentStage",
+          label: "covers currentStage",
+          status: "failed",
+          message: "expected coveredSignals to include currentStage.",
+        },
+      ]),
+    );
     expect(errorOutput.toString()).toContain("[high-stakes-finance]");
+  });
+
+  it("redacts returned local-only artifacts before exposing cells", async () => {
+    const result = await runGameMasterInterviewEvals({
+      environment: configuredEnvironment(),
+      loadFixtures: () => [buildFixture("secret-fixture")],
+      loadInstructions: () => "system prompt with apiKey: sk-test-secret and password: swordfish",
+      createInterviewer: () =>
+        fakeInterviewer({
+          ...passingInterviewResult(),
+          messageToUser: "Use token: sk-output-secret?",
+        }),
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("passed");
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+
+    const serializedCell = JSON.stringify(result.cells[0]);
+    expect(serializedCell).not.toContain("sk-test-secret");
+    expect(serializedCell).not.toContain("sk-output-secret");
+    expect(serializedCell).not.toContain("swordfish");
+    expect(serializedCell).toContain("[REDACTED]");
   });
 
   it("returns error for unexpected interviewer failures with safe diagnostics", async () => {

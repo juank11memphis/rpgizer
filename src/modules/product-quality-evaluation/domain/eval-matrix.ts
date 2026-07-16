@@ -51,6 +51,7 @@ export type EvalCellArtifact = {
   label: string;
   localOnly: true;
   redactionState: "not_available" | "redacted";
+  value?: string;
   preview?: string;
 };
 
@@ -60,6 +61,7 @@ export type EvalCell = {
   variantId: string;
   status: EvalCellStatus;
   outputPreview: string | null;
+  outputMarkdown?: string | null;
   metrics: EvalCellMetrics;
   assertions: EvalAssertion[];
   diagnostics: EvalDiagnostic[];
@@ -93,6 +95,10 @@ export function buildEvalRunAggregates(matrix: EvalMatrix): EvalRunAggregates {
   const blockedCells = matrix.cells.filter((cell) => cell.status === "blocked").length;
   const errorCells = matrix.cells.filter((cell) => cell.status === "error").length;
 
+  const reportedLatencies = matrix.cells
+    .map((cell) => cell.metrics.latency)
+    .filter((metric) => metric.reported && metric.value !== null);
+
   return {
     totalTestCases: matrix.testCases.length,
     totalCells: matrix.cells.length,
@@ -102,7 +108,11 @@ export function buildEvalRunAggregates(matrix: EvalMatrix): EvalRunAggregates {
     blockedCells,
     errorCells,
     passRate: completedCells === 0 ? null : passedCells / completedCells,
-    averageLatencyMs: null,
+    averageLatencyMs:
+      reportedLatencies.length === 0
+        ? null
+        : reportedLatencies.reduce((total, metric) => total + (metric.value ?? 0), 0) /
+          reportedLatencies.length,
     totalTokens: null,
     totalCostUsd: null,
   };

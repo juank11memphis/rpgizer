@@ -3,14 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import { GAME_MASTER_INTERVIEW_EVAL_SUITE_ID } from "../../domain/eval-suite";
 import { runEvalSuite, type GameMasterInterviewEvalRunner } from "./usecase";
 
-import type { GameMasterInterviewEvalRunResult } from "@/modules/game-master-assistant/evals/run-game-master-interview-evals";
+import type {
+  GameMasterInterviewEvalCell,
+  GameMasterInterviewEvalRunResult,
+} from "@/modules/game-master-assistant/evals/run-game-master-interview-evals";
 
 function runnerReturning(result: GameMasterInterviewEvalRunResult): GameMasterInterviewEvalRunner {
   return () => Promise.resolve(result);
 }
 
 describe("runEvalSuite", () => {
-  it("normalizes a passed Game Master Interview eval run", async () => {
+  it("normalizes a passed structured Game Master Interview eval run", async () => {
     const result = await runEvalSuite(
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
@@ -18,6 +21,7 @@ describe("runEvalSuite", () => {
           status: "passed",
           fixtureIds: ["become-a-chef"],
           diagnostics: [],
+          cells: [buildGameMasterCell({ status: "passed" })],
           durationMs: 42,
         }),
       },
@@ -30,7 +34,13 @@ describe("runEvalSuite", () => {
       diagnostics: [],
       durationMs: 42,
       matrix: {
-        testCases: [{ id: "become-a-chef", name: "become-a-chef", inputVariables: {} }],
+        testCases: [
+          {
+            id: "become-a-chef",
+            name: "Become a chef",
+            inputVariables: { goal: "Become a confident home chef.", transcriptTurns: "1" },
+          },
+        ],
         variants: [
           {
             id: "default",
@@ -45,15 +55,27 @@ describe("runEvalSuite", () => {
             testCaseId: "become-a-chef",
             variantId: "default",
             status: "passed",
-            outputPreview: null,
+            outputPreview: "Which dinner would you like to cook first?",
+            outputMarkdown: "Which dinner would you like to cook first?",
             metrics: {
-              latency: { value: null, unit: "ms", reported: false },
+              latency: { value: 25, unit: "ms", reported: true },
               tokens: { value: null, unit: "tokens", reported: false },
               cost: { value: null, unit: "usd", reported: false },
             },
-            assertions: [],
+            assertions: [
+              { id: "asks-one-question", label: "asks one focused question", status: "passed" },
+            ],
             diagnostics: [],
-            artifacts: [],
+            artifacts: [
+              {
+                id: "response",
+                label: "Raw response",
+                localOnly: true,
+                redactionState: "redacted",
+                value: "{\"messageToUser\":\"Which dinner would you like to cook first?\"}",
+                preview: "response preview",
+              },
+            ],
           },
         ],
       },
@@ -66,14 +88,14 @@ describe("runEvalSuite", () => {
         blockedCells: 0,
         errorCells: 0,
         passRate: 1,
-        averageLatencyMs: null,
+        averageLatencyMs: 25,
         totalTokens: null,
         totalCostUsd: null,
       },
     });
   });
 
-  it("normalizes failed fixture diagnostics as safe fixture-scoped diagnostics", async () => {
+  it("normalizes structured failed assertions without parsing diagnostic strings", async () => {
     const result = await runEvalSuite(
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
@@ -85,6 +107,28 @@ describe("runEvalSuite", () => {
               fixtureId: "high-stakes-finance",
               message: "Expected a safer boundary-setting answer.",
             },
+          ],
+          cells: [
+            buildGameMasterCell({
+              fixtureId: "high-stakes-finance",
+              testCaseName: "High stakes finance",
+              status: "failed",
+              assertions: [
+                { id: "safe-boundary", label: "uses safe boundary", status: "passed" },
+                {
+                  id: "no-advice",
+                  label: "avoids advice",
+                  status: "failed",
+                  message: "Expected a safer boundary-setting answer.",
+                },
+              ],
+              diagnostics: [
+                {
+                  fixtureId: "high-stakes-finance",
+                  message: "Expected a safer boundary-setting answer.",
+                },
+              ],
+            }),
           ],
           durationMs: 84,
         }),
@@ -100,7 +144,7 @@ describe("runEvalSuite", () => {
       },
     ]);
     expect(result.matrix).toMatchObject({
-      testCases: [{ id: "high-stakes-finance", name: "high-stakes-finance" }],
+      testCases: [{ id: "high-stakes-finance", name: "High stakes finance" }],
       variants: [{ id: "default", name: "Default variant" }],
       cells: [
         {
@@ -108,11 +152,12 @@ describe("runEvalSuite", () => {
           testCaseId: "high-stakes-finance",
           variantId: "default",
           status: "failed",
-          outputPreview: null,
+          outputPreview: "Which dinner would you like to cook first?",
           assertions: [
+            { id: "safe-boundary", label: "uses safe boundary", status: "passed" },
             {
-              id: "high-stakes-finance-diagnostic-1",
-              label: "Fixture expectation",
+              id: "no-advice",
+              label: "avoids advice",
               status: "failed",
               message: "Expected a safer boundary-setting answer.",
             },
@@ -124,12 +169,11 @@ describe("runEvalSuite", () => {
               message: "Expected a safer boundary-setting answer.",
             },
           ],
-          artifacts: [],
         },
       ],
     });
     expect(result.matrix?.cells[0]?.metrics).toEqual({
-      latency: { value: null, unit: "ms", reported: false },
+      latency: { value: 25, unit: "ms", reported: true },
       tokens: { value: null, unit: "tokens", reported: false },
       cost: { value: null, unit: "usd", reported: false },
     });
@@ -140,7 +184,7 @@ describe("runEvalSuite", () => {
       passedCells: 0,
       failedCells: 1,
       passRate: 0,
-      averageLatencyMs: null,
+      averageLatencyMs: 25,
       totalTokens: null,
       totalCostUsd: null,
     });
@@ -232,3 +276,44 @@ describe("runEvalSuite", () => {
     expect(result).not.toHaveProperty("aggregates");
   });
 });
+
+function buildGameMasterCell(
+  overrides: Partial<GameMasterInterviewEvalCell> = {},
+): GameMasterInterviewEvalCell {
+  const fixtureId = overrides.fixtureId ?? "become-a-chef";
+
+  return {
+    id: `${fixtureId}::default`,
+    fixtureId,
+    testCaseId: fixtureId,
+    testCaseName: overrides.testCaseName ?? "Become a chef",
+    inputVariables: overrides.inputVariables ?? {
+      goal: "Become a confident home chef.",
+      transcriptTurns: "1",
+    },
+    variantId: "default",
+    variantName: "Default variant",
+    status: overrides.status ?? "passed",
+    output: overrides.output ?? "Which dinner would you like to cook first?",
+    outputPreview: overrides.outputPreview ?? "Which dinner would you like to cook first?",
+    metrics: overrides.metrics ?? {
+      latencyMs: { value: 25, reported: true },
+      tokenCount: { value: null, reported: false },
+      costUsd: { value: null, reported: false },
+    },
+    assertions: overrides.assertions ?? [
+      { id: "asks-one-question", label: "asks one focused question", status: "passed" },
+    ],
+    diagnostics: overrides.diagnostics ?? [],
+    artifacts: overrides.artifacts ?? [
+      {
+        id: "response",
+        label: "Raw response",
+        localOnly: true,
+        redactionState: "redacted",
+        value: "{\"messageToUser\":\"Which dinner would you like to cook first?\"}",
+        preview: "response preview",
+      },
+    ],
+  };
+}

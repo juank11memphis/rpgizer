@@ -1,14 +1,18 @@
 import type { InterviewTurnRequest } from "../../../application/start-adventure-interview/ports";
-import { checkGameMasterInterviewEvalResult } from "../../domain/game-master-interview-eval-checks";
+import { checkGameMasterInterviewEvalAssertions } from "../../domain/game-master-interview-eval-checks";
 import type { GameMasterInterviewEvalFixture } from "../../domain/game-master-interview-eval-types";
 import type { RunGameMasterInterviewEvalsInput } from "./input";
 import type { GameMasterInterviewEvalInterviewer } from "./ports";
-import type {
-  GameMasterInterviewEvalBlockedResult,
-  GameMasterInterviewEvalErrorResult,
-  GameMasterInterviewEvalFailedResult,
-  GameMasterInterviewEvalRunDiagnostic,
-  GameMasterInterviewEvalRunResult,
+import {
+  GAME_MASTER_INTERVIEW_DEFAULT_VARIANT_ID,
+  createUnavailableGameMasterInterviewEvalCellMetrics,
+  type GameMasterInterviewEvalArtifact,
+  type GameMasterInterviewEvalBlockedResult,
+  type GameMasterInterviewEvalCell,
+  type GameMasterInterviewEvalErrorResult,
+  type GameMasterInterviewEvalFailedResult,
+  type GameMasterInterviewEvalRunDiagnostic,
+  type GameMasterInterviewEvalRunResult,
 } from "./output";
 
 const EVAL_CREATED_AT = new Date(0);
@@ -20,10 +24,7 @@ const NOOP_LOGGER = {
   error() {},
 };
 
-type FixtureResult = {
-  fixtureId: string;
-  diagnostics: string[];
-};
+type FixtureResult = GameMasterInterviewEvalCell;
 
 type CredentialStatus =
   | { canRun: true; reason: "credentials configured" }
@@ -67,18 +68,17 @@ export async function runGameMasterInterviewEvalUseCase(
     const results: FixtureResult[] = [];
 
     for (const fixture of fixtures) {
-      results.push(await runFixture(fixture, interviewer));
+      results.push(await runFixture(fixture, interviewer, instructions));
     }
 
-    const diagnostics = results.flatMap((result) =>
-      result.diagnostics.map((message) => ({ fixtureId: result.fixtureId, message })),
-    );
+    const diagnostics = results.flatMap((result) => result.diagnostics);
 
     if (diagnostics.length > 0) {
       const result: GameMasterInterviewEvalFailedResult = {
         status: "failed",
         fixtureIds,
         diagnostics,
+        cells: results,
         durationMs: Date.now() - startedAt,
       };
       logger.failed(result);
@@ -89,6 +89,7 @@ export async function runGameMasterInterviewEvalUseCase(
       status: "passed",
       fixtureIds,
       diagnostics: [],
+      cells: results,
       durationMs: Date.now() - startedAt,
     } satisfies GameMasterInterviewEvalRunResult;
     logger.completed(result);
@@ -141,12 +142,112 @@ function getCredentialStatus(
 async function runFixture(
   fixture: GameMasterInterviewEvalFixture,
   interviewer: GameMasterInterviewEvalInterviewer,
+  instructions: string,
 ): Promise<FixtureResult> {
-  const result = await interviewer.askNextQuestion(buildRequest(fixture));
+  const request = buildRequest(fixture);
+  const startedAt = Date.now();
+  const result = await interviewer.askNextQuestion(request);
+  const latencyMs = Date.now() - startedAt;
+  const assertions = checkGameMasterInterviewEvalAssertions(fixture, result);
+  const diagnostics = assertions
+    .filter((assertion) => assertion.status === "failed")
+    .map((assertion) => ({
+      fixtureId: fixture.id,
+      message: assertion.message ?? assertion.label,
+    }));
+
   return {
+    id: `${fixture.id}::${GAME_MASTER_INTERVIEW_DEFAULT_VARIANT_ID}`,
     fixtureId: fixture.id,
-    diagnostics: checkGameMasterInterviewEvalResult(fixture, result),
+    testCaseId: fixture.id,
+    testCaseName: fixture.name,
+    inputVariables: buildInputVariables(fixture),
+    variantId: GAME_MASTER_INTERVIEW_DEFAULT_VARIANT_ID,
+    variantName: "Default variant",
+    status: diagnostics.length > 0 ? "failed" : "passed",
+    output: redactSensitiveText(result.messageToUser),
+    outputPreview: buildOutputPreview(result.messageToUser),
+    assertions,
+    diagnostics,
+    metrics: createUnavailableGameMasterInterviewEvalCellMetrics(latencyMs),
+    artifacts: buildRedactedArtifacts({ fixture, instructions, request, response: result }),
   };
+}
+
+function buildInputVariables(fixture: GameMasterInterviewEvalFixture): Record<string, string> {
+  return {
+    goal: redactSensitiveText(fixture.goalText),
+    transcriptTurns: String(fixture.transcript.length),
+  };
+}
+
+function buildOutputPreview(output: string): string {
+  const redactedOutput = redactSensitiveText(output).replace(/\s+/g, " ").trim();
+  return redactedOutput.length > 160 ? `${redactedOutput.slice(0, 157)}…` : redactedOutput;
+}
+
+function buildRedactedArtifacts(input: {
+  fixture: GameMasterInterviewEvalFixture;
+  instructions: string;
+  request: InterviewTurnRequest;
+  response: unknown;
+}): GameMasterInterviewEvalArtifact[] {
+  return [
+    buildArtifact("prompt", "Raw prompt", input.instructions),
+    buildArtifact("request", "Raw request", input.request),
+    buildArtifact("response", "Raw response", input.response),
+    buildArtifact("expected", "Expected / golden", input.fixture.expectations),
+  ];
+}
+
+function buildArtifact(id: string, label: string, value: unknown): GameMasterInterviewEvalArtifact {
+  const serializedValue = serializeArtifactValue(value);
+
+  if (serializedValue.length === 0) {
+    return { id, label, localOnly: true, redactionState: "not_available" };
+  }
+
+  const redactedValue = redactSensitiveText(serializedValue);
+
+  return {
+    id,
+    label,
+    localOnly: true,
+    redactionState: "redacted",
+    value: redactedValue,
+    preview: buildOutputPreview(redactedValue),
+  };
+}
+
+function serializeArtifactValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  try {
+    return JSON.stringify(value, redactSecretBearingFields, 2) ?? "";
+  } catch {
+    return "[Unserializable local artifact]";
+  }
+}
+
+function redactSecretBearingFields(key: string, value: unknown): unknown {
+  if (isSecretBearingKey(key)) {
+    return "[REDACTED]";
+  }
+
+  return value;
+}
+
+function redactSensitiveText(value: string): string {
+  return value
+    .replace(/sk-[a-z0-9_-]+/giu, "[REDACTED]")
+    .replace(/(authorization\s*["':=]\s*)(bearer\s+)?[^\s"',}]+/giu, "$1[REDACTED]")
+    .replace(/(api[_-]?key|token|secret|credential|password|session|cookie)(\s*["':=]\s*)[^\s"',}]+/giu, "$1$2[REDACTED]");
+}
+
+function isSecretBearingKey(key: string): boolean {
+  return /api[_-]?key|authorization|cookie|token|secret|credential|password|session/iu.test(key);
 }
 
 function buildRequest(fixture: GameMasterInterviewEvalFixture): InterviewTurnRequest {
