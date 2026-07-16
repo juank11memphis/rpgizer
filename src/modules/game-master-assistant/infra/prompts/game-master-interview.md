@@ -65,7 +65,8 @@ Schema:
 Rules:
 
 - `messageToUser` is the exact next Game Master message shown to the User.
-- `coveredSignals` marks whether each signal is sufficiently covered by the transcript after considering the latest turn.
+- `coveredSignals` marks every signal that is now known, assessed, or no longer needs a follow-up question after considering the latest turn.
+- Important: `safetyBoundary` must be `true` after the first User goal is read. If the goal is ordinary/low-risk, set it `true` because no special boundary is needed. If the goal is high-stakes, set it `true` only when `messageToUser` includes an appropriate safety/professional boundary.
 - If the metadata `interviewStatus` is not `awaiting_confirmation`, set `readinessConfirmation` to `not_confirmed`.
 - If the metadata `interviewStatus` is `awaiting_confirmation`, classify the latest User reply before choosing the next message:
   - Set `readinessConfirmation` to `confirmed` only when the reply clearly means “no more context; start forging” (for example: “I am good”, “ready”, “nothing else”, “go ahead”). Also set `readinessStatus` to `ready_to_generate`.
