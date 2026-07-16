@@ -95,21 +95,44 @@ function logActionOutcome(
   result: RunEvalSuiteActionResult,
   event: string,
 ): void {
-  const logMethod = result.status === "passed" ? logger.info : result.status === "failed" || result.status === "blocked" ? logger.warn : logger.error;
+  const logMethod =
+    result.status === "passed"
+      ? logger.info
+      : result.status === "failed" || result.status === "blocked"
+        ? logger.warn
+        : logger.error;
+  const matrixMetadata = summarizeMatrixForLog(result);
 
-  logMethod.call(
-    logger,
-    {
-      event,
-      flow: "local_eval_dashboard",
-      operation: "run_eval_suite_action",
-      suiteId: result.suiteId,
-      outcome: result.status,
-      diagnosticCount: result.diagnostics.length,
-      durationMs: result.durationMs,
-      error: result.status === "error" ? { name: result.errorName ?? result.errorCode ?? "EvalRunError" } : undefined,
-      blocker: result.status === "blocked" ? result.blocker : undefined,
-    },
-    "Local eval suite server action completed.",
-  );
+  const payload = {
+    event,
+    flow: "local_eval_dashboard",
+    operation: "run_eval_suite_action",
+    suiteId: result.suiteId,
+    outcome: result.status,
+    diagnosticCount: result.diagnostics.length,
+    durationMs: result.durationMs,
+    ...matrixMetadata,
+    ...(result.status === "error"
+      ? { error: { name: result.errorName ?? result.errorCode ?? "EvalRunError" } }
+      : {}),
+    ...(result.status === "blocked" ? { blocker: result.blocker } : {}),
+  };
+
+  logMethod.call(logger, payload, "Local eval suite server action completed.");
+}
+
+function summarizeMatrixForLog(result: RunEvalSuiteActionResult): {
+  testCaseCount?: number;
+  variantCount?: number;
+  failedCellCount?: number;
+} {
+  if (!result.matrix) {
+    return {};
+  }
+
+  return {
+    testCaseCount: result.matrix.testCases.length,
+    variantCount: result.matrix.variants.length,
+    failedCellCount: result.matrix.cells.filter((cell) => cell.status === "failed").length,
+  };
 }
