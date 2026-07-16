@@ -65,6 +65,7 @@ export type EvalMatrixShellCell = {
   testCaseInputSummary: string;
   variantId: string;
   variantName: string;
+  variantModelLabel: string;
   status: EvalCellStatus;
   statusLabel: string;
   assertionSummary: string;

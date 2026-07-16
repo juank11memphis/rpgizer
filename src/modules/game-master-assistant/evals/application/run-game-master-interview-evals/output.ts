@@ -59,6 +59,7 @@ export type GameMasterInterviewEvalRunResult =
 
 export type GameMasterInterviewEvalPassedResult = {
   status: "passed";
+  modelLabel?: string;
   fixtureIds: string[];
   diagnostics: [];
   cells: GameMasterInterviewEvalCell[];
@@ -67,6 +68,7 @@ export type GameMasterInterviewEvalPassedResult = {
 
 export type GameMasterInterviewEvalFailedResult = {
   status: "failed";
+  modelLabel?: string;
   fixtureIds: string[];
   diagnostics: GameMasterInterviewEvalDiagnostic[];
   cells: GameMasterInterviewEvalCell[];
@@ -83,6 +85,7 @@ export type GameMasterInterviewEvalBlockedResult = {
 
 export type GameMasterInterviewEvalErrorResult = {
   status: "error";
+  modelLabel?: string;
   fixtureIds: string[];
   diagnostics: [GameMasterInterviewEvalRunDiagnostic];
   durationMs: number;

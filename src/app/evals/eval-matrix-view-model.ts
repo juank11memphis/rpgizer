@@ -38,9 +38,11 @@ const READY_TEST_CASES: EvalTestCase[] = [
 export function createReadyEvalMatrixViewModel(
   suites: EvalSuiteSummary[],
   selectedSuiteId: string,
+  options: { modelLabel?: string } = {},
 ): EvalMatrixViewModel {
   const selectedSuite = selectSuite(suites, selectedSuiteId);
   const matrixSuites = suites.map((suite) => ({ ...suite, selected: suite.id === selectedSuite.id }));
+  const defaultVariant = { ...DEFAULT_VARIANT, modelLabel: options.modelLabel ?? DEFAULT_VARIANT.modelLabel };
 
   return createBaseViewModel({
     suites: matrixSuites,
@@ -51,7 +53,8 @@ export function createReadyEvalMatrixViewModel(
     actionLabel: "Run eval",
     actionDisabled: false,
     summaryStats: createPlaceholderSummaryStats(READY_TEST_CASES.length),
-    rows: createRowsFromTestCases(READY_TEST_CASES, "not_run"),
+    variants: [defaultVariant],
+    rows: createRowsFromTestCases(READY_TEST_CASES, "not_run", defaultVariant),
     progress: { completed: 0, total: READY_TEST_CASES.length, label: `Ready · ${READY_TEST_CASES.length} test cases` },
     diagnostics: [],
   });
@@ -314,6 +317,7 @@ function createBaseViewModel(input: {
   actionLabel: EvalMatrixViewModel["action"]["label"];
   actionDisabled: boolean;
   summaryStats: EvalMatrixSummaryStat[];
+  variants?: EvalPromptModelVariant[];
   rows: EvalMatrixTestCaseRow[];
   progress: EvalMatrixViewModel["progress"];
   diagnostics: EvalMatrixViewModel["diagnostics"];
@@ -335,7 +339,7 @@ function createBaseViewModel(input: {
       searchPlaceholder: "Search test cases or variables...",
       variantLabel: "Variant",
     },
-    variants: [DEFAULT_VARIANT],
+    variants: input.variants ?? [DEFAULT_VARIANT],
     rows: input.rows,
     diagnostics: input.diagnostics,
     progress: input.progress,
@@ -345,11 +349,12 @@ function createBaseViewModel(input: {
 function createRowsFromTestCases(
   testCases: EvalTestCase[],
   status: EvalMatrixShellCell["status"],
+  variant: EvalPromptModelVariant = DEFAULT_VARIANT,
 ): EvalMatrixTestCaseRow[] {
   return testCases.map((testCase) => ({
     testCase,
     inputSummary: formatInputVariables(testCase.inputVariables),
-    cells: [createPlaceholderCell(testCase, DEFAULT_VARIANT, status)],
+    cells: [createPlaceholderCell(testCase, variant, status)],
   }));
 }
 
@@ -382,6 +387,7 @@ function createPlaceholderCell(
     testCaseInputSummary: inputSummary,
     variantId: variant.id,
     variantName: variant.name,
+    variantModelLabel: variant.modelLabel,
     status,
     statusLabel,
     assertionSummary: status === "not_run" ? "Not run" : statusLabel,
@@ -406,6 +412,7 @@ function createShellCell(
     testCaseInputSummary: formatInputVariables(testCase.inputVariables),
     variantId: cell.variantId,
     variantName: variant.name,
+    variantModelLabel: variant.modelLabel,
     status: cell.status,
     statusLabel: formatCellStatus(cell.status),
     assertionSummary: formatAssertionSummary(cell.assertions),

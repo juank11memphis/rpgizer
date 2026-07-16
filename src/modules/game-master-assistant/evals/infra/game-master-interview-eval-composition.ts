@@ -6,6 +6,7 @@ import { loadEnvConfig } from "@next/env";
 import { APPLICATION_LOG_EVENTS } from "../../../../server/logging/events";
 import { serverLogger } from "../../../../server/logging/logger";
 import { OpenAIGameMasterInterviewer } from "../../infra/openai-game-master-interviewer";
+import { loadOpenAIGameMasterModelLabel } from "../../infra/openai-game-master-interviewer-config";
 import { runGameMasterInterviewEvalUseCase } from "../application/run-game-master-interview-evals/usecase";
 import type { RunGameMasterInterviewEvalsInput } from "../application/run-game-master-interview-evals/input";
 import type {
@@ -59,6 +60,7 @@ export async function runGameMasterInterviewEvals(
     loadFixtures: options.loadFixtures ?? createFileSystemFixtureLoader(options.fixturesDirectory),
     loadInstructions: options.loadInstructions ?? loadProductionInstructions,
     createInterviewer: options.createInterviewer ?? createProductionInterviewer,
+    modelLabel: loadOpenAIGameMasterModelLabel(options.environment ?? process.env),
     testCaseId: options.testCaseId,
     logger: createGameMasterInterviewEvalLogger(),
   } satisfies RunGameMasterInterviewEvalsInput);

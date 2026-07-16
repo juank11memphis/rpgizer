@@ -77,6 +77,7 @@ describe("OpenAIGameMasterInterviewer", () => {
     );
     expect(prompt).toContain("metadata `interviewStatus` is `awaiting_confirmation`");
     expect(prompt).toContain("Set `readinessConfirmation` to `confirmed` only when the reply clearly means");
+    expect(prompt).toContain("Mark it covered for ordinary low-risk goals once no special boundary is needed");
   });
 
   it("calls OpenAI Responses with the Markdown prompt as instructions and returns RPGizer-owned data", async () => {

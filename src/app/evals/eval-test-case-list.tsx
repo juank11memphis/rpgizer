@@ -51,6 +51,7 @@ export function EvalTestCaseList({
               <span className="text-sm font-semibold text-slate-100">
                 {cell.statusLabel} · {cell.assertionSummary}
               </span>
+              <span className="text-xs text-blue-200">{cell.variantName} · {cell.variantModelLabel}</span>
               <span className="text-xs text-slate-500">{cell.metricSummary}</span>
               <span className="font-mono text-xs text-slate-300">{cell.outputPreview}</span>
               <span className="text-xs text-slate-500">{cell.diagnosticsSummary}</span>

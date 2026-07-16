@@ -18,6 +18,7 @@ export default function EvalsPage() {
   const initialViewModel = createReadyEvalMatrixViewModel(
     suites,
     GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+    { modelLabel: productQualityEvaluation.getGameMasterInterviewModelLabel() },
   );
 
   return (

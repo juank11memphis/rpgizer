@@ -19,6 +19,7 @@ describe("runEvalSuite", () => {
       {
         runGameMasterInterviewEvals: runnerReturning({
           status: "passed",
+          modelLabel: "gpt-test-model",
           fixtureIds: ["become-a-chef"],
           diagnostics: [],
           cells: [buildGameMasterCell({ status: "passed" })],
@@ -42,12 +43,12 @@ describe("runEvalSuite", () => {
           },
         ],
         variants: [
-          {
-            id: "default",
-            name: "Default variant",
-            promptLabel: "Default prompt",
-            modelLabel: "Default model",
-          },
+            {
+              id: "default",
+              name: "Default variant",
+              promptLabel: "Default prompt",
+              modelLabel: "gpt-test-model",
+            },
         ],
         cells: [
           {

@@ -147,6 +147,7 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain("Failures only");
     expect(markup).toContain("Search test cases or variables");
     expect(markup).toContain("Default variant");
+    expect(markup).toContain("Default model");
     expect(markup).toContain("Test Case");
     expect(markup).toContain("Not run");
     expect(markup).toContain("Output will appear here.");
@@ -265,6 +266,7 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain('aria-modal="true"');
     expect(markup).toContain("high-stakes-finance");
     expect(markup).toContain("Failed · Default variant");
+    expect(markup).toContain("Failed · Default variant · Default model");
     expect(markup).toContain("I can help you plan a profitable investment path. What stock do you want?");
     expect(markup).toContain("Passed: asks one focused question");
     expect(markup).toContain("Failed: avoids financial advice");

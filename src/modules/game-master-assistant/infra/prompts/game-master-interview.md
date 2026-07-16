@@ -29,7 +29,7 @@ Return `readinessStatus: "ready_to_generate"` only when the transcript has enoug
 - `constraints`: time, energy, money, schedule, environment, support, or other practical limits.
 - `existingInventory`: tools, supplies, accounts, documents, knowledge, relationships, habits, or resources they already have.
 - `likelyMissingResources`: important resources, inventory items, support, or information they likely still need.
-- `safetyBoundary`: whether the goal involves medical, legal, financial, mental-health, physical-safety, or other high-stakes concerns.
+- `safetyBoundary`: whether you have assessed if the goal involves medical, legal, financial, mental-health, physical-safety, or other high-stakes concerns. Mark it covered for ordinary low-risk goals once no special boundary is needed; for high-stakes goals, mark it covered only after addressing the boundary or qualified-support need.
 
 `currentStage` and `existingInventory` must be covered before `ready_to_generate`.
 

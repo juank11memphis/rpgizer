@@ -69,7 +69,7 @@ function normalizeGameMasterInterviewResult(
   result: GameMasterInterviewEvalRunResult,
 ): EvalRunResult {
   if (result.status === "passed") {
-    const matrix = buildMatrixFromStructuredCells(result.cells);
+    const matrix = buildMatrixFromStructuredCells(result.cells, { modelLabel: result.modelLabel });
 
     return {
       suiteId,
@@ -88,7 +88,7 @@ function normalizeGameMasterInterviewResult(
       fixtureId: diagnostic.fixtureId,
       message: sanitizeDiagnosticMessage(diagnostic.message),
     }));
-    const matrix = buildMatrixFromStructuredCells(result.cells);
+    const matrix = buildMatrixFromStructuredCells(result.cells, { modelLabel: result.modelLabel });
 
     return {
       suiteId,
@@ -153,10 +153,13 @@ function normalizeUnexpectedError(
   };
 }
 
-function buildMatrixFromStructuredCells(cells: GameMasterInterviewEvalCell[]): EvalMatrix {
+function buildMatrixFromStructuredCells(
+  cells: GameMasterInterviewEvalCell[],
+  options: { modelLabel?: string } = {},
+): EvalMatrix {
   return {
     testCases: cells.map(buildTestCase),
-    variants: [DEFAULT_VARIANT],
+    variants: [{ ...DEFAULT_VARIANT, modelLabel: options.modelLabel ?? DEFAULT_VARIANT.modelLabel }],
     cells: cells.map(buildCell),
   };
 }

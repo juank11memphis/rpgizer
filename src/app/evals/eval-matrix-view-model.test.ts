@@ -123,6 +123,7 @@ describe("eval matrix view model", () => {
       expect.objectContaining({ label: "Total cost", value: "Not reported" }),
       expect.objectContaining({ label: "Progress", value: "2/2" }),
     ]));
+    expect(viewModel.variants[0].modelLabel).toBe("Default model");
 
     const passedCell = viewModel.rows[0].cells[0];
     const failedCell = viewModel.rows[1].cells[0];
@@ -262,6 +263,7 @@ function createNavigationCell(testCaseId: string, variantId: string): EvalMatrix
     testCaseInputSummary: "No input variables",
     variantId,
     variantName: variantId,
+    variantModelLabel: "test-model",
     status: "passed",
     statusLabel: "Passed",
     assertionSummary: "1/1 assertions",

@@ -62,6 +62,7 @@ export async function runGameMasterInterviewEvalUseCase(
     if (input.testCaseId && fixtures.length === 0) {
       const result: GameMasterInterviewEvalErrorResult = {
         status: "error",
+        modelLabel: input.modelLabel,
         fixtureIds: [],
         diagnostics: [
           {
@@ -93,6 +94,7 @@ export async function runGameMasterInterviewEvalUseCase(
     if (diagnostics.length > 0) {
       const result: GameMasterInterviewEvalFailedResult = {
         status: "failed",
+        modelLabel: input.modelLabel,
         fixtureIds,
         diagnostics,
         cells: results,
@@ -104,6 +106,7 @@ export async function runGameMasterInterviewEvalUseCase(
 
     const result = {
       status: "passed",
+      modelLabel: input.modelLabel,
       fixtureIds,
       diagnostics: [],
       cells: results,
@@ -114,6 +117,7 @@ export async function runGameMasterInterviewEvalUseCase(
   } catch (error) {
     const result: GameMasterInterviewEvalErrorResult = {
       status: "error",
+      modelLabel: input.modelLabel,
       fixtureIds,
       diagnostics: [formatUnexpectedErrorDiagnostic(error)],
       durationMs: Date.now() - startedAt,

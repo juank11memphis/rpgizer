@@ -32,7 +32,8 @@ export function EvalMatrixTable({
             <th className="w-72 border-b border-r border-slate-800 px-3 py-3">Test Case</th>
             {variants.map((variant) => (
               <th key={variant.id} className="border-b border-slate-800 px-3 py-3">
-                {variant.name}
+                <span className="block text-slate-300">{variant.name}</span>
+                <span className="mt-1 block normal-case tracking-normal text-blue-200">{variant.modelLabel}</span>
               </th>
             ))}
           </tr>

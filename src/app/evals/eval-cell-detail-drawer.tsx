@@ -82,7 +82,7 @@ export function EvalCellDetailDrawer({ cell, onClose }: EvalCellDetailDrawerProp
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Cell detail</p>
           <h2 id={titleId} className="mt-1 font-mono text-lg font-semibold text-slate-50">{cell.testCaseName}</h2>
           <p id={descriptionId} className="mt-1 text-sm text-slate-300">
-            {cell.statusLabel} · {cell.variantName}
+            {cell.statusLabel} · {cell.variantName} · {cell.variantModelLabel}
           </p>
         </div>
         <button

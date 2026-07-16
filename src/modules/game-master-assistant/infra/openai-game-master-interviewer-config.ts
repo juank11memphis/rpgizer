@@ -1,6 +1,6 @@
 import { GameMasterInterviewerError } from "../application/start-adventure-interview/provider-error";
 
-const DEFAULT_OPENAI_MODEL = "gpt-5.4-mini";
+export const DEFAULT_OPENAI_GAME_MASTER_MODEL = "gpt-5.4-mini";
 
 export type OpenAIGameMasterInterviewerConfig = {
   apiKey: string;
@@ -21,6 +21,12 @@ export function loadOpenAIGameMasterInterviewerConfig(
   environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
 ): OpenAIGameMasterInterviewerConfig {
   return loadOpenAIModelConfig(environment, "OPENAI_GAME_MASTER_MODEL");
+}
+
+export function loadOpenAIGameMasterModelLabel(
+  environment: OpenAIGameMasterInterviewerEnvironment | NodeJS.ProcessEnv = process.env,
+): string {
+  return readModelEnvironmentValue(environment.OPENAI_GAME_MASTER_MODEL);
 }
 
 export function loadOpenAIInterviewSummaryConfig(
@@ -108,7 +114,7 @@ function readModelEnvironmentValue(value: string | undefined): string {
   const trimmedValue = value?.trim() ?? "";
 
   if (trimmedValue.length === 0) {
-    return DEFAULT_OPENAI_MODEL;
+    return DEFAULT_OPENAI_GAME_MASTER_MODEL;
   }
 
   return trimmedValue;
