@@ -1,13 +1,17 @@
 import { AvailableEvalsPanel } from "./available-evals-panel";
 import { EvalDiagnosticsPanel } from "./eval-diagnostics-panel";
-import type { ReadyEvalConsoleViewModel } from "./eval-console-types";
+import type { EvalConsoleViewModel } from "./eval-console-types";
 import { SelectedEvalPanel } from "./selected-eval-panel";
 
 type EvalConsoleScreenProps = {
-  viewModel: ReadyEvalConsoleViewModel;
+  viewModel: EvalConsoleViewModel;
+  onRunSelectedEval: () => void;
 };
 
-export function EvalConsoleScreen({ viewModel }: EvalConsoleScreenProps) {
+export function EvalConsoleScreen({
+  viewModel,
+  onRunSelectedEval,
+}: EvalConsoleScreenProps) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#07030d] px-4 py-8 text-stone-100 sm:px-8 lg:px-10">
       <div className="pointer-events-none fixed inset-0 -z-20 bg-[radial-gradient(circle_at_50%_-10%,rgba(127,29,29,0.58)_0%,rgba(49,18,12,0.52)_28%,rgba(7,3,13,0.98)_72%)]" />
@@ -35,11 +39,24 @@ export function EvalConsoleScreen({ viewModel }: EvalConsoleScreenProps) {
           <SelectedEvalPanel
             selectedSuite={viewModel.selectedSuite}
             status={viewModel.status}
+            statusLabel={viewModel.statusLabel}
             statusMessage={viewModel.statusMessage}
+            actionLabel={viewModel.actionLabel}
+            actionDisabled={viewModel.actionDisabled}
+            onRunSelectedEval={onRunSelectedEval}
           />
         </div>
 
-        <EvalDiagnosticsPanel message={viewModel.diagnosticsMessage} />
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          Status: {viewModel.statusLabel}
+        </div>
+
+        <EvalDiagnosticsPanel
+          title={viewModel.diagnosticsTitle}
+          status={viewModel.status}
+          message={viewModel.diagnosticsMessage}
+          diagnostics={viewModel.diagnostics}
+        />
       </div>
     </main>
   );
