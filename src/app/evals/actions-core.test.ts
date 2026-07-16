@@ -212,7 +212,7 @@ describe("runEvalSuiteActionCore", () => {
     const runEvalSuite = vi.fn();
     const logger = createLogger();
 
-    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {
+    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {}, {
       isLocalEvalDashboardEnabled: () => false,
       runEvalSuite,
       logger,
@@ -249,7 +249,7 @@ describe("runEvalSuiteActionCore", () => {
     const delegatedResult = createMatrixResult("passed");
     const runEvalSuite = vi.fn().mockResolvedValue(delegatedResult);
 
-    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {
+    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {}, {
       isLocalEvalDashboardEnabled: () => true,
       runEvalSuite,
       logger,
@@ -272,11 +272,49 @@ describe("runEvalSuiteActionCore", () => {
     expectSafeLogPayload(payload);
   });
 
+  it("delegates a selected test case scope and logs only safe scope metadata", async () => {
+    const logger = createLogger();
+    const delegatedResult = createMatrixResult("passed");
+    const runEvalSuite = vi.fn().mockResolvedValue(delegatedResult);
+
+    const result = await runEvalSuiteActionCore(
+      GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      { testCaseId: "high-stakes-finance" },
+      {
+        isLocalEvalDashboardEnabled: () => true,
+        runEvalSuite,
+        logger,
+      },
+    );
+
+    expect(runEvalSuite).toHaveBeenCalledWith({
+      suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      testCaseId: "high-stakes-finance",
+    });
+    expect(result).toBe(delegatedResult);
+
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_STARTED,
+        runScope: "test_case",
+        testCaseId: "high-stakes-finance",
+      }),
+      "Local eval suite server action started.",
+    );
+    const payload = getCompletionPayload(logger);
+    expect(payload).toMatchObject({
+      runScope: "test_case",
+      testCaseId: "high-stakes-finance",
+      testCaseCount: 2,
+    });
+    expectSafeLogPayload(payload);
+  });
+
   it("returns delegated failed matrix results without treating them as blocked", async () => {
     const logger = createLogger();
     const delegatedResult = createMatrixResult("failed");
 
-    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {
+    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {}, {
       isLocalEvalDashboardEnabled: () => true,
       runEvalSuite: vi.fn().mockResolvedValue(delegatedResult),
       logger,
@@ -311,7 +349,7 @@ describe("runEvalSuiteActionCore", () => {
       durationMs: 1,
     };
 
-    const blockedResult = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {
+    const blockedResult = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {}, {
       isLocalEvalDashboardEnabled: () => true,
       runEvalSuite: vi.fn().mockResolvedValue(delegatedResult),
       logger,
@@ -334,7 +372,7 @@ describe("runEvalSuiteActionCore", () => {
     const logger = createLogger();
     const delegatedResult = createMatrixResult("error");
 
-    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {
+    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {}, {
       isLocalEvalDashboardEnabled: () => true,
       runEvalSuite: vi.fn().mockResolvedValue(delegatedResult),
       logger,
@@ -363,7 +401,7 @@ describe("runEvalSuiteActionCore", () => {
 
   it("converts unexpected delegated throws to safe error action data", async () => {
     const logger = createLogger();
-    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {
+    const result = await runEvalSuiteActionCore(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, {}, {
       isLocalEvalDashboardEnabled: () => true,
       runEvalSuite: async () => {
         throw new Error("raw provider payload should not be surfaced");

@@ -221,6 +221,26 @@ describe("runEvalSuite", () => {
     expect(result).not.toHaveProperty("aggregates");
   });
 
+  it("passes selected test case scope to the Game Master Interview runner", async () => {
+    const runGameMasterInterviewEvals = vi.fn<GameMasterInterviewEvalRunner>().mockResolvedValue({
+      status: "passed",
+      fixtureIds: ["high-stakes-finance"],
+      diagnostics: [],
+      cells: [buildGameMasterCell({ fixtureId: "high-stakes-finance", testCaseName: "High stakes finance" })],
+      durationMs: 31,
+    });
+
+    const result = await runEvalSuite(
+      { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, testCaseId: "high-stakes-finance" },
+      { runGameMasterInterviewEvals },
+    );
+
+    expect(runGameMasterInterviewEvals).toHaveBeenCalledWith({ testCaseId: "high-stakes-finance" });
+    expect(result.matrix?.testCases).toEqual([
+      expect.objectContaining({ id: "high-stakes-finance", name: "High stakes finance" }),
+    ]);
+  });
+
   it("returns a safe error without invoking the runner for unknown suites", async () => {
     const runGameMasterInterviewEvals = vi.fn<GameMasterInterviewEvalRunner>();
 

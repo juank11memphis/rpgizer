@@ -56,8 +56,25 @@ export async function runGameMasterInterviewEvalUseCase(
   let fixtureIds: string[] = [];
 
   try {
-    const fixtures = await input.loadFixtures();
+    const fixtures = selectFixtures(await input.loadFixtures(), input.testCaseId);
     fixtureIds = fixtures.map((fixture) => fixture.id);
+
+    if (input.testCaseId && fixtures.length === 0) {
+      const result: GameMasterInterviewEvalErrorResult = {
+        status: "error",
+        fixtureIds: [],
+        diagnostics: [
+          {
+            errorName: "UnknownEvalTestCase",
+            message: "Game Master eval runner error: Error: Selected test case is not available.",
+          },
+        ],
+        durationMs: Date.now() - startedAt,
+      };
+      logger.error(result, new Error("Unknown eval test case"));
+      return result;
+    }
+
     logger.started(fixtureIds);
 
     const instructions = await input.loadInstructions();
@@ -104,6 +121,17 @@ export async function runGameMasterInterviewEvalUseCase(
     logger.error(result, error);
     return result;
   }
+}
+
+function selectFixtures(
+  fixtures: GameMasterInterviewEvalFixture[],
+  testCaseId: string | undefined,
+): GameMasterInterviewEvalFixture[] {
+  if (!testCaseId) {
+    return fixtures;
+  }
+
+  return fixtures.filter((fixture) => fixture.id === testCaseId);
 }
 
 function getCredentialStatus(

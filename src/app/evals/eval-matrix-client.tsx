@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import type { EvalRunResult } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
 
 import { EvalMatrixScreen } from "./eval-matrix-screen";
-import type { EvalCellSelection, EvalMatrixViewModel } from "./eval-matrix-types";
+import type { EvalCellSelection, EvalMatrixRunScope, EvalMatrixViewModel } from "./eval-matrix-types";
 import {
   createEvalMatrixViewModelFromRunResult,
   createRunningEvalMatrixViewModel,
@@ -18,7 +18,7 @@ import {
 
 type EvalMatrixClientProps = {
   initialViewModel: EvalMatrixViewModel;
-  runSelectedEvalSuite: (suiteId: string) => Promise<EvalRunResult>;
+  runSelectedEvalSuite: (suiteId: string, scope?: { testCaseId?: string }) => Promise<EvalRunResult>;
 };
 
 export function EvalMatrixClient({
@@ -29,24 +29,40 @@ export function EvalMatrixClient({
   const [failuresOnly, setFailuresOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleVariantIds, setVisibleVariantIds] = useState(() => initialViewModel.variants.map((variant) => variant.id));
+  const [runScope, setRunScope] = useState<EvalMatrixRunScope>({ type: "all" });
   const [selectedCellKey, setSelectedCellKey] = useState<EvalCellSelection | null>(null);
   const cellButtonRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingFocusRestoreKeyRef = useRef<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleRunSelectedEval() {
+    runEvalWithScope(runScope);
+  }
+
+  function handleRunTestCase(testCaseId: string) {
+    runEvalWithScope({ type: "test_case", testCaseId });
+  }
+
+  function runEvalWithScope(scope: EvalMatrixRunScope) {
     if (isPending || viewModel.action.disabled) {
       return;
     }
 
     const suiteId = viewModel.selectedSuite.id;
     setSelectedCellKey(null);
+    setRunScope(scope);
     pendingFocusRestoreKeyRef.current = null;
-    setViewModel((currentViewModel) => createRunningEvalMatrixViewModel(currentViewModel));
+    setViewModel((currentViewModel) => createRunningEvalMatrixViewModel(
+      createRunBaseViewModel(currentViewModel, initialViewModel),
+      scope.type === "test_case" ? { testCaseId: scope.testCaseId } : {},
+    ));
 
     startTransition(async () => {
       try {
-        const result = await runSelectedEvalSuite(suiteId);
+        const result = await runSelectedEvalSuite(
+          suiteId,
+          scope.type === "test_case" ? { testCaseId: scope.testCaseId } : {},
+        );
         setViewModel((currentViewModel) =>
           createEvalMatrixViewModelFromRunResult(currentViewModel, result),
         );
@@ -155,7 +171,12 @@ export function EvalMatrixClient({
   return (
     <EvalMatrixScreen
       viewModel={{ ...screenViewModel, variants: visibleVariants, rows: filteredRows }}
+      runScope={runScope}
+      runTestCaseRows={initialViewModel.rows}
+      runButtonLabel={formatRunButtonLabel(runScope, initialViewModel.rows.length, screenViewModel.action.label, isPending)}
       onRunSelectedEval={handleRunSelectedEval}
+      onRunScopeChange={setRunScope}
+      onRunTestCase={handleRunTestCase}
       failuresOnly={failuresOnly}
       searchQuery={searchQuery}
       visibleVariantIds={effectiveVisibleVariantIds}
@@ -169,6 +190,39 @@ export function EvalMatrixClient({
       onCellArrowNavigation={handleCellArrowNavigation}
     />
   );
+}
+
+function createRunBaseViewModel(
+  currentViewModel: EvalMatrixViewModel,
+  initialViewModel: EvalMatrixViewModel,
+): EvalMatrixViewModel {
+  return {
+    ...currentViewModel,
+    variants: initialViewModel.variants,
+    rows: initialViewModel.rows,
+    progress: initialViewModel.progress,
+  };
+}
+
+function formatRunButtonLabel(
+  runScope: EvalMatrixRunScope,
+  totalTestCases: number,
+  fallbackActionLabel: string,
+  isPending: boolean,
+): string {
+  if (isPending) {
+    return "Running...";
+  }
+
+  if (fallbackActionLabel === "Check again" || fallbackActionLabel === "Try again") {
+    return fallbackActionLabel;
+  }
+
+  if (runScope.type === "test_case") {
+    return "Run 1 test case";
+  }
+
+  return `Run all ${totalTestCases} test cases`;
 }
 
 function createCellKey(selection: EvalCellSelection): string {

@@ -37,6 +37,7 @@ type WritableStream = Pick<NodeJS.WriteStream, "write">;
 export type GameMasterInterviewEvalRunOptions = {
   environment?: GameMasterInterviewEvalRunnerEnvironment;
   fixturesDirectory?: string;
+  testCaseId?: string;
   loadFixtures?: GameMasterInterviewEvalFixtureLoader;
   loadInstructions?: GameMasterInterviewEvalInstructionsLoader;
   createInterviewer?: GameMasterInterviewEvalInterviewerFactory;
@@ -58,6 +59,7 @@ export async function runGameMasterInterviewEvals(
     loadFixtures: options.loadFixtures ?? createFileSystemFixtureLoader(options.fixturesDirectory),
     loadInstructions: options.loadInstructions ?? loadProductionInstructions,
     createInterviewer: options.createInterviewer ?? createProductionInterviewer,
+    testCaseId: options.testCaseId,
     logger: createGameMasterInterviewEvalLogger(),
   } satisfies RunGameMasterInterviewEvalsInput);
 

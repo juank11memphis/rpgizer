@@ -11,6 +11,7 @@ import type { EvalMatrixShellCell, EvalMatrixTestCaseRow } from "./eval-matrix-t
 import {
   createEvalMatrixViewModelFromRunResult,
   createReadyEvalMatrixViewModel,
+  createRunningEvalMatrixViewModel,
   filterEvalMatrixRows,
   findEvalMatrixCell,
   findNextEvalMatrixCellSelection,
@@ -172,6 +173,20 @@ describe("eval matrix view model", () => {
 
     expect(testCaseRows.map((row) => row.testCase.name)).toEqual(["become-a-chef"]);
     expect(variableRows.map((row) => row.testCase.name)).toEqual(["high-stakes-finance"]);
+  });
+
+  it("creates a one-row running state for a scoped test case run", () => {
+    const viewModel = createReadyViewModel();
+    const runningViewModel = createRunningEvalMatrixViewModel(viewModel, { testCaseId: "high-stakes-finance" });
+
+    expect(runningViewModel.rows.map((row) => row.testCase.id)).toEqual(["high-stakes-finance"]);
+    expect(runningViewModel.rows[0].cells[0]).toMatchObject({
+      status: "running",
+      statusLabel: "Running...",
+      assertionSummary: "In progress",
+    });
+    expect(runningViewModel.progress).toEqual({ completed: 0, total: 1, label: "Progress 0/1" });
+    expect(runningViewModel.statusMessage).toContain("high-stakes-finance");
   });
 
 

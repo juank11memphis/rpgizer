@@ -93,6 +93,64 @@ describe("runGameMasterInterviewEvals", () => {
     });
   });
 
+  it("runs only the selected test case when scoped", async () => {
+    const requests: InterviewTurnRequest[] = [];
+
+    const result = await runGameMasterInterviewEvals({
+      environment: configuredEnvironment(),
+      testCaseId: "high-stakes-finance",
+      loadFixtures: () => [buildFixture("become-a-chef"), buildFixture("high-stakes-finance")],
+      loadInstructions: () => "test instructions",
+      createInterviewer: () => ({
+        async askNextQuestion(request) {
+          requests.push(request);
+          return passingInterviewResult();
+        },
+      }),
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("passed");
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+
+    expect(result.fixtureIds).toEqual(["high-stakes-finance"]);
+    expect(result.cells.map((cell) => cell.testCaseId)).toEqual(["high-stakes-finance"]);
+    expect(requests).toHaveLength(1);
+    expect(requests[0]?.userId).toBe("eval-user-high-stakes-finance");
+  });
+
+  it("returns a safe error when a selected test case is unavailable", async () => {
+    let interviewerCreateCount = 0;
+
+    const result = await runGameMasterInterviewEvals({
+      environment: configuredEnvironment(),
+      testCaseId: "missing-fixture",
+      loadFixtures: () => [buildFixture("become-a-chef")],
+      loadInstructions: () => "test instructions",
+      createInterviewer: () => {
+        interviewerCreateCount += 1;
+        return fakeInterviewer(passingInterviewResult());
+      },
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("error");
+    if (result.status !== "error") {
+      throw new Error(`Expected error result, received ${result.status}.`);
+    }
+
+    expect(result.fixtureIds).toEqual([]);
+    expect(result.diagnostics[0]).toEqual({
+      errorName: "UnknownEvalTestCase",
+      message: "Game Master eval runner error: Error: Selected test case is not available.",
+    });
+    expect(interviewerCreateCount).toBe(0);
+  });
+
   it.each([
     {
       name: "missing OPENAI_API_KEY",

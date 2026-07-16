@@ -59,20 +59,32 @@ export function createReadyEvalMatrixViewModel(
 
 export function createRunningEvalMatrixViewModel(
   currentViewModel: EvalMatrixViewModel,
+  options: { testCaseId?: string } = {},
 ): EvalMatrixViewModel {
-  const rows: EvalMatrixTestCaseRow[] = currentViewModel.rows.map((row, index) => {
-    const status: EvalMatrixShellCell["status"] = index === 0 ? "passed" : index === 1 ? "running" : "queued";
+  const scopedRows = options.testCaseId
+    ? currentViewModel.rows.filter((row) => row.testCase.id === options.testCaseId)
+    : currentViewModel.rows;
+  const isSingleTestCaseRun = scopedRows.length === 1;
+  const rows: EvalMatrixTestCaseRow[] = scopedRows.map((row, index) => {
+    const status: EvalMatrixShellCell["status"] = isSingleTestCaseRun
+      ? "running"
+      : index === 0
+        ? "passed"
+        : index === 1
+          ? "running"
+          : "queued";
+    const statusLabel = formatCellStatus(status);
 
     return {
       ...row,
       cells: row.cells.map((cell) => ({
         ...cell,
         status,
-        statusLabel: index === 0 ? "Passed" : index === 1 ? "Running..." : "Queued",
-        assertionSummary: index === 0 ? "Completed" : index === 1 ? "In progress" : "Waiting",
-        metricSummary: index === 0 ? "Latency not reported · tokens not reported · cost not reported" : "Metrics pending",
-        diagnosticsSummary: index === 0 ? "No diagnostics" : "Diagnostics pending",
-        outputPreview: index === 0 ? "Completed output preview will appear here." : "Output will appear here.",
+        statusLabel,
+        assertionSummary: status === "passed" ? "Completed" : status === "running" ? "In progress" : "Waiting",
+        metricSummary: status === "passed" ? "Latency not reported · tokens not reported · cost not reported" : "Metrics pending",
+        diagnosticsSummary: status === "passed" ? "No diagnostics" : "Diagnostics pending",
+        outputPreview: status === "passed" ? "Completed output preview will appear here." : "Output will appear here.",
         detail: undefined,
       })),
     };
@@ -84,7 +96,9 @@ export function createRunningEvalMatrixViewModel(
     ...currentViewModel,
     status: "running",
     statusLabel: "Running",
-    statusMessage: "Game Master Interview eval is running locally.",
+    statusMessage: isSingleTestCaseRun
+      ? `Running ${rows[0]?.testCase.name ?? "selected test case"} locally.`
+      : "Game Master Interview eval is running locally.",
     action: { label: "Running...", disabled: true },
     summaryStats: createRunningSummaryStats(completed, total),
     rows,

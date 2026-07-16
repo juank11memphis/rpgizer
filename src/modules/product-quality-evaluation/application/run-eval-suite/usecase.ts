@@ -19,7 +19,7 @@ import type {
   GameMasterInterviewEvalRunResult,
 } from "@/modules/game-master-assistant/evals/run-game-master-interview-evals";
 
-export type GameMasterInterviewEvalRunner = () => Promise<GameMasterInterviewEvalRunResult>;
+export type GameMasterInterviewEvalRunner = (input?: { testCaseId?: string }) => Promise<GameMasterInterviewEvalRunResult>;
 
 export type RunEvalSuiteDependencies = {
   runGameMasterInterviewEvals: GameMasterInterviewEvalRunner;
@@ -56,7 +56,8 @@ export async function runEvalSuite(
   }
 
   try {
-    const result = await dependencies.runGameMasterInterviewEvals();
+    const runnerInput = input.testCaseId ? { testCaseId: input.testCaseId } : undefined;
+    const result = await dependencies.runGameMasterInterviewEvals(runnerInput);
     return normalizeGameMasterInterviewResult(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, result);
   } catch (error) {
     return normalizeUnexpectedError(input.suiteId, error, Date.now() - startedAt);

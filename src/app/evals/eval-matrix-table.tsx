@@ -8,12 +8,22 @@ import type { EvalMatrixCellNavigationDirection } from "./eval-matrix-view-model
 type EvalMatrixTableProps = {
   rows: EvalMatrixTestCaseRow[];
   variants: EvalPromptModelVariant[];
+  isRunDisabled: boolean;
+  onRunTestCase: (testCaseId: string) => void;
   onSelectCell: (selection: EvalCellSelection, mode: "matrix") => void;
   onCellButtonRef: (selection: EvalCellSelection, mode: "matrix", element: HTMLButtonElement | null) => void;
   onCellArrowNavigation: (selection: EvalCellSelection, direction: EvalMatrixCellNavigationDirection, mode: "matrix") => void;
 };
 
-export function EvalMatrixTable({ rows, variants, onSelectCell, onCellButtonRef, onCellArrowNavigation }: EvalMatrixTableProps) {
+export function EvalMatrixTable({
+  rows,
+  variants,
+  isRunDisabled,
+  onRunTestCase,
+  onSelectCell,
+  onCellButtonRef,
+  onCellArrowNavigation,
+}: EvalMatrixTableProps) {
   return (
     <div className="hidden overflow-x-auto border border-slate-800 bg-slate-950 md:block" data-layout="matrix">
       <table className="w-full min-w-[720px] border-collapse text-left text-sm">
@@ -33,6 +43,15 @@ export function EvalMatrixTable({ rows, variants, onSelectCell, onCellButtonRef,
               <th className="align-top border-r border-slate-800 bg-slate-950 px-3 py-3 font-normal">
                 <p className="font-mono text-sm font-semibold text-slate-100">{row.testCase.name}</p>
                 <p className="mt-1 text-xs text-slate-500">{row.inputSummary}</p>
+                <button
+                  type="button"
+                  onClick={() => onRunTestCase(row.testCase.id)}
+                  disabled={isRunDisabled}
+                  className="mt-3 min-h-8 border border-slate-700 px-2 text-xs font-semibold text-blue-200 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:border-slate-800 disabled:text-slate-600"
+                  aria-label={`Run only ${row.testCase.name}`}
+                >
+                  Run row
+                </button>
               </th>
               {row.cells.map((cell) => (
                 <td key={cell.id} className="min-w-80 px-3 py-3 align-top">

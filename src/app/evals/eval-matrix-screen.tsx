@@ -2,14 +2,26 @@ import { EvalBlockedPanel } from "./eval-blocked-panel";
 import { EvalCellDetailDrawer } from "./eval-cell-detail-drawer";
 import { EvalFilterBar } from "./eval-filter-bar";
 import { EvalMatrixTable } from "./eval-matrix-table";
-import type { EvalCellSelection, EvalMatrixShellCell, EvalMatrixViewModel } from "./eval-matrix-types";
+import { EvalRunScopeControls } from "./eval-run-scope-controls";
+import type {
+  EvalCellSelection,
+  EvalMatrixRunScope,
+  EvalMatrixShellCell,
+  EvalMatrixTestCaseRow,
+  EvalMatrixViewModel,
+} from "./eval-matrix-types";
 import type { EvalMatrixCellNavigationDirection, EvalMatrixCellNavigationMode } from "./eval-matrix-view-model";
 import { EvalSummaryBar } from "./eval-summary-bar";
 import { EvalTestCaseList } from "./eval-test-case-list";
 
 type EvalMatrixScreenProps = {
   viewModel: EvalMatrixViewModel;
+  runScope?: EvalMatrixRunScope;
+  runTestCaseRows?: EvalMatrixTestCaseRow[];
+  runButtonLabel?: string;
   onRunSelectedEval: () => void;
+  onRunScopeChange?: (scope: EvalMatrixRunScope) => void;
+  onRunTestCase?: (testCaseId: string) => void;
   failuresOnly?: boolean;
   searchQuery?: string;
   visibleVariantIds?: string[];
@@ -29,7 +41,12 @@ type EvalMatrixScreenProps = {
 
 export function EvalMatrixScreen({
   viewModel,
+  runScope = { type: "all" },
+  runTestCaseRows = viewModel.rows,
+  runButtonLabel = viewModel.action.label,
   onRunSelectedEval,
+  onRunScopeChange = () => undefined,
+  onRunTestCase = () => undefined,
   failuresOnly = false,
   searchQuery = "",
   visibleVariantIds = viewModel.variants.map((variant) => variant.id),
@@ -59,14 +76,14 @@ export function EvalMatrixScreen({
               </div>
               <p className="mt-1 text-sm text-slate-400">{viewModel.statusMessage}</p>
             </div>
-            <button
-              type="button"
-              onClick={onRunSelectedEval}
+            <EvalRunScopeControls
+              runScope={runScope}
+              testCaseRows={runTestCaseRows}
               disabled={viewModel.action.disabled}
-              className="min-h-11 border border-blue-400 bg-blue-500 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:border-slate-600 disabled:bg-slate-800 disabled:text-slate-400"
-            >
-              {viewModel.action.label}
-            </button>
+              runButtonLabel={runButtonLabel}
+              onRunScopeChange={onRunScopeChange}
+              onRunSelectedScope={onRunSelectedEval}
+            />
           </div>
           <EvalSummaryBar viewModel={viewModel} />
           <EvalFilterBar
@@ -91,6 +108,8 @@ export function EvalMatrixScreen({
           <section aria-label="Eval results" className="flex flex-col gap-3">
             <EvalTestCaseList
               rows={viewModel.rows}
+              isRunDisabled={viewModel.action.disabled}
+              onRunTestCase={onRunTestCase}
               onSelectCell={onSelectCell}
               onCellButtonRef={onCellButtonRef}
               onCellArrowNavigation={onCellArrowNavigation}
@@ -98,6 +117,8 @@ export function EvalMatrixScreen({
             <EvalMatrixTable
               rows={viewModel.rows}
               variants={viewModel.variants}
+              isRunDisabled={viewModel.action.disabled}
+              onRunTestCase={onRunTestCase}
               onSelectCell={onSelectCell}
               onCellButtonRef={onCellButtonRef}
               onCellArrowNavigation={onCellArrowNavigation}

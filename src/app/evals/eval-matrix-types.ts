@@ -22,9 +22,13 @@ export type EvalMatrixShellStatus =
   | "error";
 
 export type EvalMatrixAction = {
-  label: "Run eval" | "Run again" | "Check again" | "Try again" | "Running...";
+  label: string;
   disabled: boolean;
 };
+
+export type EvalMatrixRunScope =
+  | { type: "all" }
+  | { type: "test_case"; testCaseId: string };
 
 export type EvalMatrixSummaryStat = {
   label: "Pass rate" | "Avg latency" | "Total cost" | "Progress";

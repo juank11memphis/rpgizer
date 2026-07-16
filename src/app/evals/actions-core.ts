@@ -5,7 +5,11 @@ import type { EvalRunResult } from "@/modules/product-quality-evaluation/applica
 
 export type RunEvalSuiteActionResult = EvalRunResult;
 
-type RunEvalSuite = (input: { suiteId: string }) => Promise<EvalRunResult>;
+export type RunEvalSuiteActionScope = {
+  testCaseId?: string;
+};
+
+type RunEvalSuite = (input: { suiteId: string; testCaseId?: string }) => Promise<EvalRunResult>;
 type LocalEvalGuard = () => boolean;
 type ActionLogger = Pick<typeof serverLogger, "info" | "warn" | "error">;
 
@@ -18,6 +22,7 @@ export type RunEvalSuiteActionCoreDependencies = {
 
 export async function runEvalSuiteActionCore(
   suiteId: string,
+  scope: RunEvalSuiteActionScope,
   dependencies: RunEvalSuiteActionCoreDependencies,
 ): Promise<RunEvalSuiteActionResult> {
   const logger = dependencies.logger ?? serverLogger;
@@ -39,7 +44,7 @@ export async function runEvalSuiteActionCore(
       blocker: "local_eval_dashboard_disabled",
       durationMs: now() - startedAt,
     };
-    logActionOutcome(logger, result, APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_BLOCKED);
+    logActionOutcome(logger, result, APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_BLOCKED, scope);
     return result;
   }
 
@@ -49,13 +54,15 @@ export async function runEvalSuiteActionCore(
       flow: "local_eval_dashboard",
       operation: "run_eval_suite_action",
       suiteId,
+      ...summarizeScopeForLog(scope),
     },
     "Local eval suite server action started.",
   );
 
   try {
-    const result = await dependencies.runEvalSuite({ suiteId });
-    logActionOutcome(logger, result, eventForResult(result));
+    const runInput = scope.testCaseId ? { suiteId, testCaseId: scope.testCaseId } : { suiteId };
+    const result = await dependencies.runEvalSuite(runInput);
+    logActionOutcome(logger, result, eventForResult(result), scope);
     return result;
   } catch (error) {
     const errorName = error instanceof Error ? error.name || "Error" : "NonErrorThrownValue";
@@ -73,7 +80,7 @@ export async function runEvalSuiteActionCore(
       durationMs: now() - startedAt,
       errorName,
     };
-    logActionOutcome(logger, result, APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_UNEXPECTED_ERROR);
+    logActionOutcome(logger, result, APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_UNEXPECTED_ERROR, scope);
     return result;
   }
 }
@@ -94,6 +101,7 @@ function logActionOutcome(
   logger: ActionLogger,
   result: RunEvalSuiteActionResult,
   event: string,
+  scope: RunEvalSuiteActionScope,
 ): void {
   const logMethod =
     result.status === "passed"
@@ -108,6 +116,7 @@ function logActionOutcome(
     flow: "local_eval_dashboard",
     operation: "run_eval_suite_action",
     suiteId: result.suiteId,
+    ...summarizeScopeForLog(scope),
     outcome: result.status,
     diagnosticCount: result.diagnostics.length,
     durationMs: result.durationMs,
@@ -119,6 +128,17 @@ function logActionOutcome(
   };
 
   logMethod.call(logger, payload, "Local eval suite server action completed.");
+}
+
+function summarizeScopeForLog(scope: RunEvalSuiteActionScope): {
+  runScope: "all" | "test_case";
+  testCaseId?: string;
+} {
+  if (scope.testCaseId) {
+    return { runScope: "test_case", testCaseId: scope.testCaseId };
+  }
+
+  return { runScope: "all" };
 }
 
 function summarizeMatrixForLog(result: RunEvalSuiteActionResult): {

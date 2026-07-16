@@ -44,7 +44,15 @@ function createResultViewModel(): EvalMatrixViewModel {
 
 function renderMarkup(viewModel: EvalMatrixViewModel, selectedCell: EvalMatrixShellCell | null = null): string {
   return renderToStaticMarkup(
-    <EvalMatrixScreen viewModel={viewModel} onRunSelectedEval={() => undefined} selectedCell={selectedCell} />,
+    <EvalMatrixScreen
+      viewModel={viewModel}
+      runTestCaseRows={createReadyViewModel().rows}
+      runButtonLabel={viewModel.action.label === "Check again" || viewModel.action.label === "Try again"
+        ? viewModel.action.label
+        : `Run all ${createReadyViewModel().rows.length} test cases`}
+      onRunSelectedEval={() => undefined}
+      selectedCell={selectedCell}
+    />,
   );
 }
 
@@ -128,7 +136,10 @@ describe("EvalMatrixScreen", () => {
 
     expect(markup).toContain("Local Eval Matrix");
     expect(markup).toContain("Game Master Interview");
-    expect(markup).toContain("Run eval");
+    expect(markup).toContain("Run scope");
+    expect(markup).toContain("All test cases");
+    expect(markup).toContain("Run all 4 test cases");
+    expect(markup).toContain("Run row");
     expect(markup).toContain("Pass rate");
     expect(markup).toContain("Avg latency");
     expect(markup).toContain("Total cost");
@@ -149,6 +160,23 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain('data-layout="matrix"');
     expect(markup).toContain("become-a-chef-initial");
     expect(markup).toContain("topic=baking");
+  });
+
+  it("renders selected-test-case run scope controls", () => {
+    const readyViewModel = createReadyViewModel();
+    const markup = renderToStaticMarkup(
+      <EvalMatrixScreen
+        viewModel={readyViewModel}
+        runScope={{ type: "test_case", testCaseId: "high-stakes-finance" }}
+        runTestCaseRows={readyViewModel.rows}
+        runButtonLabel="Run 1 test case"
+        onRunSelectedEval={() => undefined}
+      />,
+    );
+
+    expect(markup).toContain("Selected test case");
+    expect(markup).toContain("high-stakes-finance");
+    expect(markup).toContain("Run 1 test case");
   });
 
   it("renders blocked configuration guidance instead of an empty matrix", () => {
