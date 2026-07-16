@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.28.2",
   "scripts": {
     "dev": "next dev --port 3002",
-    "dev:clean": "set -a && . ./.env.local && set +a && pnpm run db:up && pnpm run db:migrate && pnpm run dev",
+    "dev:clean": "node scripts/run-dev-clean.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

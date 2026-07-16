@@ -71,6 +71,7 @@ export function createEvalConsoleViewModelFromRunResult(
       actionLabel: "Run Again",
       actionDisabled: false,
       diagnosticsTitle: "Diagnostics",
+      diagnosticsMessage: undefined,
       diagnostics: result.diagnostics,
     };
   }
@@ -84,6 +85,7 @@ export function createEvalConsoleViewModelFromRunResult(
       actionLabel: "Check Again",
       actionDisabled: false,
       diagnosticsTitle: "Configuration",
+      diagnosticsMessage: undefined,
       diagnostics: result.diagnostics,
     };
   }
@@ -96,6 +98,7 @@ export function createEvalConsoleViewModelFromRunResult(
     actionLabel: "Try Again",
     actionDisabled: false,
     diagnosticsTitle: "Diagnostics",
+    diagnosticsMessage: undefined,
     diagnostics: result.diagnostics,
   };
 }

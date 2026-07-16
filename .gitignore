@@ -33,4 +33,5 @@ notes.md
 
 docs/features
 # RPGizer application logs
+app.log
 rpgizer*.log

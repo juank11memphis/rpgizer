@@ -96,25 +96,29 @@ describe("EvalConsoleScreen", () => {
 
   it("renders failed fixture diagnostics without blocked guidance", () => {
     const markup = renderMarkup(
-      createEvalConsoleViewModelFromRunResult(readyViewModel, {
-        suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
-        status: "failed",
-        summary: "Some fixtures need attention.",
-        diagnostics: [
-          {
-            scope: "fixture",
-            fixtureId: "learn-a-language",
-            message: "Expected one focused follow-up question.",
-          },
-        ],
-        durationMs: 1,
-      }),
+      createEvalConsoleViewModelFromRunResult(
+        createRunningEvalConsoleViewModel(readyViewModel),
+        {
+          suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+          status: "failed",
+          summary: "Some fixtures need attention.",
+          diagnostics: [
+            {
+              scope: "fixture",
+              fixtureId: "learn-a-language",
+              message: "Expected one focused follow-up question.",
+            },
+          ],
+          durationMs: 1,
+        },
+      ),
     );
 
     expect(markup).toContain("Status: Failed");
     expect(markup).toContain("[learn-a-language]");
     expect(markup).toContain("Expected one focused follow-up question.");
     expect(markup).not.toContain("Add local config, then check again.");
+    expect(markup).not.toContain("Waiting for results…");
   });
 
   it("renders blocked outcomes as configuration guidance", () => {
