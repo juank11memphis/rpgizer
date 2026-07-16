@@ -4,8 +4,8 @@ import { GAME_MASTER_INTERVIEW_EVAL_SUITE_ID } from "@/modules/product-quality-e
 import { createProductQualityEvaluationComposition } from "@/modules/product-quality-evaluation/infra/product-quality-evaluation-composition";
 
 import { runSelectedEvalSuiteAction } from "./actions";
-import { EvalConsoleClient } from "./eval-console-client";
-import { createReadyEvalConsoleViewModel } from "./eval-console-view-model";
+import { EvalMatrixClient } from "./eval-matrix-client";
+import { createReadyEvalMatrixViewModel } from "./eval-matrix-view-model";
 import { isLocalEvalDashboardEnabled } from "./eval-route-guard";
 
 export default function EvalsPage() {
@@ -15,13 +15,13 @@ export default function EvalsPage() {
 
   const productQualityEvaluation = createProductQualityEvaluationComposition();
   const suites = productQualityEvaluation.listEvalSuites();
-  const initialViewModel = createReadyEvalConsoleViewModel(
+  const initialViewModel = createReadyEvalMatrixViewModel(
     suites,
     GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
   );
 
   return (
-    <EvalConsoleClient
+    <EvalMatrixClient
       initialViewModel={initialViewModel}
       runSelectedEvalSuite={runSelectedEvalSuiteAction}
     />
