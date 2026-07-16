@@ -206,6 +206,91 @@ export function findEvalMatrixCell(
   return null;
 }
 
+export type EvalMatrixCellNavigationDirection = "up" | "down" | "left" | "right";
+export type EvalMatrixCellNavigationMode = "matrix" | "stacked-list";
+
+export function findNextEvalMatrixCellSelection(input: {
+  rows: EvalMatrixTestCaseRow[];
+  current: EvalCellSelection;
+  direction: EvalMatrixCellNavigationDirection;
+  mode?: EvalMatrixCellNavigationMode;
+}): EvalCellSelection | null {
+  const mode = input.mode ?? "matrix";
+
+  if (mode === "stacked-list") {
+    return findNextStackedListCellSelection(input.rows, input.current, input.direction);
+  }
+
+  return findNextMatrixCellSelection(input.rows, input.current, input.direction);
+}
+
+function findNextStackedListCellSelection(
+  rows: EvalMatrixTestCaseRow[],
+  current: EvalCellSelection,
+  direction: EvalMatrixCellNavigationDirection,
+): EvalCellSelection | null {
+  if (direction !== "up" && direction !== "down") {
+    return null;
+  }
+
+  const cells = rows.flatMap((row) => row.cells);
+  const currentIndex = cells.findIndex((cell) => isCellSelection(cell, current));
+
+  if (currentIndex === -1) {
+    return null;
+  }
+
+  const nextIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  const nextCell = cells[nextIndex];
+  return nextCell ? toCellSelection(nextCell) : null;
+}
+
+function findNextMatrixCellSelection(
+  rows: EvalMatrixTestCaseRow[],
+  current: EvalCellSelection,
+  direction: EvalMatrixCellNavigationDirection,
+): EvalCellSelection | null {
+  const rowIndex = rows.findIndex((row) => row.cells.some((cell) => isCellSelection(cell, current)));
+
+  if (rowIndex === -1) {
+    return null;
+  }
+
+  const currentRow = rows[rowIndex];
+  const cellIndex = currentRow.cells.findIndex((cell) => isCellSelection(cell, current));
+
+  if (cellIndex === -1) {
+    return null;
+  }
+
+  if (direction === "left" || direction === "right") {
+    const nextIndex = direction === "left" ? cellIndex - 1 : cellIndex + 1;
+    const nextCell = currentRow.cells[nextIndex];
+    return nextCell ? toCellSelection(nextCell) : null;
+  }
+
+  const nextRowIndex = direction === "up" ? rowIndex - 1 : rowIndex + 1;
+  const nextRow = rows[nextRowIndex];
+
+  if (!nextRow) {
+    return null;
+  }
+
+  const sameVariantCell = nextRow.cells.find((cell) => cell.variantId === current.variantId);
+  const fallbackCell = nextRow.cells[Math.min(cellIndex, nextRow.cells.length - 1)];
+  const nextCell = sameVariantCell ?? fallbackCell;
+
+  return nextCell ? toCellSelection(nextCell) : null;
+}
+
+function isCellSelection(cell: EvalMatrixShellCell, selection: EvalCellSelection): boolean {
+  return cell.testCaseId === selection.testCaseId && cell.variantId === selection.variantId;
+}
+
+function toCellSelection(cell: EvalMatrixShellCell): EvalCellSelection {
+  return { testCaseId: cell.testCaseId, variantId: cell.variantId };
+}
+
 function createBaseViewModel(input: {
   suites: EvalMatrixSuite[];
   selectedSuite: EvalMatrixSuite;

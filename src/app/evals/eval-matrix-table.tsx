@@ -1,14 +1,19 @@
 import type { EvalPromptModelVariant } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
 
+import type { KeyboardEvent } from "react";
+
 import type { EvalCellSelection, EvalMatrixShellCell, EvalMatrixTestCaseRow } from "./eval-matrix-types";
+import type { EvalMatrixCellNavigationDirection } from "./eval-matrix-view-model";
 
 type EvalMatrixTableProps = {
   rows: EvalMatrixTestCaseRow[];
   variants: EvalPromptModelVariant[];
-  onSelectCell: (selection: EvalCellSelection) => void;
+  onSelectCell: (selection: EvalCellSelection, mode: "matrix") => void;
+  onCellButtonRef: (selection: EvalCellSelection, mode: "matrix", element: HTMLButtonElement | null) => void;
+  onCellArrowNavigation: (selection: EvalCellSelection, direction: EvalMatrixCellNavigationDirection, mode: "matrix") => void;
 };
 
-export function EvalMatrixTable({ rows, variants, onSelectCell }: EvalMatrixTableProps) {
+export function EvalMatrixTable({ rows, variants, onSelectCell, onCellButtonRef, onCellArrowNavigation }: EvalMatrixTableProps) {
   return (
     <div className="hidden overflow-x-auto border border-slate-800 bg-slate-950 md:block" data-layout="matrix">
       <table className="w-full min-w-[720px] border-collapse text-left text-sm">
@@ -33,9 +38,11 @@ export function EvalMatrixTable({ rows, variants, onSelectCell }: EvalMatrixTabl
                 <td key={cell.id} className="min-w-80 px-3 py-3 align-top">
                   <button
                     type="button"
-                    onClick={() => onSelectCell({ testCaseId: cell.testCaseId, variantId: cell.variantId })}
+                    ref={(element) => onCellButtonRef(toCellSelection(cell), "matrix", element)}
+                    onClick={() => onSelectCell(toCellSelection(cell), "matrix")}
+                    onKeyDown={(event) => handleCellKeyDown(event, cell, onCellArrowNavigation)}
                     className={`flex w-full flex-col gap-1 border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-blue-200 ${cellClassName(cell)}`}
-                    aria-label={`Open ${cell.testCaseName} ${cell.variantName} detail: ${cell.statusLabel}`}
+                    aria-label={`Open ${cell.testCaseName} ${cell.variantName} detail: ${cell.statusLabel}. Press Enter or Space to open.`}
                   >
                     <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-100">
                       {cell.statusLabel} · {cell.assertionSummary}
@@ -72,4 +79,44 @@ function cellClassName(cell: EvalMatrixShellCell): string {
   }
 
   return "border-slate-800 bg-slate-900/50 hover:border-slate-500";
+}
+
+
+function handleCellKeyDown(
+  event: KeyboardEvent<HTMLButtonElement>,
+  cell: EvalMatrixShellCell,
+  onCellArrowNavigation: EvalMatrixTableProps["onCellArrowNavigation"],
+) {
+  const direction = getArrowDirection(event.key);
+
+  if (!direction) {
+    return;
+  }
+
+  event.preventDefault();
+  onCellArrowNavigation(toCellSelection(cell), direction, "matrix");
+}
+
+function getArrowDirection(key: string): EvalMatrixCellNavigationDirection | null {
+  if (key === "ArrowUp") {
+    return "up";
+  }
+
+  if (key === "ArrowDown") {
+    return "down";
+  }
+
+  if (key === "ArrowLeft") {
+    return "left";
+  }
+
+  if (key === "ArrowRight") {
+    return "right";
+  }
+
+  return null;
+}
+
+function toCellSelection(cell: EvalMatrixShellCell): EvalCellSelection {
+  return { testCaseId: cell.testCaseId, variantId: cell.variantId };
 }

@@ -3,6 +3,7 @@ import { EvalCellDetailDrawer } from "./eval-cell-detail-drawer";
 import { EvalFilterBar } from "./eval-filter-bar";
 import { EvalMatrixTable } from "./eval-matrix-table";
 import type { EvalCellSelection, EvalMatrixShellCell, EvalMatrixViewModel } from "./eval-matrix-types";
+import type { EvalMatrixCellNavigationDirection, EvalMatrixCellNavigationMode } from "./eval-matrix-view-model";
 import { EvalSummaryBar } from "./eval-summary-bar";
 import { EvalTestCaseList } from "./eval-test-case-list";
 
@@ -16,8 +17,14 @@ type EvalMatrixScreenProps = {
   onFailuresOnlyChange?: (value: boolean) => void;
   onSearchQueryChange?: (value: string) => void;
   onVisibleVariantIdsChange?: (variantIds: string[]) => void;
-  onSelectCell?: (selection: EvalCellSelection) => void;
+  onSelectCell?: (selection: EvalCellSelection, mode: EvalMatrixCellNavigationMode) => void;
   onCloseCellDetail?: () => void;
+  onCellButtonRef?: (selection: EvalCellSelection, mode: EvalMatrixCellNavigationMode, element: HTMLButtonElement | null) => void;
+  onCellArrowNavigation?: (
+    selection: EvalCellSelection,
+    direction: EvalMatrixCellNavigationDirection,
+    mode: EvalMatrixCellNavigationMode,
+  ) => void;
 };
 
 export function EvalMatrixScreen({
@@ -32,6 +39,8 @@ export function EvalMatrixScreen({
   onVisibleVariantIdsChange = () => undefined,
   onSelectCell = () => undefined,
   onCloseCellDetail = () => undefined,
+  onCellButtonRef = () => undefined,
+  onCellArrowNavigation = () => undefined,
 }: EvalMatrixScreenProps) {
   return (
     <main className="min-h-screen bg-slate-950 px-3 py-4 text-slate-100 sm:px-5 lg:px-8">
@@ -80,8 +89,19 @@ export function EvalMatrixScreen({
           <EvalBlockedPanel viewModel={viewModel} />
         ) : (
           <section aria-label="Eval results" className="flex flex-col gap-3">
-            <EvalTestCaseList rows={viewModel.rows} onSelectCell={onSelectCell} />
-            <EvalMatrixTable rows={viewModel.rows} variants={viewModel.variants} onSelectCell={onSelectCell} />
+            <EvalTestCaseList
+              rows={viewModel.rows}
+              onSelectCell={onSelectCell}
+              onCellButtonRef={onCellButtonRef}
+              onCellArrowNavigation={onCellArrowNavigation}
+            />
+            <EvalMatrixTable
+              rows={viewModel.rows}
+              variants={viewModel.variants}
+              onSelectCell={onSelectCell}
+              onCellButtonRef={onCellButtonRef}
+              onCellArrowNavigation={onCellArrowNavigation}
+            />
           </section>
         )}
 

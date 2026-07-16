@@ -1,11 +1,16 @@
+import type { KeyboardEvent } from "react";
+
 import type { EvalCellSelection, EvalMatrixShellCell, EvalMatrixTestCaseRow } from "./eval-matrix-types";
+import type { EvalMatrixCellNavigationDirection } from "./eval-matrix-view-model";
 
 type EvalTestCaseListProps = {
   rows: EvalMatrixTestCaseRow[];
-  onSelectCell: (selection: EvalCellSelection) => void;
+  onSelectCell: (selection: EvalCellSelection, mode: "stacked-list") => void;
+  onCellButtonRef: (selection: EvalCellSelection, mode: "stacked-list", element: HTMLButtonElement | null) => void;
+  onCellArrowNavigation: (selection: EvalCellSelection, direction: EvalMatrixCellNavigationDirection, mode: "stacked-list") => void;
 };
 
-export function EvalTestCaseList({ rows, onSelectCell }: EvalTestCaseListProps) {
+export function EvalTestCaseList({ rows, onSelectCell, onCellButtonRef, onCellArrowNavigation }: EvalTestCaseListProps) {
   return (
     <section aria-label="Phone Test Cases" className="flex flex-col gap-2 md:hidden" data-layout="stacked-list">
       <h2 className="px-1 text-sm font-semibold text-slate-200">Test Cases</h2>
@@ -17,9 +22,11 @@ export function EvalTestCaseList({ rows, onSelectCell }: EvalTestCaseListProps) 
             <button
               key={cell.id}
               type="button"
-              onClick={() => onSelectCell({ testCaseId: cell.testCaseId, variantId: cell.variantId })}
+              ref={(element) => onCellButtonRef(toCellSelection(cell), "stacked-list", element)}
+              onClick={() => onSelectCell(toCellSelection(cell), "stacked-list")}
+              onKeyDown={(event) => handleCellKeyDown(event, cell, onCellArrowNavigation)}
               className={`mt-3 flex w-full flex-col gap-1 border-t pt-3 text-left focus:outline-none focus:ring-2 focus:ring-blue-200 ${cellListClassName(cell)}`}
-              aria-label={`Open ${cell.testCaseName} ${cell.variantName} detail: ${cell.statusLabel}`}
+              aria-label={`Open ${cell.testCaseName} ${cell.variantName} detail: ${cell.statusLabel}. Press Enter or Space to open.`}
             >
               <span className="text-sm font-semibold text-slate-100">
                 {cell.statusLabel} · {cell.assertionSummary}
@@ -45,4 +52,36 @@ function cellListClassName(cell: EvalMatrixShellCell): string {
   }
 
   return "border-slate-800";
+}
+
+
+function handleCellKeyDown(
+  event: KeyboardEvent<HTMLButtonElement>,
+  cell: EvalMatrixShellCell,
+  onCellArrowNavigation: EvalTestCaseListProps["onCellArrowNavigation"],
+) {
+  const direction = getStackedListArrowDirection(event.key);
+
+  if (!direction) {
+    return;
+  }
+
+  event.preventDefault();
+  onCellArrowNavigation(toCellSelection(cell), direction, "stacked-list");
+}
+
+function getStackedListArrowDirection(key: string): EvalMatrixCellNavigationDirection | null {
+  if (key === "ArrowUp") {
+    return "up";
+  }
+
+  if (key === "ArrowDown") {
+    return "down";
+  }
+
+  return null;
+}
+
+function toCellSelection(cell: EvalMatrixShellCell): EvalCellSelection {
+  return { testCaseId: cell.testCaseId, variantId: cell.variantId };
 }

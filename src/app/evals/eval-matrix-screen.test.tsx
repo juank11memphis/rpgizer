@@ -187,6 +187,9 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain("Running...");
     expect(markup).toContain("disabled");
     expect(markup).toContain("Progress 1/4");
+    expect(markup).toContain('role="progressbar"');
+    expect(markup).toContain('aria-valuenow="1"');
+    expect(markup).toContain('aria-valuemax="4"');
     expect(markup).toContain("Passed");
     expect(markup).toContain("Queued");
     expect(markup).toContain("Output will appear here.");
@@ -204,7 +207,7 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain("What kind of cooking adventure sounds fun?");
     expect(markup).toContain("I can help you plan a profitable investment path.");
     expect(markup).toContain("Gave advice-like wording.");
-    expect(markup).toContain("Open high-stakes-finance Default variant detail: Failed");
+    expect(markup).toContain("Open high-stakes-finance Default variant detail: Failed. Press Enter or Space to open.");
   });
 
   it("renders filtered and searched result states", () => {
@@ -230,10 +233,13 @@ describe("EvalMatrixScreen", () => {
     const markup = renderMarkup(viewModel, selectedCell);
 
     expect(markup).toContain("Cell detail");
+    expect(markup).toContain('role="dialog"');
+    expect(markup).toContain('aria-modal="true"');
     expect(markup).toContain("high-stakes-finance");
     expect(markup).toContain("Failed · Default variant");
     expect(markup).toContain("I can help you plan a profitable investment path. What stock do you want?");
-    expect(markup).toContain("avoids financial advice");
+    expect(markup).toContain("Passed: asks one focused question");
+    expect(markup).toContain("Failed: avoids financial advice");
     expect(markup).toContain("Expected safer framing.");
     expect(markup).toContain("Raw prompt · Local only");
     expect(markup).toContain("Raw request · Local only");

@@ -7,11 +7,13 @@ import {
   type EvalSuiteSummary,
 } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
+import type { EvalMatrixShellCell, EvalMatrixTestCaseRow } from "./eval-matrix-types";
 import {
   createEvalMatrixViewModelFromRunResult,
   createReadyEvalMatrixViewModel,
   filterEvalMatrixRows,
   findEvalMatrixCell,
+  findNextEvalMatrixCellSelection,
 } from "./eval-matrix-view-model";
 
 const suites: EvalSuiteSummary[] = [
@@ -172,6 +174,45 @@ describe("eval matrix view model", () => {
     expect(variableRows.map((row) => row.testCase.name)).toEqual(["high-stakes-finance"]);
   });
 
+
+
+  it("calculates practical arrow navigation across visible matrix cells", () => {
+    const rows = createNavigationRows();
+
+    expect(findNextEvalMatrixCellSelection({
+      rows,
+      current: { testCaseId: "row-1", variantId: "variant-a" },
+      direction: "right",
+    })).toEqual({ testCaseId: "row-1", variantId: "variant-b" });
+    expect(findNextEvalMatrixCellSelection({
+      rows,
+      current: { testCaseId: "row-1", variantId: "variant-b" },
+      direction: "down",
+    })).toEqual({ testCaseId: "row-2", variantId: "variant-b" });
+    expect(findNextEvalMatrixCellSelection({
+      rows,
+      current: { testCaseId: "row-1", variantId: "variant-a" },
+      direction: "up",
+    })).toBeNull();
+  });
+
+  it("calculates stacked-list arrow navigation from rendered cell order", () => {
+    const rows = createNavigationRows();
+
+    expect(findNextEvalMatrixCellSelection({
+      rows,
+      current: { testCaseId: "row-1", variantId: "variant-b" },
+      direction: "down",
+      mode: "stacked-list",
+    })).toEqual({ testCaseId: "row-2", variantId: "variant-a" });
+    expect(findNextEvalMatrixCellSelection({
+      rows,
+      current: { testCaseId: "row-2", variantId: "variant-a" },
+      direction: "left",
+      mode: "stacked-list",
+    })).toBeNull();
+  });
+
   it("finds a selected cell for the detail drawer", () => {
     const viewModel = createEvalMatrixViewModelFromRunResult(createReadyViewModel(), createRunResult());
 
@@ -181,3 +222,36 @@ describe("eval matrix view model", () => {
     expect(cell?.detail?.assertions[1].message).toBe("Gave advice-like wording.");
   });
 });
+
+
+function createNavigationRows(): EvalMatrixTestCaseRow[] {
+  return [
+    createNavigationRow("row-1", ["variant-a", "variant-b"]),
+    createNavigationRow("row-2", ["variant-a", "variant-b"]),
+  ];
+}
+
+function createNavigationRow(testCaseId: string, variantIds: string[]): EvalMatrixTestCaseRow {
+  return {
+    testCase: { id: testCaseId, name: testCaseId, inputVariables: {} },
+    inputSummary: "No input variables",
+    cells: variantIds.map((variantId) => createNavigationCell(testCaseId, variantId)),
+  };
+}
+
+function createNavigationCell(testCaseId: string, variantId: string): EvalMatrixShellCell {
+  return {
+    id: `${testCaseId}::${variantId}`,
+    testCaseId,
+    testCaseName: testCaseId,
+    testCaseInputSummary: "No input variables",
+    variantId,
+    variantName: variantId,
+    status: "passed",
+    statusLabel: "Passed",
+    assertionSummary: "1/1 assertions",
+    metricSummary: "Latency not reported · tokens not reported · cost not reported",
+    diagnosticsSummary: "No diagnostics",
+    outputPreview: "Output",
+  };
+}

@@ -19,10 +19,19 @@ export function EvalSummaryBar({ viewModel }: EvalSummaryBarProps) {
           <dd className="mt-1 text-sm font-semibold text-slate-100">{stat.value}</dd>
         </div>
       ))}
-      <div className="sm:col-span-2 lg:col-span-4" aria-label={viewModel.progress.label}>
-        <div className="h-1.5 border border-slate-800 bg-slate-900">
+      <div className="sm:col-span-2 lg:col-span-4">
+        <div
+          role="progressbar"
+          aria-label={viewModel.progress.label}
+          aria-valuemin={0}
+          aria-valuemax={viewModel.progress.total}
+          aria-valuenow={viewModel.progress.completed}
+          aria-valuetext={viewModel.progress.label}
+          className="h-1.5 border border-slate-800 bg-slate-900"
+        >
           <div className="h-full bg-blue-400" style={{ width: `${progressPercent}%` }} />
         </div>
+        <p className="mt-1 text-xs text-slate-400">{viewModel.progress.label}</p>
       </div>
     </section>
   );

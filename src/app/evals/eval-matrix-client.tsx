@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import type { EvalRunResult } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
 
@@ -11,6 +11,9 @@ import {
   createRunningEvalMatrixViewModel,
   filterEvalMatrixRows,
   findEvalMatrixCell,
+  findNextEvalMatrixCellSelection,
+  type EvalMatrixCellNavigationDirection,
+  type EvalMatrixCellNavigationMode,
 } from "./eval-matrix-view-model";
 
 type EvalMatrixClientProps = {
@@ -27,6 +30,8 @@ export function EvalMatrixClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleVariantIds, setVisibleVariantIds] = useState(() => initialViewModel.variants.map((variant) => variant.id));
   const [selectedCellKey, setSelectedCellKey] = useState<EvalCellSelection | null>(null);
+  const cellButtonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const pendingFocusRestoreKeyRef = useRef<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleRunSelectedEval() {
@@ -36,6 +41,7 @@ export function EvalMatrixClient({
 
     const suiteId = viewModel.selectedSuite.id;
     setSelectedCellKey(null);
+    pendingFocusRestoreKeyRef.current = null;
     setViewModel((currentViewModel) => createRunningEvalMatrixViewModel(currentViewModel));
 
     startTransition(async () => {
@@ -66,19 +72,64 @@ export function EvalMatrixClient({
   }
 
   useEffect(() => {
-    if (!selectedCellKey) {
+    if (selectedCellKey || !pendingFocusRestoreKeyRef.current) {
       return;
     }
 
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setSelectedCellKey(null);
-      }
+    const focusRestoreKey = pendingFocusRestoreKeyRef.current;
+    pendingFocusRestoreKeyRef.current = null;
+
+    window.requestAnimationFrame(() => {
+      cellButtonRefs.current.get(focusRestoreKey)?.focus();
+    });
+  }, [selectedCellKey]);
+
+  function handleCellButtonRef(
+    selection: EvalCellSelection,
+    mode: EvalMatrixCellNavigationMode,
+    element: HTMLButtonElement | null,
+  ) {
+    const key = createCellButtonKey(selection, mode);
+
+    if (element) {
+      cellButtonRefs.current.set(key, element);
+      return;
     }
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedCellKey]);
+    cellButtonRefs.current.delete(key);
+  }
+
+  function handleSelectCell(selection: EvalCellSelection, mode: EvalMatrixCellNavigationMode) {
+    pendingFocusRestoreKeyRef.current = createCellButtonKey(selection, mode);
+    setSelectedCellKey(selection);
+  }
+
+  function handleCloseCellDetail() {
+    if (selectedCellKey) {
+      pendingFocusRestoreKeyRef.current = pendingFocusRestoreKeyRef.current ?? createCellKey(selectedCellKey);
+    }
+
+    setSelectedCellKey(null);
+  }
+
+  function handleCellArrowNavigation(
+    selection: EvalCellSelection,
+    direction: EvalMatrixCellNavigationDirection,
+    mode: EvalMatrixCellNavigationMode,
+  ) {
+    const nextSelection = findNextEvalMatrixCellSelection({
+      rows: filteredRows,
+      current: selection,
+      direction,
+      mode,
+    });
+
+    if (!nextSelection) {
+      return;
+    }
+
+    cellButtonRefs.current.get(createCellButtonKey(nextSelection, mode))?.focus();
+  }
 
   const screenViewModel: EvalMatrixViewModel = isPending
     ? {
@@ -87,21 +138,23 @@ export function EvalMatrixClient({
       }
     : viewModel;
 
-  const effectiveVisibleVariantIds = useMemo(() => {
-    const availableVariantIds = screenViewModel.variants.map((variant) => variant.id);
-    const stillVisibleVariantIds = visibleVariantIds.filter((variantId) => availableVariantIds.includes(variantId));
-    return stillVisibleVariantIds.length > 0 ? stillVisibleVariantIds : availableVariantIds.slice(0, 1);
-  }, [screenViewModel.variants, visibleVariantIds]);
-
-  const filteredRows = useMemo(
-    () => filterEvalMatrixRows({ rows: screenViewModel.rows, failuresOnly, searchQuery, visibleVariantIds: effectiveVisibleVariantIds }),
-    [screenViewModel.rows, failuresOnly, searchQuery, effectiveVisibleVariantIds],
-  );
+  const availableVariantIds = screenViewModel.variants.map((variant) => variant.id);
+  const stillVisibleVariantIds = visibleVariantIds.filter((variantId) => availableVariantIds.includes(variantId));
+  const effectiveVisibleVariantIds = stillVisibleVariantIds.length > 0
+    ? stillVisibleVariantIds
+    : availableVariantIds.slice(0, 1);
+  const filteredRows = filterEvalMatrixRows({
+    rows: screenViewModel.rows,
+    failuresOnly,
+    searchQuery,
+    visibleVariantIds: effectiveVisibleVariantIds,
+  });
   const selectedCell = findEvalMatrixCell(screenViewModel.rows, selectedCellKey);
+  const visibleVariants = screenViewModel.variants.filter((variant) => effectiveVisibleVariantIds.includes(variant.id));
 
   return (
     <EvalMatrixScreen
-      viewModel={{ ...screenViewModel, rows: filteredRows }}
+      viewModel={{ ...screenViewModel, variants: visibleVariants, rows: filteredRows }}
       onRunSelectedEval={handleRunSelectedEval}
       failuresOnly={failuresOnly}
       searchQuery={searchQuery}
@@ -110,8 +163,18 @@ export function EvalMatrixClient({
       onFailuresOnlyChange={setFailuresOnly}
       onSearchQueryChange={setSearchQuery}
       onVisibleVariantIdsChange={setVisibleVariantIds}
-      onSelectCell={setSelectedCellKey}
-      onCloseCellDetail={() => setSelectedCellKey(null)}
+      onSelectCell={handleSelectCell}
+      onCloseCellDetail={handleCloseCellDetail}
+      onCellButtonRef={handleCellButtonRef}
+      onCellArrowNavigation={handleCellArrowNavigation}
     />
   );
+}
+
+function createCellKey(selection: EvalCellSelection): string {
+  return `${selection.testCaseId}::${selection.variantId}`;
+}
+
+function createCellButtonKey(selection: EvalCellSelection, mode: EvalMatrixCellNavigationMode): string {
+  return `${mode}::${createCellKey(selection)}`;
 }
