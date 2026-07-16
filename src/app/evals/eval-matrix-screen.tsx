@@ -1,16 +1,38 @@
 import { EvalBlockedPanel } from "./eval-blocked-panel";
+import { EvalCellDetailDrawer } from "./eval-cell-detail-drawer";
 import { EvalFilterBar } from "./eval-filter-bar";
 import { EvalMatrixTable } from "./eval-matrix-table";
-import type { EvalMatrixViewModel } from "./eval-matrix-types";
+import type { EvalCellSelection, EvalMatrixShellCell, EvalMatrixViewModel } from "./eval-matrix-types";
 import { EvalSummaryBar } from "./eval-summary-bar";
 import { EvalTestCaseList } from "./eval-test-case-list";
 
 type EvalMatrixScreenProps = {
   viewModel: EvalMatrixViewModel;
   onRunSelectedEval: () => void;
+  failuresOnly?: boolean;
+  searchQuery?: string;
+  visibleVariantIds?: string[];
+  selectedCell?: EvalMatrixShellCell | null;
+  onFailuresOnlyChange?: (value: boolean) => void;
+  onSearchQueryChange?: (value: string) => void;
+  onVisibleVariantIdsChange?: (variantIds: string[]) => void;
+  onSelectCell?: (selection: EvalCellSelection) => void;
+  onCloseCellDetail?: () => void;
 };
 
-export function EvalMatrixScreen({ viewModel, onRunSelectedEval }: EvalMatrixScreenProps) {
+export function EvalMatrixScreen({
+  viewModel,
+  onRunSelectedEval,
+  failuresOnly = false,
+  searchQuery = "",
+  visibleVariantIds = viewModel.variants.map((variant) => variant.id),
+  selectedCell = null,
+  onFailuresOnlyChange = () => undefined,
+  onSearchQueryChange = () => undefined,
+  onVisibleVariantIdsChange = () => undefined,
+  onSelectCell = () => undefined,
+  onCloseCellDetail = () => undefined,
+}: EvalMatrixScreenProps) {
   return (
     <main className="min-h-screen bg-slate-950 px-3 py-4 text-slate-100 sm:px-5 lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3">
@@ -38,7 +60,16 @@ export function EvalMatrixScreen({ viewModel, onRunSelectedEval }: EvalMatrixScr
             </button>
           </div>
           <EvalSummaryBar viewModel={viewModel} />
-          <EvalFilterBar filters={viewModel.filters} variants={viewModel.variants} />
+          <EvalFilterBar
+            filters={viewModel.filters}
+            variants={viewModel.variants}
+            failuresOnly={failuresOnly}
+            searchQuery={searchQuery}
+            visibleVariantIds={visibleVariantIds}
+            onFailuresOnlyChange={onFailuresOnlyChange}
+            onSearchQueryChange={onSearchQueryChange}
+            onVisibleVariantIdsChange={onVisibleVariantIdsChange}
+          />
         </header>
 
         <div aria-live="polite" aria-atomic="true" className="sr-only">
@@ -49,10 +80,12 @@ export function EvalMatrixScreen({ viewModel, onRunSelectedEval }: EvalMatrixScr
           <EvalBlockedPanel viewModel={viewModel} />
         ) : (
           <section aria-label="Eval results" className="flex flex-col gap-3">
-            <EvalTestCaseList rows={viewModel.rows} />
-            <EvalMatrixTable rows={viewModel.rows} variants={viewModel.variants} />
+            <EvalTestCaseList rows={viewModel.rows} onSelectCell={onSelectCell} />
+            <EvalMatrixTable rows={viewModel.rows} variants={viewModel.variants} onSelectCell={onSelectCell} />
           </section>
         )}
+
+        {selectedCell ? <EvalCellDetailDrawer cell={selectedCell} onClose={onCloseCellDetail} /> : null}
       </div>
     </main>
   );

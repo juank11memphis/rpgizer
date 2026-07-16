@@ -13,6 +13,7 @@ import {
 } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
 import type {
+  EvalCellSelection,
   EvalMatrixShellCell,
   EvalMatrixSuite,
   EvalMatrixSummaryStat,
@@ -69,8 +70,10 @@ export function createRunningEvalMatrixViewModel(
         status,
         statusLabel: index === 0 ? "Passed" : index === 1 ? "Running..." : "Queued",
         assertionSummary: index === 0 ? "Completed" : index === 1 ? "In progress" : "Waiting",
-        metricSummary: index === 0 ? "Latency not reported" : "Metrics pending",
+        metricSummary: index === 0 ? "Latency not reported · tokens not reported · cost not reported" : "Metrics pending",
+        diagnosticsSummary: index === 0 ? "No diagnostics" : "Diagnostics pending",
         outputPreview: index === 0 ? "Completed output preview will appear here." : "Output will appear here.",
+        detail: undefined,
       })),
     };
   });
@@ -148,6 +151,61 @@ export function createEvalMatrixViewModelFromRunResult(
   };
 }
 
+export function filterEvalMatrixRows(input: {
+  rows: EvalMatrixTestCaseRow[];
+  failuresOnly: boolean;
+  searchQuery: string;
+  visibleVariantIds: string[];
+}): EvalMatrixTestCaseRow[] {
+  const normalizedSearch = input.searchQuery.trim().toLowerCase();
+  const visibleVariantIds = new Set(input.visibleVariantIds);
+
+  return input.rows
+    .map((row) => ({
+      ...row,
+      cells: row.cells.filter((cell) => {
+        const isVisibleVariant = visibleVariantIds.size === 0 || visibleVariantIds.has(cell.variantId);
+        const matchesFailure = !input.failuresOnly || cell.status === "failed" || cell.status === "error" || cell.status === "blocked";
+        return isVisibleVariant && matchesFailure;
+      }),
+    }))
+    .filter((row) => {
+      if (row.cells.length === 0) {
+        return false;
+      }
+
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return [row.testCase.name, row.testCase.id, row.inputSummary]
+        .join(" ")
+        .toLowerCase()
+        .includes(normalizedSearch);
+    });
+}
+
+export function findEvalMatrixCell(
+  rows: EvalMatrixTestCaseRow[],
+  selection: EvalCellSelection | null,
+): EvalMatrixShellCell | null {
+  if (!selection) {
+    return null;
+  }
+
+  for (const row of rows) {
+    const cell = row.cells.find(
+      (candidate) => candidate.testCaseId === selection.testCaseId && candidate.variantId === selection.variantId,
+    );
+
+    if (cell) {
+      return cell;
+    }
+  }
+
+  return null;
+}
+
 function createBaseViewModel(input: {
   suites: EvalMatrixSuite[];
   selectedSuite: EvalMatrixSuite;
@@ -191,6 +249,7 @@ function createRowsFromTestCases(
 ): EvalMatrixTestCaseRow[] {
   return testCases.map((testCase) => ({
     testCase,
+    inputSummary: formatInputVariables(testCase.inputVariables),
     cells: [createPlaceholderCell(testCase, DEFAULT_VARIANT, status)],
   }));
 }
@@ -198,12 +257,13 @@ function createRowsFromTestCases(
 function createRowsFromMatrix(matrix: EvalMatrix): EvalMatrixTestCaseRow[] {
   return matrix.testCases.map((testCase) => ({
     testCase,
+    inputSummary: formatInputVariables(testCase.inputVariables),
     cells: matrix.variants.map((variant) => {
       const cell = matrix.cells.find(
         (candidate) => candidate.testCaseId === testCase.id && candidate.variantId === variant.id,
       );
 
-      return cell ? createShellCell(cell) : createPlaceholderCell(testCase, variant, "not_run");
+      return cell ? createShellCell(testCase, variant, cell) : createPlaceholderCell(testCase, variant, "not_run");
     }),
   }));
 }
@@ -214,29 +274,53 @@ function createPlaceholderCell(
   status: EvalMatrixShellCell["status"],
 ): EvalMatrixShellCell {
   const statusLabel = formatCellStatus(status);
+  const inputSummary = formatInputVariables(testCase.inputVariables);
 
   return {
     id: `${testCase.id}::${variant.id}`,
     testCaseId: testCase.id,
+    testCaseName: testCase.name,
+    testCaseInputSummary: inputSummary,
     variantId: variant.id,
+    variantName: variant.name,
     status,
     statusLabel,
     assertionSummary: status === "not_run" ? "Not run" : statusLabel,
     metricSummary: "Latency not reported · tokens not reported · cost not reported",
+    diagnosticsSummary: "No diagnostics",
     outputPreview: "Output will appear here.",
   };
 }
 
-function createShellCell(cell: EvalCell): EvalMatrixShellCell {
+function createShellCell(
+  testCase: EvalTestCase,
+  variant: EvalPromptModelVariant,
+  cell: EvalCell,
+): EvalMatrixShellCell {
+  const outputMarkdown = cell.outputMarkdown ?? cell.outputPreview ?? "Output not reported.";
+  const expectedGolden = cell.artifacts.find((artifact) => /expected|golden/i.test(artifact.label))?.value;
+
   return {
     id: cell.id,
     testCaseId: cell.testCaseId,
+    testCaseName: testCase.name,
+    testCaseInputSummary: formatInputVariables(testCase.inputVariables),
     variantId: cell.variantId,
+    variantName: variant.name,
     status: cell.status,
     statusLabel: formatCellStatus(cell.status),
     assertionSummary: formatAssertionSummary(cell.assertions),
     metricSummary: formatMetrics(cell.metrics),
+    diagnosticsSummary: formatDiagnosticsSummary(cell.diagnostics),
     outputPreview: cell.outputPreview ?? "Output will appear here.",
+    detail: {
+      outputMarkdown,
+      assertions: cell.assertions,
+      diagnostics: cell.diagnostics,
+      metrics: cell.metrics,
+      expectedGolden,
+      artifacts: cell.artifacts,
+    },
   };
 }
 
@@ -266,7 +350,7 @@ function createResultSummaryStats(
     ? "--"
     : `${Math.round(aggregates.passRate * 100)}%`;
   const averageLatency = aggregates?.averageLatencyMs === null || aggregates?.averageLatencyMs === undefined
-    ? formatMilliseconds(durationMs)
+    ? (aggregates ? "Not reported" : formatMilliseconds(durationMs))
     : formatMilliseconds(aggregates.averageLatencyMs);
   const totalCost = aggregates?.totalCostUsd === null || aggregates?.totalCostUsd === undefined
     ? "Not reported"
@@ -293,6 +377,14 @@ function formatAssertionSummary(assertions: EvalCell["assertions"]): string {
     : `${failedCount} failed / ${assertions.length} assertions`;
 }
 
+function formatDiagnosticsSummary(diagnostics: EvalCell["diagnostics"]): string {
+  if (diagnostics.length === 0) {
+    return "No diagnostics";
+  }
+
+  return diagnostics.map((diagnostic) => diagnostic.message).join(" ");
+}
+
 function formatMetrics(metrics: EvalCellMetrics): string {
   return [
     formatMetric(metrics.latency),
@@ -304,7 +396,7 @@ function formatMetrics(metrics: EvalCellMetrics): string {
 function formatMetric(metric: EvalCellMetrics[keyof EvalCellMetrics]): string {
   if (!metric.reported || metric.value === null) {
     if (metric.unit === "ms") {
-      return "latency not reported";
+      return "Latency not reported";
     }
 
     if (metric.unit === "usd") {
@@ -323,6 +415,13 @@ function formatMetric(metric: EvalCellMetrics[keyof EvalCellMetrics]): string {
 
 function formatMilliseconds(value: number): string {
   return `${Math.round(value)} ms`;
+}
+
+function formatInputVariables(inputVariables: Record<string, string>): string {
+  const entries = Object.entries(inputVariables);
+  return entries.length === 0
+    ? "No input variables"
+    : entries.map(([key, value]) => `${key}=${value}`).join(" · ");
 }
 
 function formatCellStatus(status: EvalMatrixShellCell["status"]): string {

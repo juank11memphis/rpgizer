@@ -1,4 +1,7 @@
 import type {
+  EvalAssertion,
+  EvalCellArtifact,
+  EvalCellMetrics,
   EvalCellStatus,
   EvalDiagnostic,
   EvalPromptModelVariant,
@@ -42,20 +45,40 @@ export type EvalMatrixProgress = {
   label: string;
 };
 
+export type EvalMatrixCellDetail = {
+  outputMarkdown: string;
+  assertions: EvalAssertion[];
+  diagnostics: EvalDiagnostic[];
+  metrics: EvalCellMetrics;
+  expectedGolden?: string;
+  artifacts: EvalCellArtifact[];
+};
+
 export type EvalMatrixShellCell = {
   id: string;
   testCaseId: string;
+  testCaseName: string;
+  testCaseInputSummary: string;
   variantId: string;
+  variantName: string;
   status: EvalCellStatus;
   statusLabel: string;
   assertionSummary: string;
   metricSummary: string;
+  diagnosticsSummary: string;
   outputPreview: string;
+  detail?: EvalMatrixCellDetail;
 };
 
 export type EvalMatrixTestCaseRow = {
   testCase: EvalTestCase;
+  inputSummary: string;
   cells: EvalMatrixShellCell[];
+};
+
+export type EvalCellSelection = {
+  testCaseId: string;
+  variantId: string;
 };
 
 export type EvalMatrixViewModel = {
