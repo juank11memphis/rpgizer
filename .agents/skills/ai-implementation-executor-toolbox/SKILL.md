@@ -18,13 +18,17 @@ This toolbox is for `sibu-implementation-executor` workers only. It is not a nor
 - Treat distilled skill constraints from the packet as binding task constraints.
 - If an optional relevant skill is not installed and you encounter an unmapped language, framework, database, or architecture pattern, do not guess silently; continue only when safe and flag the gap as a Review Gate risk.
 
+### Selected architecture guidance
+- Required: read `.agents/skills/ddd-hexagonal/SKILL.md` before executing or reviewing implementation steps.
+- Treat this selected architecture guidance as binding for boundaries, dependency direction, sequencing, and reviewable constraints.
+- If the selected architecture skill path is missing or unavailable, stop and tell the main agent to direct the user to run `sibu sync`; do not choose, infer, or substitute architecture guidance.
+
 ### Optional installed skills relevant to executor work
 - Structured Logging: read `.agents/skills/structured-logging/SKILL.md` when the story involves logs, workflows, handlers, jobs, external calls, errors, retries, long-running operations, state changes, or other observability-relevant behavior.
 - TypeScript: read `.agents/skills/typescript/SKILL.md` when relevant. For any task that changes `.ts` or `.tsx` files, also use `typescript`.
 - React: read `.agents/skills/react/SKILL.md` when relevant. For React component changes involving responsibility, props, state ownership, or presentational/data-owning boundaries, use `react`.
 - Next.js: read `.agents/skills/nextjs/SKILL.md` when relevant. For Next.js App Router or framework-specific changes—`src/app/**`, pages, layouts, route handlers, loading/error/not-found files, metadata, or Server/Client boundaries—use `nextjs`.
 - PostgreSQL Expert: read `.agents/skills/postgresql-expert/SKILL.md` when relevant. For PostgreSQL schema design, migrations, constraints, queries, indexing, or database tradeoffs, use `postgresql-expert`.
-- DDD + Hexagonal Architecture: read `.agents/skills/ddd-hexagonal/SKILL.md` when relevant. For backend features, refactors, bug fixes, persistence, external integrations, application/service boundaries, domain modeling, or architectural tradeoffs, use `ddd-hexagonal`.
 - AI Prompt Engineer Master: read `.agents/skills/ai-prompt-engineer-master/SKILL.md` when relevant. For prompt creation, rewriting, optimization, compression, evaluation, or reusable templates for AI models, agents, tools, coding assistants, or product workflows, use `ai-prompt-engineer-master`.
 - UX Expert: read `.agents/skills/ux-expert/SKILL.md` when relevant. For UX/UI design after product definition for UI-changing features, use `ux-expert`; downstream design, planning, and implementation must treat `docs/features/<feature-slug>/ux.md` mockups as binding UI goals, not redesign targets.
 
@@ -35,6 +39,7 @@ Use only the narrow packet from the main agent. The packet must include:
 - exactly one User Story path or one story-local `.impl_plan/` folder
 - required source artifact paths: story, Epic brief, feature brief, technical design, and UX spec when the story, plan, or feature has UI impact
 - this toolbox skill path
+- selected architecture skill path and distilled architecture constraints
 - required skill paths, including `clean-code` and `structured-logging` when the story touches observability-relevant code
 - optional installed skill paths relevant to the story
 - distilled skill constraints that are binding for this execution task
@@ -43,14 +48,17 @@ Use only the narrow packet from the main agent. The packet must include:
 
 If the packet names multiple stories, multiple plans, an Epic without one selected story, or no executable target, stop and ask the main agent for exactly one story or `.impl_plan/` path.
 
+If selected architecture guidance is missing from the packet or unavailable to read, stop and tell the main agent to direct the user to run `sibu sync`; do not choose, infer, or substitute architecture guidance.
+
 If a required source artifact or required skill path is missing, stop and report the blocker. Do not invent scope from partial context.
 
 ## Execution rules
 
-- Read the story, ordered step files, required source artifacts, required skills, and relevant optional installed skills before execution.
+- Read the story, ordered step files, required source artifacts, required skills, the selected architecture skill, and relevant optional installed skills before execution.
 - If `structured-logging` is provided in the packet, apply it only to observability-relevant code paths and do not duplicate its policy in other skill guidance.
+- Apply selected architecture guidance during implementation and review, including boundaries, dependency direction, sequencing, and architecture-specific risks.
 - Execute all unapproved step files in filename order.
-- Keep changes inside the story scope, step scope, source artifacts, and distilled constraints.
+- Keep changes inside the story scope, step scope, source artifacts, selected architecture constraints, and distilled constraints.
 - Read repository files narrowly, only as needed for the current step or validation result.
 - Run focused validation named by the step files or technical design when practical.
 - If validation fails and the fix is ambiguous, risky, or outside scope, stop and report the blocker.
