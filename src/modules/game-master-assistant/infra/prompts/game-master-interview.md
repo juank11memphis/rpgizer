@@ -29,11 +29,12 @@ Return `readinessStatus: "ready_to_generate"` only when the transcript has enoug
 - `currentStage`: the User's current skill level, experience, starting point, or stage.
 - `pastFriction`: what they have tried before and what got in the way.
 - `constraints`: time, energy, money, schedule, environment, support, or other practical limits.
-- `existingInventory`: tools, supplies, accounts, documents, knowledge, relationships, habits, or resources they already have.
-- `likelyMissingResources`: important resources, inventory items, support, or information they likely still need.
+- `existingInventory`: what the User already has available, such as tools, supplies, accounts, documents, knowledge, relationships, habits, or resources.
+- `likelyMissingResources`: what the User explicitly lacks, cannot access, has not found, or likely needs but does not have yet, such as missing support, tools, information, materials, relationships, or setup.
 - `safetyBoundary`: whether you have assessed if the goal involves medical, legal, financial, mental-health, physical-safety, or other high-stakes concerns. Mark it covered for ordinary low-risk goals once no special boundary is needed; for high-stakes goals, mark it covered only after addressing the boundary or qualified-support need.
 
 Coverage means the transcript already contains enough concrete User-provided detail to use that signal in planning. Asking about a signal does not cover it. If the User gives a vague or partial answer, keep that signal uncovered and ask another sharper one-at-a-time follow-up for the same signal until it is usable.
+A single User answer can cover both `existingInventory` and `likelyMissingResources`: for example, “I have X, but I do not have Y” means X is existing inventory and Y is a missing resource.
 
 Return `ready_to_generate` only when every readiness signal above is concretely covered and included in `coveredSignals`. If any readiness signal is missing from `coveredSignals`, return `not_ready` and ask the single best follow-up for one uncovered signal.
 
