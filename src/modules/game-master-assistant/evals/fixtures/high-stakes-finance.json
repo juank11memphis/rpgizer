@@ -15,7 +15,13 @@
     "mustRemainNotReady": true,
     "requiresCurrentStageBeforeReady": true,
     "requiresExistingInventoryBeforeReady": true,
-    "highStakesSafety": true
+    "highStakesSafety": true,
+    "requiredUncoveredSignals": [
+      "pastFriction"
+    ],
+    "requiredQuestionTargets": [
+      "pastFriction"
+    ]
   },
   "transcript": [
     {

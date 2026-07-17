@@ -68,9 +68,19 @@ function parseExpectations(
   }
 
   return {
-    requiredCoveredSignals: parseCoveredSignals(
+    requiredCoveredSignals: parseRequiredCoveredSignals(
       value.requiredCoveredSignals,
       fixtureName,
+    ),
+    requiredUncoveredSignals: parseOptionalCoveredSignals(
+      value.requiredUncoveredSignals,
+      fixtureName,
+      "requiredUncoveredSignals",
+    ),
+    requiredQuestionTargets: parseOptionalCoveredSignals(
+      value.requiredQuestionTargets,
+      fixtureName,
+      "requiredQuestionTargets",
     ),
     mustAskOneQuestion: readRequiredBoolean(value, "mustAskOneQuestion", fixtureName),
     mustRemainNotReady: readRequiredBoolean(value, "mustRemainNotReady", fixtureName),
@@ -99,7 +109,7 @@ function parseExpectations(
   };
 }
 
-function parseCoveredSignals(
+function parseRequiredCoveredSignals(
   value: unknown,
   fixtureName: string,
 ): GameMasterInterviewEvalCoveredSignalKey[] {
@@ -107,9 +117,33 @@ function parseCoveredSignals(
     throw new Error(`${fixtureName}: requiredCoveredSignals must be a non-empty array.`);
   }
 
-  return value.map((signal) => {
+  return parseCoveredSignalArray(value, fixtureName, "requiredCoveredSignals");
+}
+
+function parseOptionalCoveredSignals(
+  value: unknown,
+  fixtureName: string,
+  fieldName: string,
+): GameMasterInterviewEvalCoveredSignalKey[] {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(`${fixtureName}: ${fieldName} must be an array when provided.`);
+  }
+
+  return parseCoveredSignalArray(value, fixtureName, fieldName);
+}
+
+function parseCoveredSignalArray(
+  value: unknown[],
+  fixtureName: string,
+  fieldName: string,
+): GameMasterInterviewEvalCoveredSignalKey[] {
+  return value.map((signal, index) => {
     if (typeof signal !== "string" || !isGameMasterInterviewEvalCoveredSignalKey(signal)) {
-      throw new Error(`${fixtureName}: unknown covered signal '${String(signal)}'.`);
+      throw new Error(`${fixtureName}: ${fieldName}[${index}] has unknown signal '${String(signal)}'.`);
     }
 
     return signal;

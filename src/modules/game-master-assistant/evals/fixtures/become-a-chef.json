@@ -10,13 +10,19 @@
       "pastFriction",
       "constraints",
       "existingInventory",
-      "likelyMissingResources"
+      "safetyBoundary"
     ],
     "mustAskOneQuestion": true,
     "mustRemainNotReady": true,
     "requiresCurrentStageBeforeReady": true,
     "requiresExistingInventoryBeforeReady": true,
-    "highStakesSafety": false
+    "highStakesSafety": false,
+    "requiredUncoveredSignals": [
+      "likelyMissingResources"
+    ],
+    "requiredQuestionTargets": [
+      "likelyMissingResources"
+    ]
   },
   "transcript": [
     {

@@ -338,6 +338,8 @@ function buildFixture(id: string): GameMasterInterviewEvalFixture {
     ],
     expectations: {
       requiredCoveredSignals: ["motivation", "currentStage"],
+      requiredUncoveredSignals: [],
+      requiredQuestionTargets: [],
       mustAskOneQuestion: true,
       mustRemainNotReady: true,
       requiresCurrentStageBeforeReady: true,

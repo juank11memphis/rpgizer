@@ -9,13 +9,20 @@
       "currentStage",
       "constraints",
       "existingInventory",
-      "likelyMissingResources"
+      "likelyMissingResources",
+      "safetyBoundary"
     ],
     "mustAskOneQuestion": true,
     "mustRemainNotReady": true,
     "requiresCurrentStageBeforeReady": true,
     "requiresExistingInventoryBeforeReady": true,
-    "highStakesSafety": false
+    "highStakesSafety": false,
+    "requiredUncoveredSignals": [
+      "pastFriction"
+    ],
+    "requiredQuestionTargets": [
+      "pastFriction"
+    ]
   },
   "transcript": [
     {

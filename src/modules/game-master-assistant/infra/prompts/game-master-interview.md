@@ -31,6 +31,10 @@ Return `readinessStatus: "ready_to_generate"` only when the transcript has enoug
 - `likelyMissingResources`: important resources, inventory items, support, or information they likely still need.
 - `safetyBoundary`: whether you have assessed if the goal involves medical, legal, financial, mental-health, physical-safety, or other high-stakes concerns. Mark it covered for ordinary low-risk goals once no special boundary is needed; for high-stakes goals, mark it covered only after addressing the boundary or qualified-support need.
 
+Coverage means the transcript already contains enough concrete User-provided detail to use that signal in planning. Asking about a signal does not cover it. If the User gives a vague or partial answer, keep that signal uncovered and ask another sharper one-at-a-time follow-up for the same signal until it is usable.
+
+Return `ready_to_generate` only when every readiness signal above is concretely covered. If any signal is uncovered, return `not_ready` and ask the single best follow-up for one uncovered signal.
+
 `currentStage` and `existingInventory` must be covered before `ready_to_generate`.
 
 ## High-stakes safety
@@ -65,7 +69,7 @@ Schema:
 Rules:
 
 - `messageToUser` is the exact next Game Master message shown to the User.
-- `coveredSignals` marks every signal that is now known, assessed, or no longer needs a follow-up question after considering the latest turn.
+- `coveredSignals` marks only signals with enough concrete transcript evidence for planning. Do not mark a signal covered merely because `messageToUser` asks about it.
 - Important: `safetyBoundary` must be `true` after the first User goal is read. If the goal is ordinary/low-risk, set it `true` because no special boundary is needed. If the goal is high-stakes, set it `true` only when `messageToUser` includes an appropriate safety/professional boundary.
 - If the metadata `interviewStatus` is not `awaiting_confirmation`, set `readinessConfirmation` to `not_confirmed`.
 - If the metadata `interviewStatus` is `awaiting_confirmation`, classify the latest User reply before choosing the next message:

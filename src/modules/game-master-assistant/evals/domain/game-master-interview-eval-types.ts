@@ -34,6 +34,8 @@ export type GameMasterInterviewEvalAssertion = {
 
 export type GameMasterInterviewEvalExpectations = {
   requiredCoveredSignals: GameMasterInterviewEvalCoveredSignalKey[];
+  requiredUncoveredSignals: GameMasterInterviewEvalCoveredSignalKey[];
+  requiredQuestionTargets: GameMasterInterviewEvalCoveredSignalKey[];
   mustAskOneQuestion: boolean;
   mustRemainNotReady: boolean;
   requiresCurrentStageBeforeReady: boolean;

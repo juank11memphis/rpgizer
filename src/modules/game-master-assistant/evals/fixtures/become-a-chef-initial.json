@@ -14,6 +14,9 @@
     "requiresConcreteExamples": true,
     "forbiddenQuestionPatterns": [
       "what does .{0,40}success look like for you(?!.*(:|for example|such as|like|or something else))"
+    ],
+    "requiredQuestionTargets": [
+      "successDefinition"
     ]
   },
   "transcript": [
