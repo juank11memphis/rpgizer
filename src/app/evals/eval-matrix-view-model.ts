@@ -69,13 +69,9 @@ export function createRunningEvalMatrixViewModel(
     : currentViewModel.rows;
   const isSingleTestCaseRun = scopedRows.length === 1;
   const rows: EvalMatrixTestCaseRow[] = scopedRows.map((row, index) => {
-    const status: EvalMatrixShellCell["status"] = isSingleTestCaseRun
+    const status: EvalMatrixShellCell["status"] = isSingleTestCaseRun || index === 0
       ? "running"
-      : index === 0
-        ? "passed"
-        : index === 1
-          ? "running"
-          : "queued";
+      : "queued";
     const statusLabel = formatCellStatus(status);
 
     return {
@@ -84,10 +80,10 @@ export function createRunningEvalMatrixViewModel(
         ...cell,
         status,
         statusLabel,
-        assertionSummary: status === "passed" ? "Completed" : status === "running" ? "In progress" : "Waiting",
-        metricSummary: status === "passed" ? "Latency not reported · tokens not reported · cost not reported" : "Metrics pending",
-        diagnosticsSummary: status === "passed" ? "No diagnostics" : "Diagnostics pending",
-        outputPreview: status === "passed" ? "Completed output preview will appear here." : "Output will appear here.",
+        assertionSummary: status === "running" ? "In progress" : "Waiting",
+        metricSummary: "Metrics pending",
+        diagnosticsSummary: "Diagnostics pending",
+        outputPreview: "Output will appear here.",
         detail: undefined,
       })),
     };

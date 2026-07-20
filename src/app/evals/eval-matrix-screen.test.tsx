@@ -215,12 +215,13 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain("Game Master Interview");
     expect(markup).toContain("Running...");
     expect(markup).toContain("disabled");
-    expect(markup).toContain("Progress 1/4");
+    expect(markup).toContain("Progress 0/4");
     expect(markup).toContain('role="progressbar"');
-    expect(markup).toContain('aria-valuenow="1"');
+    expect(markup).toContain('aria-valuenow="0"');
     expect(markup).toContain('aria-valuemax="4"');
-    expect(markup).toContain("Passed");
+    expect(markup).toContain("Running...");
     expect(markup).toContain("Queued");
+    expect(markup).not.toContain("Passed · Completed");
     expect(markup).toContain("Output will appear here.");
   });
 
