@@ -15,15 +15,20 @@ export default function EvalsPage() {
 
   const productQualityEvaluation = createProductQualityEvaluationComposition();
   const suites = productQualityEvaluation.listEvalSuites();
-  const initialViewModel = createReadyEvalMatrixViewModel(
+  const gameMasterModelLabel = productQualityEvaluation.getGameMasterInterviewModelLabel();
+  const readyViewModels = suites.map((suite) => createReadyEvalMatrixViewModel(
     suites,
-    GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
-    { modelLabel: productQualityEvaluation.getGameMasterInterviewModelLabel() },
-  );
+    suite.id,
+    suite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID ? { modelLabel: gameMasterModelLabel } : {},
+  ));
+  const initialViewModel = readyViewModels.find(
+    (viewModel) => viewModel.selectedSuite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+  ) ?? readyViewModels[0];
 
   return (
     <EvalMatrixClient
       initialViewModel={initialViewModel}
+      readyViewModels={readyViewModels}
       runSelectedEvalSuite={runSelectedEvalSuiteAction}
     />
   );

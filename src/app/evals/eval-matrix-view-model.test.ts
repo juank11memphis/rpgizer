@@ -4,6 +4,7 @@ import type { EvalRunResult } from "@/modules/product-quality-evaluation/applica
 import { buildEvalRunAggregates, createUnreportedEvalCellMetrics } from "@/modules/product-quality-evaluation/domain/eval-matrix";
 import {
   GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+  GENERATE_ADVENTURE_EVAL_SUITE_ID,
   type EvalSuiteSummary,
 } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
@@ -23,6 +24,26 @@ const suites: EvalSuiteSummary[] = [
     name: "Game Master Interview",
     shortDescription: "Checks focused, useful interview turns.",
     purpose: "Checks focused Game Master interview behavior.",
+    readyTestCases: [
+      { id: "become-a-chef-initial", name: "become-a-chef-initial", inputVariables: { topic: "baking", initial: "true" } },
+      { id: "become-a-chef", name: "become-a-chef", inputVariables: { topic: "baking" } },
+      { id: "high-stakes-finance", name: "high-stakes-finance", inputVariables: { topic: "finance" } },
+      { id: "learn-a-language", name: "learn-a-language", inputVariables: { topic: "language learning" } },
+    ],
+    defaultVariantLabel: "Default variant",
+    defaultModelLabel: "Default model",
+  },
+  {
+    id: GENERATE_ADVENTURE_EVAL_SUITE_ID,
+    name: "Generate Adventure",
+    shortDescription: "Checks full playable roadmap generation.",
+    purpose: "Checks full Adventure generation from interview context.",
+    readyTestCases: [
+      { id: "learn-a-skill", name: "learn-a-skill", inputVariables: { goal: "Spanish coffee chat" } },
+      { id: "high-stakes-boundary", name: "high-stakes-boundary", inputVariables: { goal: "High-stakes boundary" } },
+    ],
+    defaultVariantLabel: "Default variant",
+    defaultModelLabel: "Default model",
   },
 ];
 
@@ -112,6 +133,28 @@ function createRunResult(): EvalRunResult {
 }
 
 describe("eval matrix view model", () => {
+
+  it("creates suite-ready rows from the selected suite metadata", () => {
+    const gameMasterViewModel = createReadyEvalMatrixViewModel(suites, GAME_MASTER_INTERVIEW_EVAL_SUITE_ID);
+    const generateAdventureViewModel = createReadyEvalMatrixViewModel(suites, GENERATE_ADVENTURE_EVAL_SUITE_ID);
+
+    expect(gameMasterViewModel.rows.map((row) => row.testCase.id)).toEqual([
+      "become-a-chef-initial",
+      "become-a-chef",
+      "high-stakes-finance",
+      "learn-a-language",
+    ]);
+    expect(generateAdventureViewModel.selectedSuite.name).toBe("Generate Adventure");
+    expect(generateAdventureViewModel.rows.map((row) => row.testCase.id)).toEqual([
+      "learn-a-skill",
+      "high-stakes-boundary",
+    ]);
+    expect(generateAdventureViewModel.rows.flatMap((row) => row.cells).map((cell) => cell.status)).toEqual([
+      "not_run",
+      "not_run",
+    ]);
+    expect(generateAdventureViewModel.summaryStats).toContainEqual(expect.objectContaining({ label: "Progress", value: "0/2" }));
+  });
   it("maps passed and failed cells with detail evidence and not-reported metrics", () => {
     const viewModel = createEvalMatrixViewModelFromRunResult(createReadyViewModel(), createRunResult());
 

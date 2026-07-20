@@ -7,10 +7,7 @@ import type {
   EvalRunResult,
   EvalTestCase,
 } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
-import {
-  GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
-  type EvalSuiteSummary,
-} from "@/modules/product-quality-evaluation/domain/eval-suite";
+import type { EvalSuiteSummary } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
 import type {
   EvalCellSelection,
@@ -28,13 +25,6 @@ const DEFAULT_VARIANT: EvalPromptModelVariant = {
   modelLabel: "Default model",
 };
 
-const READY_TEST_CASES: EvalTestCase[] = [
-  { id: "become-a-chef-initial", name: "become-a-chef-initial", inputVariables: { topic: "baking", initial: "true" } },
-  { id: "become-a-chef", name: "become-a-chef", inputVariables: { topic: "baking" } },
-  { id: "high-stakes-finance", name: "high-stakes-finance", inputVariables: { topic: "finance" } },
-  { id: "learn-a-language", name: "learn-a-language", inputVariables: { topic: "language learning" } },
-];
-
 export function createReadyEvalMatrixViewModel(
   suites: EvalSuiteSummary[],
   selectedSuiteId: string,
@@ -42,20 +32,28 @@ export function createReadyEvalMatrixViewModel(
 ): EvalMatrixViewModel {
   const selectedSuite = selectSuite(suites, selectedSuiteId);
   const matrixSuites = suites.map((suite) => ({ ...suite, selected: suite.id === selectedSuite.id }));
-  const defaultVariant = { ...DEFAULT_VARIANT, modelLabel: options.modelLabel ?? DEFAULT_VARIANT.modelLabel };
+  const readyTestCases = selectedSuite.readyTestCases.map((testCase) => ({
+    ...testCase,
+    inputVariables: { ...testCase.inputVariables },
+  }));
+  const defaultVariant = {
+    ...DEFAULT_VARIANT,
+    name: selectedSuite.defaultVariantLabel,
+    modelLabel: options.modelLabel ?? selectedSuite.defaultModelLabel,
+  };
 
   return createBaseViewModel({
     suites: matrixSuites,
     selectedSuite: { ...selectedSuite, selected: true },
     status: "ready",
     statusLabel: "Ready",
-    statusMessage: `${READY_TEST_CASES.length} test cases ready to run.`,
+    statusMessage: `${readyTestCases.length} Test Cases ready.`,
     actionLabel: "Run eval",
     actionDisabled: false,
-    summaryStats: createPlaceholderSummaryStats(READY_TEST_CASES.length),
+    summaryStats: createPlaceholderSummaryStats(readyTestCases.length),
     variants: [defaultVariant],
-    rows: createRowsFromTestCases(READY_TEST_CASES, "not_run", defaultVariant),
-    progress: { completed: 0, total: READY_TEST_CASES.length, label: `Ready · ${READY_TEST_CASES.length} test cases` },
+    rows: createRowsFromTestCases(readyTestCases, "not_run", defaultVariant),
+    progress: { completed: 0, total: readyTestCases.length, label: `Ready · ${readyTestCases.length} Test Cases` },
     diagnostics: [],
   });
 }
@@ -97,7 +95,7 @@ export function createRunningEvalMatrixViewModel(
     statusLabel: "Running",
     statusMessage: isSingleTestCaseRun
       ? `Running ${rows[0]?.testCase.name ?? "selected test case"} locally.`
-      : "Game Master Interview eval is running locally.",
+      : `${currentViewModel.selectedSuite.name} eval is running locally.`,
     action: { label: "Running...", disabled: true },
     summaryStats: createRunningSummaryStats(completed, total),
     rows,
@@ -543,8 +541,8 @@ function formatCellStatus(status: EvalMatrixShellCell["status"]): string {
 function selectSuite(suites: EvalSuiteSummary[], selectedSuiteId: string): EvalSuiteSummary {
   const selectedSuite = suites.find((suite) => suite.id === selectedSuiteId);
 
-  if (!selectedSuite || selectedSuite.id !== GAME_MASTER_INTERVIEW_EVAL_SUITE_ID) {
-    throw new Error("Game Master Interview eval suite is not available.");
+  if (!selectedSuite) {
+    throw new Error(`Eval suite is not available: ${selectedSuiteId}`);
   }
 
   return selectedSuite;

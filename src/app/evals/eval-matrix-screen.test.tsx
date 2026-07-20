@@ -5,6 +5,7 @@ import type { EvalRunResult } from "@/modules/product-quality-evaluation/applica
 import { buildEvalRunAggregates, createUnreportedEvalCellMetrics } from "@/modules/product-quality-evaluation/domain/eval-matrix";
 import {
   GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+  GENERATE_ADVENTURE_EVAL_SUITE_ID,
   type EvalSuiteSummary,
 } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
@@ -24,6 +25,26 @@ const suites: EvalSuiteSummary[] = [
     name: "Game Master Interview",
     shortDescription: "Checks focused, useful interview turns.",
     purpose: "Checks focused Game Master interview behavior.",
+    readyTestCases: [
+      { id: "become-a-chef-initial", name: "become-a-chef-initial", inputVariables: { topic: "baking", initial: "true" } },
+      { id: "become-a-chef", name: "become-a-chef", inputVariables: { topic: "baking" } },
+      { id: "high-stakes-finance", name: "high-stakes-finance", inputVariables: { topic: "finance" } },
+      { id: "learn-a-language", name: "learn-a-language", inputVariables: { topic: "language learning" } },
+    ],
+    defaultVariantLabel: "Default variant",
+    defaultModelLabel: "Default model",
+  },
+  {
+    id: GENERATE_ADVENTURE_EVAL_SUITE_ID,
+    name: "Generate Adventure",
+    shortDescription: "Checks full playable roadmap generation.",
+    purpose: "Checks full Adventure generation from interview context.",
+    readyTestCases: [
+      { id: "learn-a-skill", name: "learn-a-skill", inputVariables: { goal: "Spanish coffee chat" } },
+      { id: "high-stakes-boundary", name: "high-stakes-boundary", inputVariables: { goal: "High-stakes boundary" } },
+    ],
+    defaultVariantLabel: "Default variant",
+    defaultModelLabel: "Default model",
   },
 ];
 
@@ -136,9 +157,13 @@ describe("EvalMatrixScreen", () => {
 
     expect(markup).toContain("Local Eval Matrix");
     expect(markup).toContain("Game Master Interview");
+    expect(markup).toContain("Eval Suite");
     expect(markup).toContain("Run scope");
     expect(markup).toContain("All test cases");
     expect(markup).toContain("Run all 4 test cases");
+    expect(markup).toContain("Eval Suites");
+    expect(markup).toContain("Generate Adventure");
+    expect(markup).toContain("2 evals available");
     expect(markup).toContain("Run row");
     expect(markup).toContain("Pass rate");
     expect(markup).toContain("Avg latency");
@@ -154,9 +179,11 @@ describe("EvalMatrixScreen", () => {
     expect(markup).not.toContain("Arcane Eval Console");
   });
 
-  it("renders phone stacked-list and medium-plus matrix structures", () => {
+  it("renders phone suite selector, stacked-list, desktop rail, and medium-plus matrix structures", () => {
     const markup = renderMarkup(createReadyViewModel());
 
+    expect(markup).toContain('aria-label="Eval Suite"');
+    expect(markup).toContain('aria-label="Eval Suites"');
     expect(markup).toContain('data-layout="stacked-list"');
     expect(markup).toContain('data-layout="matrix"');
     expect(markup).toContain("become-a-chef-initial");

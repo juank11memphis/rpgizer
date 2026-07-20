@@ -16,11 +16,20 @@ export const EVAL_SUITE_IDS = [
 
 export type EvalSuiteId = (typeof EVAL_SUITE_IDS)[number];
 
+export type EvalSuiteReadyTestCase = {
+  id: string;
+  name: string;
+  inputVariables: Record<string, string>;
+};
+
 export type EvalSuiteSummary = {
   id: EvalSuiteId;
   name: string;
   shortDescription: string;
   purpose: string;
+  readyTestCases: EvalSuiteReadyTestCase[];
+  defaultVariantLabel: string;
+  defaultModelLabel: string;
 };
 
 export function isEvalSuiteId(suiteId: string): suiteId is EvalSuiteId {

@@ -41,15 +41,18 @@ describe("listEvalSuites", () => {
           id: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
           shortDescription: "Checks focused, useful interview turns.",
           purpose: expect.stringContaining("focused questions"),
+          readyTestCases: expect.arrayContaining([expect.objectContaining({ id: "become-a-chef" })]),
         }),
         expect.objectContaining({
           id: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
           shortDescription: "Checks extracted interview output artifacts.",
           purpose: expect.stringContaining("interview transcripts"),
+          readyTestCases: expect.arrayContaining([expect.objectContaining({ id: "become-a-confident-home-chef" })]),
         }),
         expect.objectContaining({
           id: ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
           purpose: expect.stringContaining("XP balancing"),
+          readyTestCases: expect.arrayContaining([expect.objectContaining({ id: "spanish-coffee-chat" })]),
         }),
       ]),
     );
@@ -57,6 +60,9 @@ describe("listEvalSuites", () => {
     for (const suite of suites) {
       expect(suite.purpose).not.toContain("OPENAI_API_KEY");
       expect(suite.shortDescription).not.toContain("OPENAI_API_KEY");
+      expect(suite.defaultVariantLabel).toBe("Default variant");
+      expect(suite.defaultModelLabel).toBe("Default model");
+      expect(suite.readyTestCases.length).toBeGreaterThan(0);
     }
   });
 });

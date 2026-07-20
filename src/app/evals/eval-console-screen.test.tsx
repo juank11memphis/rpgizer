@@ -17,6 +17,11 @@ describe("legacy eval console route shell", () => {
               name: "Game Master Interview",
               shortDescription: "Checks focused, useful interview turns.",
               purpose: "Checks focused Game Master interview behavior.",
+              readyTestCases: [
+                { id: "become-a-chef", name: "become-a-chef", inputVariables: { topic: "baking" } },
+              ],
+              defaultVariantLabel: "Default variant",
+              defaultModelLabel: "Default model",
             },
           ],
           GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
