@@ -40,7 +40,7 @@ const adventureFocusedReadyTestCases: EvalSuiteReadyTestCase[] = [
 const EVAL_SUITES: EvalSuiteSummary[] = [
   {
     id: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
-    name: "Game Master",
+    name: "Interview",
     shortDescription: "Checks focused, useful interview turns.",
     purpose:
       "Checks whether the Game Master interview asks focused questions, keeps useful boundaries, and helps maintainers catch product-quality regressions before changes ship.",
@@ -49,7 +49,7 @@ const EVAL_SUITES: EvalSuiteSummary[] = [
   },
   {
     id: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
-    name: "Artifact",
+    name: "Interview Artifact",
     shortDescription: "Checks extracted interview output artifacts.",
     purpose:
       "Checks whether interview transcripts become grounded, useful Adventure creation inputs without losing goals, constraints, or safety boundaries.",
@@ -58,7 +58,7 @@ const EVAL_SUITES: EvalSuiteSummary[] = [
   },
   {
     id: GENERATE_ADVENTURE_EVAL_SUITE_ID,
-    name: "Generate Adventure",
+    name: "Adventure Generation",
     shortDescription: "Checks full playable roadmap generation.",
     purpose:
       "Checks whether the Adventure generation pipeline turns interview context into coherent quests, milestones, inventory, dependencies, and XP balance.",
@@ -67,7 +67,7 @@ const EVAL_SUITES: EvalSuiteSummary[] = [
   },
   {
     id: ADVENTURE_CONTENT_EVAL_SUITE_ID,
-    name: "Content",
+    name: "Adventure Content",
     shortDescription: "Checks generated Adventure content quality.",
     purpose:
       "Checks whether focused Adventure content generation is specific, useful, RPG-native, and grounded in the selected Test Case context.",

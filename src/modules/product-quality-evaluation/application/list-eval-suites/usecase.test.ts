@@ -23,10 +23,10 @@ describe("listEvalSuites", () => {
       ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
     ]);
     expect(suites.map((suite) => suite.name)).toEqual([
-      "Game Master",
-      "Artifact",
-      "Generate Adventure",
-      "Content",
+      "Interview",
+      "Interview Artifact",
+      "Adventure Generation",
+      "Adventure Content",
       "Dependency Links",
       "XP Balance",
     ]);
