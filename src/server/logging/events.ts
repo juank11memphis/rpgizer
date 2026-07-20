@@ -88,6 +88,13 @@ export const APPLICATION_LOG_EVENTS = {
   GAME_MASTER_INTERVIEW_EVAL_CONFIG_BLOCKED: "eval.game_master_interview.config_blocked",
   GAME_MASTER_INTERVIEW_EVAL_UNEXPECTED_ERROR:
     "eval.game_master_interview.unexpected_error",
+  INTERVIEW_OUTPUT_ARTIFACT_EVAL_STARTED: "eval.interview_output_artifact.started",
+  INTERVIEW_OUTPUT_ARTIFACT_EVAL_COMPLETED: "eval.interview_output_artifact.completed",
+  INTERVIEW_OUTPUT_ARTIFACT_EVAL_FAILED: "eval.interview_output_artifact.failed",
+  INTERVIEW_OUTPUT_ARTIFACT_EVAL_CONFIG_BLOCKED:
+    "eval.interview_output_artifact.config_blocked",
+  INTERVIEW_OUTPUT_ARTIFACT_EVAL_UNEXPECTED_ERROR:
+    "eval.interview_output_artifact.unexpected_error",
   AI_OPENAI_REQUEST_COMPLETED: "ai.openai.request.completed",
   AI_OPENAI_REQUEST_FAILED: "ai.openai.request.failed",
   AI_OPENAI_OUTPUT_INVALID: "ai.openai.output.invalid",

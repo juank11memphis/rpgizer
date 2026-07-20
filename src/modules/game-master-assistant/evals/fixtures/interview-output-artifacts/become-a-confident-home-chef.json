@@ -1,0 +1,36 @@
+{
+  "id": "become-a-confident-home-chef",
+  "name": "Become a confident home chef",
+  "context": {
+    "goalText": "Become a confident home chef.",
+    "readinessStatus": "ready_to_generate",
+    "interviewStatus": "confirmed"
+  },
+  "transcript": [
+    {
+      "role": "user",
+      "content": "I want to cook better dinners instead of ordering takeout."
+    },
+    {
+      "role": "game_master",
+      "content": "What would make dinner feel successful after a month?"
+    },
+    {
+      "role": "user",
+      "content": "I want three reliable weeknight meals, mostly vegetarian, that I can cook without stress. I have basic pans but no meal planning habit."
+    }
+  ],
+  "expectations": {
+    "goalSummary": { "includes": ["confident", "cook"] },
+    "coreWhy": { "includes": ["takeout"] },
+    "successDefinition": { "includes": ["three", "weeknight"] },
+    "currentStage": { "includes": ["basic"] },
+    "blockers": { "includes": ["stress"] },
+    "constraints": { "includes": ["vegetarian"] },
+    "existingResources": { "includes": ["pans"] },
+    "likelyMissingResources": { "includes": ["planning"] },
+    "safetyBoundaries": { "includes": ["medical"] },
+    "preferences": { "includes": ["weeknight"] },
+    "compactSourceSummary": { "includes": ["three", "vegetarian", "planning"] }
+  }
+}

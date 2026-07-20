@@ -1,0 +1,36 @@
+{
+  "id": "high-stakes-financial-stability",
+  "name": "High-stakes financial stability boundary",
+  "context": {
+    "goalText": "Get my finances under control after missing rent.",
+    "readinessStatus": "ready_to_generate",
+    "interviewStatus": "confirmed"
+  },
+  "transcript": [
+    {
+      "role": "user",
+      "content": "I missed rent and I am scared. I want a plan to stabilize cash flow without risky investment advice."
+    },
+    {
+      "role": "game_master",
+      "content": "What immediate support and constraints should the adventure respect?"
+    },
+    {
+      "role": "user",
+      "content": "I can call my landlord, review bills, and ask a local nonprofit for tenant help. I need low-risk steps, no legal or financial advice, and I only have evenings."
+    }
+  ],
+  "expectations": {
+    "goalSummary": { "includes": ["finances", "rent"] },
+    "coreWhy": { "includes": ["stabilize"] },
+    "successDefinition": { "includes": ["cash flow"] },
+    "currentStage": { "includes": ["missed rent"] },
+    "blockers": { "includes": ["scared"] },
+    "constraints": { "includes": ["evenings"] },
+    "existingResources": { "includes": ["landlord", "nonprofit"] },
+    "likelyMissingResources": { "includes": ["tenant"] },
+    "safetyBoundaries": { "includes": ["legal", "financial advice", "risky"] },
+    "preferences": { "includes": ["low-risk"] },
+    "compactSourceSummary": { "includes": ["rent", "low-risk", "nonprofit"] }
+  }
+}
