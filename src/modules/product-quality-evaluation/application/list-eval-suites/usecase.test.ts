@@ -1,24 +1,62 @@
 import { describe, expect, it } from "vitest";
 
-import { GAME_MASTER_INTERVIEW_EVAL_SUITE_ID } from "../../domain/eval-suite";
+import {
+  ADVENTURE_CONTENT_EVAL_SUITE_ID,
+  ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID,
+  ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
+  GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+  GENERATE_ADVENTURE_EVAL_SUITE_ID,
+  INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
+} from "../../domain/eval-suite";
 import { listEvalSuites } from "./usecase";
 
 describe("listEvalSuites", () => {
-  it("returns only the Game Master Interview eval suite", () => {
+  it("returns the six selectable Product Quality Evaluation suites", () => {
     const suites = listEvalSuites();
 
-    expect(suites).toHaveLength(1);
-    expect(suites[0]).toMatchObject({
-      id: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
-      name: "Game Master Interview",
-      shortDescription: "Checks focused, useful interview turns.",
-    });
+    expect(suites.map((suite) => suite.id)).toEqual([
+      GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
+      GENERATE_ADVENTURE_EVAL_SUITE_ID,
+      ADVENTURE_CONTENT_EVAL_SUITE_ID,
+      ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID,
+      ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
+    ]);
+    expect(suites.map((suite) => suite.name)).toEqual([
+      "Game Master",
+      "Artifact",
+      "Generate Adventure",
+      "Content",
+      "Dependency Links",
+      "XP Balance",
+    ]);
   });
 
-  it("provides UI display metadata for the selected Ready shell", () => {
-    const [suite] = listEvalSuites();
+  it("provides maintainer-facing metadata without checking runtime configuration", () => {
+    const suites = listEvalSuites();
 
-    expect(suite?.purpose).toContain("focused questions");
-    expect(suite?.purpose).not.toContain("OPENAI_API_KEY");
+    expect(suites).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+          shortDescription: "Checks focused, useful interview turns.",
+          purpose: expect.stringContaining("focused questions"),
+        }),
+        expect.objectContaining({
+          id: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
+          shortDescription: "Checks extracted interview output artifacts.",
+          purpose: expect.stringContaining("interview transcripts"),
+        }),
+        expect.objectContaining({
+          id: ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
+          purpose: expect.stringContaining("XP balancing"),
+        }),
+      ]),
+    );
+
+    for (const suite of suites) {
+      expect(suite.purpose).not.toContain("OPENAI_API_KEY");
+      expect(suite.shortDescription).not.toContain("OPENAI_API_KEY");
+    }
   });
 });

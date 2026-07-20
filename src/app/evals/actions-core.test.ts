@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
 import type { EvalMatrix, EvalRunResult } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
-import { GAME_MASTER_INTERVIEW_EVAL_SUITE_ID } from "@/modules/product-quality-evaluation/domain/eval-suite";
+import {
+  GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+  GENERATE_ADVENTURE_EVAL_SUITE_ID,
+  type EvalSuiteId,
+} from "@/modules/product-quality-evaluation/domain/eval-suite";
 import { createUnreportedEvalCellMetrics } from "@/modules/product-quality-evaluation/domain/eval-matrix";
 import { APPLICATION_LOG_EVENTS } from "@/server/logging/events";
 
@@ -15,7 +19,10 @@ function createLogger() {
   };
 }
 
-function createMatrixResult(status: "passed" | "failed" | "error"): EvalRunResult {
+function createMatrixResult(
+  status: "passed" | "failed" | "error",
+  suiteId: EvalSuiteId = GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+): EvalRunResult {
   const matrix = createMatrix();
   const diagnostic = {
     scope: "fixture" as const,
@@ -26,7 +33,7 @@ function createMatrixResult(status: "passed" | "failed" | "error"): EvalRunResul
 
   if (status === "passed") {
     return {
-      suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      suiteId,
       status,
       summary: "Game Master Interview Evals passed.",
       diagnostics: [],
@@ -50,7 +57,7 @@ function createMatrixResult(status: "passed" | "failed" | "error"): EvalRunResul
 
   if (status === "failed") {
     return {
-      suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      suiteId,
       status,
       summary: "Some Test Cases need attention.",
       diagnostics: [diagnostic],
@@ -73,7 +80,7 @@ function createMatrixResult(status: "passed" | "failed" | "error"): EvalRunResul
   }
 
   return {
-    suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+    suiteId,
     status,
     summary: "The eval did not finish.",
     diagnostics: [diagnostic],
@@ -306,6 +313,34 @@ describe("runEvalSuiteActionCore", () => {
       runScope: "test_case",
       testCaseId: "high-stakes-finance",
       testCaseCount: 2,
+    });
+    expectSafeLogPayload(payload);
+  });
+
+
+  it("logs safe aggregate metadata for a non-Game-Master suite result", async () => {
+    const logger = createLogger();
+    const delegatedResult = createMatrixResult("failed", GENERATE_ADVENTURE_EVAL_SUITE_ID);
+
+    const result = await runEvalSuiteActionCore(GENERATE_ADVENTURE_EVAL_SUITE_ID, {}, {
+      isLocalEvalDashboardEnabled: () => true,
+      runEvalSuite: vi.fn().mockResolvedValue(delegatedResult),
+      logger,
+      now: () => 100,
+    });
+
+    expect(result).toBe(delegatedResult);
+    const payload = getCompletionPayload(logger);
+    expect(payload).toMatchObject({
+      event: APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_COMPLETED,
+      suiteId: GENERATE_ADVENTURE_EVAL_SUITE_ID,
+      runScope: "all",
+      outcome: "failed",
+      diagnosticCount: 1,
+      durationMs: 25,
+      testCaseCount: 2,
+      variantCount: 1,
+      failedCellCount: 1,
     });
     expectSafeLogPayload(payload);
   });

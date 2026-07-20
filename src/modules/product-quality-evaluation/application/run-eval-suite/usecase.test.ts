@@ -1,15 +1,49 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { GAME_MASTER_INTERVIEW_EVAL_SUITE_ID } from "../../domain/eval-suite";
-import { runEvalSuite, type GameMasterInterviewEvalRunner } from "./usecase";
+import {
+  ADVENTURE_CONTENT_EVAL_SUITE_ID,
+  ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID,
+  ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
+  GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+  GENERATE_ADVENTURE_EVAL_SUITE_ID,
+  INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
+} from "../../domain/eval-suite";
+import {
+  runEvalSuite,
+  type FocusedAdventureStepEvalRunner,
+  type GameMasterInterviewEvalRunner,
+  type GenerateAdventureEvalRunner,
+  type InterviewOutputArtifactEvalRunner,
+  type RunEvalSuiteDependencies,
+} from "./usecase";
 
+import type { FocusedAdventureStepRunResult } from "@/modules/adventure-planner/evals/focused-adventure-step-eval-runner";
+import type { GenerateAdventureEvalRunResult } from "@/modules/adventure-planner/evals/run-generate-adventure-evals";
 import type {
   GameMasterInterviewEvalCell,
   GameMasterInterviewEvalRunResult,
 } from "@/modules/game-master-assistant/evals/run-game-master-interview-evals";
+import type {
+  InterviewOutputArtifactEvalCell,
+  InterviewOutputArtifactEvalRunResult,
+} from "@/modules/game-master-assistant/evals/run-interview-output-artifact-evals";
 
 function runnerReturning(result: GameMasterInterviewEvalRunResult): GameMasterInterviewEvalRunner {
   return () => Promise.resolve(result);
+}
+
+function createDependencies(
+  overrides: Partial<RunEvalSuiteDependencies> = {},
+): RunEvalSuiteDependencies {
+  return {
+    runGameMasterInterviewEvals: vi.fn<GameMasterInterviewEvalRunner>().mockResolvedValue(buildPassedGameMasterResult()),
+    runInterviewOutputArtifactEvals: vi.fn<InterviewOutputArtifactEvalRunner>().mockResolvedValue(buildPassedInterviewOutputArtifactResult()),
+    runGenerateAdventureEvals: vi.fn<GenerateAdventureEvalRunner>().mockResolvedValue(buildPassedAdventureResult()),
+    runAdventureContentEvals: vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue(buildPassedAdventureResult()),
+    runAdventureLinkingEvals: vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue(buildPassedAdventureResult()),
+    runAdventureXpEvals: vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue(buildPassedAdventureResult()),
+    ...overrides,
+  };
 }
 
 describe("runEvalSuite", () => {
@@ -17,6 +51,7 @@ describe("runEvalSuite", () => {
     const result = await runEvalSuite(
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
+        ...createDependencies(),
         runGameMasterInterviewEvals: runnerReturning({
           status: "passed",
           modelLabel: "gpt-test-model",
@@ -100,6 +135,7 @@ describe("runEvalSuite", () => {
     const result = await runEvalSuite(
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
+        ...createDependencies(),
         runGameMasterInterviewEvals: runnerReturning({
           status: "failed",
           fixtureIds: ["high-stakes-finance"],
@@ -195,6 +231,7 @@ describe("runEvalSuite", () => {
     const result = await runEvalSuite(
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
+        ...createDependencies(),
         runGameMasterInterviewEvals: runnerReturning({
           status: "blocked",
           fixtureIds: [],
@@ -233,7 +270,7 @@ describe("runEvalSuite", () => {
 
     const result = await runEvalSuite(
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, testCaseId: "high-stakes-finance" },
-      { runGameMasterInterviewEvals },
+      { ...createDependencies(), runGameMasterInterviewEvals },
     );
 
     expect(runGameMasterInterviewEvals).toHaveBeenCalledWith({ testCaseId: "high-stakes-finance" });
@@ -242,12 +279,223 @@ describe("runEvalSuite", () => {
     ]);
   });
 
+
+  it("invokes only the selected runner for each known suite", async () => {
+    const cases = [
+      [GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, "runGameMasterInterviewEvals"],
+      [INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID, "runInterviewOutputArtifactEvals"],
+      [GENERATE_ADVENTURE_EVAL_SUITE_ID, "runGenerateAdventureEvals"],
+      [ADVENTURE_CONTENT_EVAL_SUITE_ID, "runAdventureContentEvals"],
+      [ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID, "runAdventureLinkingEvals"],
+      [ADVENTURE_XP_BALANCING_EVAL_SUITE_ID, "runAdventureXpEvals"],
+    ] as const;
+
+    for (const [suiteId, selectedRunner] of cases) {
+      const dependencies = createDependencies();
+
+      await runEvalSuite({ suiteId }, dependencies);
+
+      for (const [runnerName, runner] of Object.entries(dependencies)) {
+        expect(runner, `${suiteId} should only call ${selectedRunner}; checked ${runnerName}`).toHaveBeenCalledTimes(
+          runnerName === selectedRunner ? 1 : 0,
+        );
+      }
+    }
+  });
+
+  it("passes selected test case scope to Interview Output Artifact evals", async () => {
+    const runInterviewOutputArtifactEvals = vi.fn<InterviewOutputArtifactEvalRunner>().mockResolvedValue(
+      buildPassedInterviewOutputArtifactResult({ fixtureId: "chef-artifact" }),
+    );
+
+    const result = await runEvalSuite(
+      { suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID, testCaseId: "chef-artifact" },
+      createDependencies({ runInterviewOutputArtifactEvals }),
+    );
+
+    expect(runInterviewOutputArtifactEvals).toHaveBeenCalledWith({ testCaseId: "chef-artifact" });
+    expect(result).toMatchObject({
+      suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
+      status: "passed",
+      matrix: { testCases: [{ id: "chef-artifact" }] },
+    });
+  });
+
+  it("normalizes Interview Output Artifact failures, blockers, and errors", async () => {
+    const failed = await runEvalSuite(
+      { suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID },
+      createDependencies({
+        runInterviewOutputArtifactEvals: vi.fn<InterviewOutputArtifactEvalRunner>().mockResolvedValue({
+          status: "failed",
+          fixtureIds: ["artifact-fixture"],
+          diagnostics: [
+            {
+              fixtureId: "artifact-fixture",
+              assertionId: "captures-boundary",
+              message: "Expected safety boundary to be captured.",
+            },
+          ],
+          cells: [
+            buildInterviewOutputArtifactCell({
+              status: "failed",
+              assertions: [
+                {
+                  id: "captures-boundary",
+                  label: "captures safety boundary",
+                  status: "failed",
+                  message: "Expected safety boundary to be captured.",
+                },
+              ],
+              diagnostics: [
+                {
+                  fixtureId: "artifact-fixture",
+                  assertionId: "captures-boundary",
+                  message: "Expected safety boundary to be captured.",
+                },
+              ],
+            }),
+          ],
+          durationMs: 99,
+        }),
+      }),
+    );
+
+    expect(failed).toMatchObject({
+      suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
+      status: "failed",
+      diagnostics: [{ scope: "fixture", fixtureId: "artifact-fixture", code: "captures-boundary" }],
+      matrix: { cells: [{ status: "failed", assertions: [{ id: "captures-boundary", status: "failed" }] }] },
+    });
+
+    const blocked = await runEvalSuite(
+      { suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID },
+      createDependencies({
+        runInterviewOutputArtifactEvals: vi.fn<InterviewOutputArtifactEvalRunner>().mockResolvedValue({
+          status: "blocked",
+          fixtureIds: [],
+          blocker: "missing_openai_api_key",
+          diagnostics: [{ message: "OPENAI_API_KEY is not configured" }],
+          durationMs: 5,
+        }),
+      }),
+    );
+
+    expect(blocked).toMatchObject({
+      status: "blocked",
+      blocker: "missing_openai_api_key",
+      diagnostics: [{ scope: "configuration" }],
+    });
+    expect(blocked).not.toHaveProperty("matrix");
+
+    const error = await runEvalSuite(
+      { suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID },
+      createDependencies({
+        runInterviewOutputArtifactEvals: vi.fn<InterviewOutputArtifactEvalRunner>().mockResolvedValue({
+          status: "error",
+          fixtureIds: [],
+          diagnostics: [{ message: "Runner failed safely.", errorName: "EvalError" }],
+          durationMs: 6,
+        }),
+      }),
+    );
+
+    expect(error).toMatchObject({
+      status: "error",
+      errorName: "EvalError",
+      diagnostics: [{ scope: "run", code: "EvalError" }],
+    });
+  });
+
+  it("normalizes Adventure Planner passed, failed, blocked, unavailable metrics, and thrown errors", async () => {
+    const passed = await runEvalSuite(
+      { suiteId: GENERATE_ADVENTURE_EVAL_SUITE_ID },
+      createDependencies({
+        runGenerateAdventureEvals: vi.fn<GenerateAdventureEvalRunner>().mockResolvedValue(
+          buildPassedAdventureResult(["learn-spanish"]),
+        ),
+      }),
+    );
+
+    expect(passed).toMatchObject({
+      suiteId: GENERATE_ADVENTURE_EVAL_SUITE_ID,
+      status: "passed",
+      matrix: {
+        testCases: [{ id: "learn-spanish", inputVariables: { fixtureId: "learn-spanish" } }],
+        cells: [{ status: "passed", assertions: [{ status: "passed" }] }],
+      },
+      aggregates: { passRate: 1, averageLatencyMs: null },
+    });
+    expect(passed.matrix?.cells[0]?.metrics).toEqual({
+      latency: { value: null, unit: "ms", reported: false },
+      tokens: { value: null, unit: "tokens", reported: false },
+      cost: { value: null, unit: "usd", reported: false },
+    });
+
+    const failed = await runEvalSuite(
+      { suiteId: ADVENTURE_CONTENT_EVAL_SUITE_ID },
+      createDependencies({
+        runAdventureContentEvals: vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue({
+          passed: false,
+          fixtureIds: ["learn-spanish"],
+          diagnostics: [
+            {
+              fixtureId: "learn-spanish",
+              area: "fixture grounding",
+              message: "Expected Spanish coffee chat context.",
+            },
+          ],
+        }),
+      }),
+    );
+
+    expect(failed).toMatchObject({
+      suiteId: ADVENTURE_CONTENT_EVAL_SUITE_ID,
+      status: "failed",
+      diagnostics: [{ scope: "fixture", fixtureId: "learn-spanish", code: "fixture grounding" }],
+      matrix: { cells: [{ status: "failed", assertions: [{ label: "Fixture Grounding", status: "failed" }] }] },
+    });
+
+    const blocked = await runEvalSuite(
+      { suiteId: ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID },
+      createDependencies({
+        runAdventureLinkingEvals: vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue({
+          passed: false,
+          fixtureIds: [],
+          diagnostics: [{ fixtureId: "runner", area: "configuration", message: "OPENAI_API_KEY is required." }],
+        }),
+      }),
+    );
+
+    expect(blocked).toMatchObject({
+      suiteId: ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID,
+      status: "blocked",
+      diagnostics: [{ scope: "configuration", code: "configuration" }],
+      blocker: "configuration",
+    });
+    expect(blocked).not.toHaveProperty("matrix");
+
+    const error = await runEvalSuite(
+      { suiteId: ADVENTURE_XP_BALANCING_EVAL_SUITE_ID },
+      createDependencies({
+        runAdventureXpEvals: vi.fn<FocusedAdventureStepEvalRunner>().mockRejectedValue(
+          new Error("raw generated output should not be surfaced"),
+        ),
+      }),
+    );
+
+    expect(error).toMatchObject({
+      suiteId: ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
+      status: "error",
+      diagnostics: [{ scope: "run", message: "The eval could not finish. Try again after checking local setup." }],
+    });
+  });
+
   it("returns a safe error without invoking the runner for unknown suites", async () => {
     const runGameMasterInterviewEvals = vi.fn<GameMasterInterviewEvalRunner>();
 
     const result = await runEvalSuite(
       { suiteId: "unknown-suite" },
-      { runGameMasterInterviewEvals },
+      { ...createDependencies(), runGameMasterInterviewEvals },
     );
 
     expect(runGameMasterInterviewEvals).not.toHaveBeenCalled();
@@ -272,6 +520,7 @@ describe("runEvalSuite", () => {
     const result = await runEvalSuite(
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
+        ...createDependencies(),
         runGameMasterInterviewEvals: async () => {
           throw new Error("provider response contained unsafe payload");
         },
@@ -297,6 +546,67 @@ describe("runEvalSuite", () => {
     expect(result).not.toHaveProperty("aggregates");
   });
 });
+
+
+function buildPassedGameMasterResult(): GameMasterInterviewEvalRunResult {
+  return {
+    status: "passed",
+    fixtureIds: ["become-a-chef"],
+    diagnostics: [],
+    cells: [buildGameMasterCell()],
+    durationMs: 1,
+  };
+}
+
+function buildPassedInterviewOutputArtifactResult(
+  options: { fixtureId?: string } = {},
+): InterviewOutputArtifactEvalRunResult {
+  const fixtureId = options.fixtureId ?? "artifact-fixture";
+  return {
+    status: "passed",
+    fixtureIds: [fixtureId],
+    diagnostics: [],
+    cells: [buildInterviewOutputArtifactCell({ fixtureId })],
+    durationMs: 2,
+  };
+}
+
+function buildPassedAdventureResult(fixtureIds = ["learn-a-skill"]): GenerateAdventureEvalRunResult & FocusedAdventureStepRunResult {
+  return {
+    passed: true,
+    fixtureIds,
+    diagnostics: [],
+  };
+}
+
+function buildInterviewOutputArtifactCell(
+  overrides: Partial<InterviewOutputArtifactEvalCell> = {},
+): InterviewOutputArtifactEvalCell {
+  const fixtureId = overrides.fixtureId ?? "artifact-fixture";
+
+  return {
+    id: `${fixtureId}::default`,
+    fixtureId,
+    testCaseId: fixtureId,
+    testCaseName: overrides.testCaseName ?? "Artifact fixture",
+    inputVariables: overrides.inputVariables ?? { goal: "Spanish coffee chat", transcriptTurns: "3" },
+    variantId: "default",
+    variantName: "Default variant",
+    status: overrides.status ?? "passed",
+    output: overrides.output ?? JSON.stringify({ goalSummary: "Spanish coffee chat" }),
+    outputPreview: overrides.outputPreview ?? "Spanish coffee chat artifact",
+    metrics: overrides.metrics ?? {
+      latencyMs: { value: 15, reported: true },
+      tokenCount: { value: null, reported: false },
+      costUsd: { value: null, reported: false },
+    },
+    assertions: overrides.assertions ?? [
+      { id: "captures-goal", label: "captures goal", status: "passed" },
+    ],
+    diagnostics: overrides.diagnostics ?? [],
+    artifacts: overrides.artifacts ?? [],
+  };
+}
 
 function buildGameMasterCell(
   overrides: Partial<GameMasterInterviewEvalCell> = {},
