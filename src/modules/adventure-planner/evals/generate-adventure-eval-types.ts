@@ -31,6 +31,7 @@ export type AdventureQualityDiagnostic = {
 export type AdventureQualityDiagnosticArea =
   | "required structure"
   | "done condition"
+  | "quest quality"
   | "side quest quality"
   | "boss fight quality"
   | "inventory quality"

@@ -1,4 +1,8 @@
-import type { GeneratedAdventureContent } from "../domain/generated-adventure-content";
+import type {
+  GeneratedAdventureContent,
+  GeneratedAdventureContentBossFight,
+  GeneratedAdventureContentQuest,
+} from "../domain/generated-adventure-content";
 import { buildAdventureQualityAssertionOutcomes } from "./generate-adventure-eval-types";
 import type {
   AdventureQualityCheckResult,
@@ -15,6 +19,61 @@ const VAGUE_DONE_PATTERNS = [
   "make progress",
   "work on it",
   "try your best",
+];
+const OBSERVABLE_DONE_TERMS = [
+  "written",
+  "listed",
+  "chosen",
+  "completed",
+  "submitted",
+  "published",
+  "shared",
+  "recorded",
+  "captured",
+  "measured",
+  "scheduled",
+  "practiced",
+  "built",
+  "tested",
+  "reviewed",
+  "served",
+  "ready",
+  "delivered",
+  "drafted",
+  "created",
+  "one",
+  "two",
+  "three",
+  "four",
+  "first",
+  "at least",
+  "week",
+  "weeks",
+  "session",
+  "sessions",
+];
+const FILLER_QUEST_PATTERNS = [
+  "random quest",
+  "do something",
+  "do some stuff",
+  "work on the goal",
+  "advance the adventure",
+  "continue your journey",
+];
+const FILLER_SIDE_QUEST_PATTERNS = [
+  "optional fun",
+  "random side quest",
+  "do something extra",
+  "explore the area",
+  "collect coins",
+  "grind for xp",
+  "bonus task",
+];
+const GENERIC_BOSS_FIGHT_PATTERNS = [
+  "hard task",
+  "difficult task",
+  "final task",
+  "complete the task",
 ];
 const PRACTICAL_INVENTORY_TERMS = [
   "template",
@@ -53,6 +112,9 @@ const GENERIC_NEXT_ACTION_PATTERNS = ["start working", "make progress", "do your
 const ADVENTURE_CONTENT_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea[] = [
   "required structure",
   "done condition",
+  "quest quality",
+  "side quest quality",
+  "boss fight quality",
   "skill quality",
   "inventory quality",
   "achievement quality",
@@ -71,7 +133,7 @@ export function checkGeneratedAdventureContentQuality(
   const diagnostics: AdventureQualityDiagnostic[] = [];
 
   checkRequiredStructure(content, diagnostics);
-  checkActs(content, diagnostics);
+  checkActs(content, fixture, diagnostics);
   checkSkills(content, fixture, diagnostics);
   checkInventory(content, fixture, diagnostics);
   checkAchievements(content, diagnostics);
@@ -103,22 +165,104 @@ function checkRequiredStructure(
 
 function checkActs(
   content: GeneratedAdventureContent,
+  fixture: GenerateAdventureEvalFixture,
   diagnostics: AdventureQualityDiagnostic[],
 ): void {
+  const contextTerms = buildContextTerms(fixture);
+
   for (const act of content.acts) {
     addIfEmpty(act.mainQuests, "required structure", `Act ${act.key} expected at least one Main Quest.`, diagnostics);
     addIfEmpty(act.sideQuests, "required structure", `Act ${act.key} expected at least one Side Quest.`, diagnostics);
     addIfEmpty(act.bossFights, "required structure", `Act ${act.key} expected at least one Boss Fight.`, diagnostics);
 
-    for (const quest of [...act.mainQuests, ...act.sideQuests, ...act.bossFights]) {
-      const searchable = normalize(`${quest.title} ${quest.description} ${quest.doneCondition}`);
-      if (includesAny(searchable, VAGUE_DONE_PATTERNS)) {
-        diagnostics.push({
-          area: "done condition",
-          message: `${quest.key} has a vague completion signal.`,
-        });
-      }
+    for (const quest of act.mainQuests) {
+      checkDoneCondition(quest, diagnostics);
+      checkMainQuestQuality(quest, contextTerms, diagnostics);
     }
+
+    for (const sideQuest of act.sideQuests) {
+      checkDoneCondition(sideQuest, diagnostics);
+      checkSideQuestQuality(sideQuest, contextTerms, diagnostics);
+    }
+
+    for (const bossFight of act.bossFights) {
+      checkDoneCondition(bossFight, diagnostics);
+      checkBossFightQuality(bossFight, diagnostics);
+    }
+  }
+}
+
+function checkDoneCondition(
+  step: GeneratedAdventureContentQuest | GeneratedAdventureContentBossFight,
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  const text = normalize(step.doneCondition);
+
+  if (includesAny(text, VAGUE_DONE_PATTERNS) || isTooGenericDoneCondition(text)) {
+    diagnostics.push({
+      area: "done condition",
+      message: `${step.key} needs an observable done condition rather than vague completion language.`,
+    });
+  }
+}
+
+function checkMainQuestQuality(
+  quest: GeneratedAdventureContentQuest,
+  contextTerms: readonly string[],
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  const text = normalize(`${quest.title} ${quest.description} ${quest.doneCondition} ${quest.rewardIntent}`);
+
+  if (includesAny(text, FILLER_QUEST_PATTERNS)) {
+    diagnostics.push({
+      area: "quest quality",
+      message: `${quest.key} looks generic instead of a concrete goal-connected Main Quest.`,
+    });
+    return;
+  }
+
+  if (!hasAnyWord(text, contextTerms)) {
+    diagnostics.push({
+      area: "quest quality",
+      message: `${quest.key} should mention the user's goal, constraints, resources, or context.`,
+    });
+  }
+}
+
+function checkSideQuestQuality(
+  sideQuest: GeneratedAdventureContentQuest,
+  contextTerms: readonly string[],
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  const text = normalize(`${sideQuest.title} ${sideQuest.description} ${sideQuest.doneCondition} ${sideQuest.rewardIntent}`);
+
+  if (includesAny(text, FILLER_SIDE_QUEST_PATTERNS)) {
+    diagnostics.push({
+      area: "side quest quality",
+      message: `${sideQuest.key} looks like filler instead of a goal-connected Side Quest.`,
+    });
+    return;
+  }
+
+  if (!hasAnyWord(text, contextTerms)) {
+    diagnostics.push({
+      area: "side quest quality",
+      message: `${sideQuest.key} should mention the user's goal, constraints, resources, or context.`,
+    });
+  }
+}
+
+function checkBossFightQuality(
+  bossFight: GeneratedAdventureContentBossFight,
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  const text = normalize(`${bossFight.title} ${bossFight.description} ${bossFight.doneCondition} ${bossFight.rewardIntent}`);
+
+  if (includesAny(text, GENERIC_BOSS_FIGHT_PATTERNS) || !includesAny(text, OBSERVABLE_DONE_TERMS)) {
+    diagnostics.push({
+      area: "boss fight quality",
+      message: `${bossFight.key} should read like an observable milestone, proof point, or challenge.`,
+    });
   }
 }
 
@@ -235,6 +379,47 @@ function checkNoDependencyOrXpFields(
   }
 }
 
+function buildContextTerms(fixture: GenerateAdventureEvalFixture): string[] {
+  return unique([
+    ...fixture.expectations.expectedGoalTerms,
+    ...fixture.expectations.expectedSkillThemes,
+    ...fixture.expectations.expectedInventoryThemes,
+    ...extractSignificantWords(fixture.goalText),
+    ...extractSignificantWords(fixture.interviewOutputArtifact.goalSummary),
+    ...extractSignificantWords(fixture.interviewOutputArtifact.currentStage),
+    ...fixture.interviewOutputArtifact.blockers.flatMap(extractSignificantWords),
+    ...fixture.interviewOutputArtifact.constraints.flatMap(extractSignificantWords),
+    ...fixture.interviewOutputArtifact.existingResources.flatMap(extractSignificantWords),
+    ...fixture.interviewOutputArtifact.likelyMissingResources.flatMap(extractSignificantWords),
+    ...fixture.interviewOutputArtifact.preferences.flatMap(extractSignificantWords),
+    ...extractSignificantWords(fixture.interviewOutputArtifact.compactSourceSummary),
+  ]);
+}
+
+function extractSignificantWords(text: string): string[] {
+  const stopWords = new Set([
+    "about",
+    "after",
+    "before",
+    "become",
+    "with",
+    "without",
+    "from",
+    "that",
+    "this",
+    "their",
+    "there",
+    "want",
+    "need",
+    "goal",
+    "into",
+  ]);
+
+  return normalize(text)
+    .split(/[^a-z0-9]+/u)
+    .filter((word) => word.length >= 4 && !stopWords.has(word));
+}
+
 function addIfBlank(
   value: string,
   area: AdventureQualityDiagnostic["area"],
@@ -257,10 +442,28 @@ function addIfEmpty(
   }
 }
 
-function includesAny(value: string, terms: string[]): boolean {
+function includesAny(value: string, terms: readonly string[]): boolean {
   return terms.some((term) => value.includes(normalize(term)));
 }
 
+function isTooGenericDoneCondition(text: string): boolean {
+  if (includesAny(text, OBSERVABLE_DONE_TERMS)) {
+    return false;
+  }
+
+  const words = text.split(/[^a-z0-9]+/u).filter(Boolean);
+  return words.length < 5;
+}
+
+function hasAnyWord(text: string, words: readonly string[]): boolean {
+  const textWords = new Set(text.split(/[^a-z0-9]+/u).filter(Boolean));
+  return words.some((word) => textWords.has(normalize(word)));
+}
+
 function normalize(value: string): string {
-  return value.toLocaleLowerCase();
+  return value.toLocaleLowerCase().replace(/\s+/gu, " ").trim();
+}
+
+function unique(values: readonly string[]): string[] {
+  return [...new Set(values.map(normalize).filter((value) => value.length > 0))];
 }

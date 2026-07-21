@@ -15,7 +15,69 @@ describe("Adventure content quality checks", () => {
     expect(result.assertions).toEqual(
       expect.arrayContaining([
         { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+        { id: "adventure-quest-quality", label: "Quest Quality", status: "passed" },
+        { id: "adventure-side-quest-quality", label: "Side Quest Quality", status: "passed" },
+        { id: "adventure-boss-fight-quality", label: "Boss Fight Quality", status: "passed" },
         { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
+      ]),
+    );
+  });
+
+  it("reports weak Main Quest, Side Quest, and Boss Fight quality", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        acts: [
+          {
+            key: "act-1",
+            title: "Generic Act",
+            summary: "A generic act.",
+            mainQuests: [
+              {
+                key: "quest-generic",
+                title: "Continue Your Journey",
+                description: "Work on the goal in a general way.",
+                doneCondition: "Make progress.",
+                rewardIntent: "Reward generic progress.",
+              },
+            ],
+            sideQuests: [
+              {
+                key: "quest-filler",
+                title: "Collect Coins",
+                description: "Explore the area and collect coins for bonus task flavor.",
+                doneCondition: "Three coins are collected.",
+                rewardIntent: "Reward optional fun.",
+              },
+            ],
+            bossFights: [
+              {
+                key: "boss-generic",
+                title: "Final Task",
+                description: "Complete the task.",
+                doneCondition: "Finish it.",
+                rewardIntent: "Reward completion.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const result = checkGeneratedAdventureContentQuality(content, buildFixture());
+
+    expect(result.diagnostics.map((diagnostic) => diagnostic.area)).toEqual(
+      expect.arrayContaining([
+        "done condition",
+        "quest quality",
+        "side quest quality",
+        "boss fight quality",
+      ]),
+    );
+    expect(result.assertions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "adventure-quest-quality", status: "failed" }),
+        expect.objectContaining({ id: "adventure-side-quest-quality", status: "failed" }),
+        expect.objectContaining({ id: "adventure-boss-fight-quality", status: "failed" }),
       ]),
     );
   });
