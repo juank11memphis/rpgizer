@@ -1,5 +1,4 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import type { AdventureGeneratorRequest } from "../application/generate-adventure/ports";
 import type { GeneratedAdventureContent } from "../domain/generated-adventure-content";
@@ -101,16 +100,3 @@ async function createOpenAIAdventureContentGenerator(): Promise<AdventureContent
   return new OpenAIAdventureContentGenerator();
 }
 
-async function main(): Promise<void> {
-  const result = await runAdventureContentEvals();
-  if (!result.passed) {
-    process.exitCode = 1;
-  }
-}
-
-const currentFilePath = fileURLToPath(import.meta.url);
-const invokedFilePath = process.argv[1] === undefined ? "" : path.resolve(process.argv[1]);
-
-if (invokedFilePath === currentFilePath) {
-  void main();
-}

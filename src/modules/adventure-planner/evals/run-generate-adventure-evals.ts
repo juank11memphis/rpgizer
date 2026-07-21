@@ -1,6 +1,5 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { loadEnvConfig } from "@next/env";
 
@@ -437,16 +436,3 @@ function unique(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-async function main(): Promise<void> {
-  const result = await runGenerateAdventureEvals();
-  if (!result.passed) {
-    process.exitCode = 1;
-  }
-}
-
-const currentFilePath = fileURLToPath(import.meta.url);
-const invokedFilePath = process.argv[1] === undefined ? "" : path.resolve(process.argv[1]);
-
-if (invokedFilePath === currentFilePath) {
-  void main();
-}

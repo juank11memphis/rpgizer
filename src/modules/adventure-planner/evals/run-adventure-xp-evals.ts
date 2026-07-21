@@ -1,5 +1,4 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import { parseGeneratedAdventureContent, type GeneratedAdventureContent } from "../domain/generated-adventure-content";
 import {
@@ -144,16 +143,3 @@ function readRecord(input: unknown, message: string): Record<string, unknown> {
   return input as Record<string, unknown>;
 }
 
-async function main(): Promise<void> {
-  const result = await runAdventureXpEvals();
-  if (!result.passed) {
-    process.exitCode = 1;
-  }
-}
-
-const currentFilePath = fileURLToPath(import.meta.url);
-const invokedFilePath = process.argv[1] === undefined ? "" : path.resolve(process.argv[1]);
-
-if (invokedFilePath === currentFilePath) {
-  void main();
-}

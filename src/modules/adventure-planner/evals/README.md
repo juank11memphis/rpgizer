@@ -1,28 +1,27 @@
 # Adventure generation evals
 
-Adventure evals are local, maintainer-facing checks for live Adventure generation. Live eval commands call OpenAI through the same production providers and runtime config used by the app, then run deterministic validations. Ordinary tests use injected fakes and must not call OpenAI.
+Adventure evals are local, maintainer-facing checks for live Adventure generation. Product Quality Evaluation runs through the local evals page, which calls the same production providers and runtime config used by the app, then runs deterministic validations. Ordinary tests use injected fakes and must not call OpenAI.
 
-## Commands
+## Run
+
+Start the app locally and open `/evals`, then choose the Adventure suite you want to run.
 
 ```bash
-pnpm run eval:adventure-content
-pnpm run eval:adventure-linking
-pnpm run eval:adventure-xp
-pnpm run eval:generate-adventure
+pnpm run dev
 ```
 
-Responsibilities:
+Available suites:
 
-- `eval:adventure-content` calls the live content generator and validates unlinked Adventure structure, fixture grounding, safety, and absence of dependency/XP fields.
-- `eval:adventure-linking` calls the live dependency linker with representative unlinked fixtures and validates Quest/Boss coverage plus existing Skill and Inventory references.
-- `eval:adventure-xp` calls the live XP balancer with representative linked fixtures and validates bounded positive XP, linked Skill coverage, proportionality, and no content/link rewrites.
-- `eval:generate-adventure` is the aggregate eval. It loads request fixtures from `src/modules/adventure-planner/evals/fixtures/`, runs the full production multi-step generator path, and validates the final complete `GeneratedAdventure` output.
+- Adventure Content validates unlinked Adventure structure, fixture grounding, safety, and absence of dependency/XP fields.
+- Dependency Links validates Quest/Boss coverage plus existing Skill and Inventory references for representative unlinked fixtures.
+- XP Balance validates bounded positive XP, linked Skill coverage, proportionality, and no content/link rewrites for representative linked fixtures.
+- Adventure Generation is the aggregate eval. It loads request fixtures from `src/modules/adventure-planner/evals/fixtures/`, runs the full production multi-step generator path, and validates the final complete `GeneratedAdventure` output.
 
-The aggregate eval differs from focused step evals by exercising content generation, dependency linking, XP balancing, final assembly, and final validation together. Use focused evals to isolate a failed interaction after the aggregate eval reports the failing area.
+The aggregate eval differs from focused step evals by exercising content generation, dependency linking, XP balancing, final assembly, and final validation together. Use focused eval suites to isolate a failed interaction after the aggregate eval reports the failing area.
 
 ## Runtime configuration
 
-All evals load `.env.local` before reading config. Live OpenAI config is required and may incur cost.
+The app loads `.env.local` before reading config. Live OpenAI config is required and may incur cost.
 
 Required:
 
@@ -34,11 +33,11 @@ Adventure model variables:
 - `OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL`
 - `OPENAI_ADVENTURE_XP_BALANCER_MODEL`
 
-Each step model falls back to `OPENAI_ADVENTURE_GENERATION_MODEL`, then to the shared runtime default when blank or unset. Missing, blank, or placeholder API keys fail before provider calls. Placeholder model values fail with a concise configuration diagnostic.
+Each step model falls back to `OPENAI_ADVENTURE_GENERATION_MODEL`, then to the shared runtime default when blank or unset. Missing, blank, or placeholder API keys are reported as configuration blockers before provider calls. Placeholder model values produce concise configuration diagnostics.
 
 ## Diagnostics and logs
 
-Failures print concise diagnostics such as:
+Failures report concise diagnostics such as:
 
 ```txt
 [spanish-coffee-chat] references: questLinks is missing coverage for quest-speaking-sprint.
@@ -68,9 +67,10 @@ Run ordinary validation separately:
 pnpm run test
 pnpm run typecheck
 pnpm run lint
+pnpm run build
 ```
 
-These commands should pass without OpenAI credentials. Live eval status should be reported separately: run `pnpm run eval:generate-adventure` when live config is available; otherwise record the exact config blocker instead of reporting live eval success.
+These commands should pass without OpenAI credentials. Live eval status should be reported from the local evals page when live config is available; otherwise record the exact configuration blocker instead of reporting live eval success.
 
 ## Known limitations
 

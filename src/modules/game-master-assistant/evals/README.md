@@ -4,11 +4,13 @@ Local evals for the Game Master interview prompt. These fixtures are repo-based 
 
 ## Run
 
+Product Quality Evaluation runs through the local evals page. Start the app locally and open `/evals`, then choose the Game Master Interview suite.
+
 ```bash
-pnpm run eval:game-master
+pnpm run dev
 ```
 
-The runner loads the production prompt from:
+The suite loads the production prompt from:
 
 ```text
 src/modules/game-master-assistant/infra/prompts/game-master-interview.md
@@ -18,7 +20,7 @@ src/modules/game-master-assistant/infra/prompts/game-master-interview.md
 
 Live evals require `OPENAI_API_KEY`. `OPENAI_GAME_MASTER_MODEL` is optional and defaults to the shared runtime model when unset.
 
-If the API key is missing, or either value is left as a `replace-with-*` placeholder, the command exits successfully with a clear skip message and does not call OpenAI. This keeps local validation usable when credentials are unavailable.
+If the API key is missing, or either value is left as a `replace-with-*` placeholder, the eval run reports a clear configuration blocker and does not call OpenAI. This keeps local validation usable when credentials are unavailable.
 
 ## Fixtures
 
@@ -30,7 +32,7 @@ Fixtures live in `fixtures/` and cover:
 
 ## Checks
 
-The runner validates the structured interviewer port result and reports concise per-fixture diagnostics. It checks:
+The suite validates the structured interviewer port result and reports concise per-fixture diagnostics. It checks:
 
 - `messageToUser`, `readinessStatus`, `coveredSignals`, and `summaryDelta` shape.
 - One-question-at-a-time behavior using a deterministic question-mark heuristic.
