@@ -28,7 +28,11 @@ import type {
   InterviewOutputArtifactEvalRunResult,
 } from "@/modules/game-master-assistant/evals/run-interview-output-artifact-evals";
 
-function runnerReturning(result: GameMasterInterviewEvalRunResult): GameMasterInterviewEvalRunner {
+function gameMasterRunnerReturning(result: GameMasterInterviewEvalRunResult): GameMasterInterviewEvalRunner {
+  return () => Promise.resolve(result);
+}
+
+function artifactRunnerReturning(result: InterviewOutputArtifactEvalRunResult): InterviewOutputArtifactEvalRunner {
   return () => Promise.resolve(result);
 }
 
@@ -52,7 +56,7 @@ describe("runEvalSuite", () => {
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
         ...createDependencies(),
-        runGameMasterInterviewEvals: runnerReturning({
+        runGameMasterInterviewEvals: gameMasterRunnerReturning({
           status: "passed",
           modelLabel: "gpt-test-model",
           fixtureIds: ["become-a-chef"],
@@ -136,7 +140,7 @@ describe("runEvalSuite", () => {
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
         ...createDependencies(),
-        runGameMasterInterviewEvals: runnerReturning({
+        runGameMasterInterviewEvals: gameMasterRunnerReturning({
           status: "failed",
           fixtureIds: ["high-stakes-finance"],
           diagnostics: [
@@ -232,7 +236,7 @@ describe("runEvalSuite", () => {
       { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
       {
         ...createDependencies(),
-        runGameMasterInterviewEvals: runnerReturning({
+        runGameMasterInterviewEvals: gameMasterRunnerReturning({
           status: "blocked",
           fixtureIds: [],
           blocker: "missing_openai_api_key",
@@ -277,6 +281,28 @@ describe("runEvalSuite", () => {
     expect(result.matrix?.testCases).toEqual([
       expect.objectContaining({ id: "high-stakes-finance", name: "High stakes finance" }),
     ]);
+    expect(result.matrix?.cells.map((cell) => cell.testCaseId)).toEqual(["high-stakes-finance"]);
+  });
+
+  it("calls Interview runners without selected scope for all Test Case runs", async () => {
+    const runGameMasterInterviewEvals = vi.fn<GameMasterInterviewEvalRunner>().mockResolvedValue(
+      buildPassedGameMasterResult(),
+    );
+    const runInterviewOutputArtifactEvals = vi.fn<InterviewOutputArtifactEvalRunner>().mockResolvedValue(
+      buildPassedInterviewOutputArtifactResult(),
+    );
+
+    await runEvalSuite(
+      { suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID },
+      createDependencies({ runGameMasterInterviewEvals }),
+    );
+    await runEvalSuite(
+      { suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID },
+      createDependencies({ runInterviewOutputArtifactEvals }),
+    );
+
+    expect(runGameMasterInterviewEvals).toHaveBeenCalledWith(undefined);
+    expect(runInterviewOutputArtifactEvals).toHaveBeenCalledWith(undefined);
   });
 
 
@@ -319,6 +345,7 @@ describe("runEvalSuite", () => {
       status: "passed",
       matrix: { testCases: [{ id: "chef-artifact" }] },
     });
+    expect(result.matrix?.cells.map((cell) => cell.testCaseId)).toEqual(["chef-artifact"]);
   });
 
   it("passes selected test case scope to Adventure eval runners", async () => {
@@ -420,6 +447,99 @@ describe("runEvalSuite", () => {
       status: "error",
       errorName: "EvalError",
       diagnostics: [{ scope: "run", code: "EvalError" }],
+    });
+  });
+
+  it("preserves structured Interview Output Artifact cell fields", async () => {
+    const artifactCell = buildInterviewOutputArtifactCell({
+      metrics: {
+        latencyMs: { value: 44, reported: true },
+        tokenCount: { value: 321, reported: true },
+        costUsd: { value: 0.0042, reported: true },
+      },
+      assertions: [
+        { id: "captures-goal", label: "captures goal", status: "passed" },
+        {
+          id: "captures-boundary",
+          label: "captures safety boundary",
+          status: "failed",
+          message: "Expected safety boundary to be captured.",
+        },
+      ],
+      diagnostics: [
+        {
+          fixtureId: "artifact-fixture",
+          assertionId: "captures-boundary",
+          message: "Expected safety boundary to be captured.",
+        },
+      ],
+      artifacts: [
+        {
+          id: "raw-artifact",
+          label: "Raw artifact",
+          localOnly: true,
+          redactionState: "redacted",
+          value: "{\"goalSummary\":\"Spanish coffee chat\"}",
+          preview: "artifact preview",
+        },
+      ],
+    });
+
+    const result = await runEvalSuite(
+      { suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID },
+      createDependencies({
+        runInterviewOutputArtifactEvals: artifactRunnerReturning({
+          status: "failed",
+          fixtureIds: ["artifact-fixture"],
+          diagnostics: [
+            {
+              fixtureId: "artifact-fixture",
+              assertionId: "captures-boundary",
+              message: "Expected safety boundary to be captured.",
+            },
+          ],
+          cells: [artifactCell],
+          durationMs: 101,
+        }),
+      }),
+    );
+
+    expect(result.matrix?.cells[0]).toMatchObject({
+      id: "artifact-fixture::default",
+      outputPreview: "Spanish coffee chat artifact",
+      outputMarkdown: JSON.stringify({ goalSummary: "Spanish coffee chat" }),
+      metrics: {
+        latency: { value: 44, unit: "ms", reported: true },
+        tokens: { value: 321, unit: "tokens", reported: true },
+        cost: { value: 0.0042, unit: "usd", reported: true },
+      },
+      assertions: [
+        { id: "captures-goal", label: "captures goal", status: "passed" },
+        {
+          id: "captures-boundary",
+          label: "captures safety boundary",
+          status: "failed",
+          message: "Expected safety boundary to be captured.",
+        },
+      ],
+      diagnostics: [
+        {
+          scope: "fixture",
+          fixtureId: "artifact-fixture",
+          code: "captures-boundary",
+          message: "Expected safety boundary to be captured.",
+        },
+      ],
+      artifacts: [
+        {
+          id: "raw-artifact",
+          label: "Raw artifact",
+          localOnly: true,
+          redactionState: "redacted",
+          value: "{\"goalSummary\":\"Spanish coffee chat\"}",
+          preview: "artifact preview",
+        },
+      ],
     });
   });
 

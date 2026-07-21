@@ -65,6 +65,51 @@ describe("listEvalSuites", () => {
       expect(suite.readyTestCases.length).toBeGreaterThan(0);
     }
   });
+
+  it("lists Interview suite Test Cases from the framework registry", () => {
+    const interviewSuite = listEvalSuites().find((suite) => suite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID);
+
+    expect(interviewSuite).toEqual(
+      expect.objectContaining({
+        id: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+        name: "Interview",
+        defaultVariantLabel: "Default variant",
+        defaultModelLabel: "Default model",
+        readyTestCases: [
+          { id: "become-a-chef-initial", name: "become-a-chef-initial", inputVariables: { topic: "baking", initial: "true" } },
+          { id: "become-a-chef", name: "become-a-chef", inputVariables: { topic: "baking" } },
+          { id: "high-stakes-finance", name: "high-stakes-finance", inputVariables: { topic: "finance" } },
+          { id: "learn-a-language", name: "learn-a-language", inputVariables: { topic: "language learning" } },
+        ],
+      }),
+    );
+  });
+
+  it("lists Interview Artifact suite Test Cases from the framework registry", () => {
+    const artifactSuite = listEvalSuites().find((suite) => suite.id === INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID);
+
+    expect(artifactSuite).toEqual(
+      expect.objectContaining({
+        id: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
+        name: "Interview Artifact",
+        defaultVariantLabel: "Default variant",
+        defaultModelLabel: "Default model",
+        readyTestCases: [
+          {
+            id: "become-a-confident-home-chef",
+            name: "become-a-confident-home-chef",
+            inputVariables: { fixtureId: "become-a-confident-home-chef" },
+          },
+          {
+            id: "high-stakes-financial-stability",
+            name: "high-stakes-financial-stability",
+            inputVariables: { fixtureId: "high-stakes-financial-stability" },
+          },
+        ],
+      }),
+    );
+  });
+
   it("returns cloned suite and Test Case data on each call", () => {
     const first = listEvalSuites();
     const second = listEvalSuites();
@@ -76,5 +121,4 @@ describe("listEvalSuites", () => {
     expect(second[0]!.readyTestCases[0]!.inputVariables).toEqual({ topic: "baking", initial: "true" });
     expect(listEvalSuites()[0]!.readyTestCases[0]!.inputVariables).toEqual({ topic: "baking", initial: "true" });
   });
-
 });

@@ -43,6 +43,63 @@ describe("runInterviewOutputArtifactEvals", () => {
     expect(errorOutput.toString()).toBe("");
   });
 
+  it("runs only the selected test case when scoped", async () => {
+    const generatedFixtureIds: string[] = [];
+
+    const result = await runInterviewOutputArtifactEvals({
+      environment: configuredEnvironment(),
+      testCaseId: "finance",
+      loadFixtures: () => [buildFixture("chef"), buildFixture("finance")],
+      loadInstructions: () => "artifact instructions",
+      createGenerator: () => ({
+        async generateArtifact(input) {
+          generatedFixtureIds.push(input.adventureId.replace("eval-adventure-", ""));
+          return validArtifact();
+        },
+      }),
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("passed");
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+
+    expect(result.fixtureIds).toEqual(["finance"]);
+    expect(result.cells.map((cell) => cell.testCaseId)).toEqual(["finance"]);
+    expect(generatedFixtureIds).toEqual(["finance"]);
+  });
+
+  it("returns a safe error when a selected test case is unavailable", async () => {
+    let generatorCreateCount = 0;
+
+    const result = await runInterviewOutputArtifactEvals({
+      environment: configuredEnvironment(),
+      testCaseId: "missing-fixture",
+      loadFixtures: () => [buildFixture("chef")],
+      loadInstructions: () => "artifact instructions",
+      createGenerator: () => {
+        generatorCreateCount += 1;
+        return fakeGenerator(validArtifact());
+      },
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("error");
+    if (result.status !== "error") {
+      throw new Error(`Expected error result, received ${result.status}.`);
+    }
+
+    expect(result.fixtureIds).toEqual([]);
+    expect(result.diagnostics[0]).toEqual({
+      errorName: "UnknownEvalTestCase",
+      message: "Interview Output Artifact eval runner error: Error: Selected test case is not available.",
+    });
+    expect(generatorCreateCount).toBe(0);
+  });
+
   it("writes configuration blocker output and avoids live generator creation", async () => {
     let generatorCreateCount = 0;
     const output = new CapturedStream();
