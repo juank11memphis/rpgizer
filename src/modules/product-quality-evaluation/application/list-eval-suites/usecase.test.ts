@@ -65,4 +65,16 @@ describe("listEvalSuites", () => {
       expect(suite.readyTestCases.length).toBeGreaterThan(0);
     }
   });
+  it("returns cloned suite and Test Case data on each call", () => {
+    const first = listEvalSuites();
+    const second = listEvalSuites();
+
+    first[0]!.readyTestCases[0]!.inputVariables.topic = "mutated";
+    first[0]!.readyTestCases.push({ id: "mutated", name: "mutated", inputVariables: {} });
+
+    expect(second[0]!.readyTestCases).not.toContainEqual(expect.objectContaining({ id: "mutated" }));
+    expect(second[0]!.readyTestCases[0]!.inputVariables).toEqual({ topic: "baking", initial: "true" });
+    expect(listEvalSuites()[0]!.readyTestCases[0]!.inputVariables).toEqual({ topic: "baking", initial: "true" });
+  });
+
 });
