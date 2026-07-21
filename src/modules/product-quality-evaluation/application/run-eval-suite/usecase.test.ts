@@ -558,7 +558,10 @@ describe("runEvalSuite", () => {
       status: "passed",
       matrix: {
         testCases: [{ id: "learn-spanish", inputVariables: { fixtureId: "learn-spanish" } }],
-        cells: [{ status: "passed", assertions: [{ status: "passed" }] }],
+        cells: [{ status: "passed", assertions: [
+          { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+          { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
+        ] }],
       },
       aggregates: { passRate: 1, averageLatencyMs: null },
     });
@@ -581,6 +584,19 @@ describe("runEvalSuite", () => {
               message: "Expected Spanish coffee chat context.",
             },
           ],
+          assertionResults: [
+            {
+              fixtureId: "learn-spanish",
+              assertions: [
+                {
+                  id: "adventure-fixture-grounding",
+                  label: "Fixture Grounding",
+                  status: "failed",
+                  message: "Expected Spanish coffee chat context.",
+                },
+              ],
+            },
+          ],
         }),
       }),
     );
@@ -599,6 +615,7 @@ describe("runEvalSuite", () => {
           passed: false,
           fixtureIds: [],
           diagnostics: [{ fixtureId: "runner", area: "configuration", message: "OPENAI_API_KEY is required." }],
+          assertionResults: [],
         }),
       }),
     );
@@ -713,6 +730,13 @@ function buildPassedAdventureResult(fixtureIds = ["learn-a-skill"]): GenerateAdv
     passed: true,
     fixtureIds,
     diagnostics: [],
+    assertionResults: fixtureIds.map((fixtureId) => ({
+      fixtureId,
+      assertions: [
+        { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+        { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
+      ],
+    })),
   };
 }
 

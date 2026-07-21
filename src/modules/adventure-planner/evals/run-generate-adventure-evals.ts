@@ -20,6 +20,7 @@ import { checkGeneratedAdventureQuality } from "./adventure-quality-checks";
 import { buildMissingTestCaseDiagnostic, selectEvalFixtures } from "./focused-adventure-step-eval-runner";
 import { parseGenerateAdventureEvalFixture } from "./generate-adventure-eval-fixture-parser";
 import type {
+  AdventureQualityAssertionOutcome,
   AdventureQualityDiagnostic,
   GenerateAdventureEvalFixture,
 } from "./generate-adventure-eval-types";
@@ -47,6 +48,12 @@ export type GenerateAdventureEvalRunResult = {
   passed: boolean;
   fixtureIds: string[];
   diagnostics: GenerateAdventureEvalFailureDiagnostic[];
+  assertionResults: GenerateAdventureEvalAssertionResult[];
+};
+
+export type GenerateAdventureEvalAssertionResult = {
+  fixtureId: string;
+  assertions: AdventureQualityAssertionOutcome[];
 };
 
 export type GenerateAdventureEvalFailureDiagnostic = AdventureQualityDiagnostic & {
@@ -65,7 +72,7 @@ export async function runGenerateAdventureEvals(
   if (configurationError !== null) {
     const diagnostic = buildRunDiagnostic("configuration", configurationError);
     writeDiagnostic(errorOutput, diagnostic);
-    return { passed: false, fixtureIds: [], diagnostics: [diagnostic] };
+    return { passed: false, fixtureIds: [], diagnostics: [diagnostic], assertionResults: [] };
   }
 
   let fixtures: GenerateAdventureEvalFixture[];
@@ -79,16 +86,17 @@ export async function runGenerateAdventureEvals(
     if (fixtures.length === 0 && options.testCaseId) {
       const diagnostic = buildMissingTestCaseDiagnostic(options.testCaseId);
       writeDiagnostic(errorOutput, diagnostic);
-      return { passed: false, fixtureIds: [], diagnostics: [diagnostic] };
+      return { passed: false, fixtureIds: [], diagnostics: [diagnostic], assertionResults: [] };
     }
     generator = await (options.createGenerator ?? createProductionAdventureGenerator)();
   } catch (error) {
     const diagnostic = buildRunDiagnostic("configuration", formatEvalError(error));
     writeDiagnostic(errorOutput, diagnostic);
-    return { passed: false, fixtureIds: [], diagnostics: [diagnostic] };
+    return { passed: false, fixtureIds: [], diagnostics: [diagnostic], assertionResults: [] };
   }
 
   const diagnostics: GenerateAdventureEvalFailureDiagnostic[] = [];
+  const assertionResults: GenerateAdventureEvalAssertionResult[] = [];
   logEvalStarted(fixtures.map((fixture) => fixture.id));
 
   for (const fixture of fixtures) {
@@ -96,6 +104,7 @@ export async function runGenerateAdventureEvals(
       const adventure = await generator.generateAdventure(buildAdventureGeneratorRequest(fixture));
       const result = checkGeneratedAdventureQuality(adventure, fixture);
 
+      assertionResults.push({ fixtureId: fixture.id, assertions: result.assertions });
       diagnostics.push(
         ...result.diagnostics.map((diagnostic) => ({ fixtureId: fixture.id, ...diagnostic })),
       );
@@ -119,6 +128,7 @@ export async function runGenerateAdventureEvals(
       passed: false,
       fixtureIds: fixtures.map((fixture) => fixture.id),
       diagnostics,
+      assertionResults,
     };
   }
 
@@ -129,6 +139,7 @@ export async function runGenerateAdventureEvals(
     passed: true,
     fixtureIds: fixtures.map((fixture) => fixture.id),
     diagnostics: [],
+    assertionResults,
   };
 }
 

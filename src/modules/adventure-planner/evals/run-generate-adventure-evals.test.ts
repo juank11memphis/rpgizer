@@ -171,7 +171,19 @@ describe("Generate Adventure eval runner", () => {
       errorOutput: errorOutput.stream,
     });
 
-    expect(result).toMatchObject({ passed: true, fixtureIds: ["cooking-eval"], diagnostics: [] });
+    expect(result).toMatchObject({
+      passed: true,
+      fixtureIds: ["cooking-eval"],
+      diagnostics: [],
+      assertionResults: [
+        {
+          fixtureId: "cooking-eval",
+          assertions: expect.arrayContaining([
+            { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+          ]),
+        },
+      ],
+    });
     expect(seenRequests).toEqual(["eval-adventure-cooking-eval"]);
     expect(output.output()).toBe("Generate Adventure evals passed: cooking-eval\n");
     expect(errorOutput.output()).toBe("");

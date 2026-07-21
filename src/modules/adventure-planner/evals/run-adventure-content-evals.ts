@@ -66,12 +66,15 @@ export async function runAdventureContentEvals(
   }
 
   const diagnostics: FocusedAdventureStepDiagnostic[] = [];
+  const assertionResults: FocusedAdventureStepRunResult["assertionResults"] = [];
 
   for (const fixture of fixtures) {
     try {
       const content = await generator.generateAdventureContent(buildAdventureGeneratorRequest(fixture));
+      const qualityResult = checkGeneratedAdventureContentQuality(content, fixture);
+      assertionResults.push({ fixtureId: fixture.id, assertions: qualityResult.assertions });
       diagnostics.push(
-        ...checkGeneratedAdventureContentQuality(content, fixture).diagnostics.map((diagnostic) => ({
+        ...qualityResult.diagnostics.map((diagnostic) => ({
           fixtureId: fixture.id,
           ...diagnostic,
         })),
@@ -87,10 +90,10 @@ export async function runAdventureContentEvals(
 
   const fixtureIds = fixtures.map((fixture) => fixture.id);
   if (diagnostics.length > 0) {
-    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics);
+    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults);
   }
 
-  return buildPassedResult(context.output, "Adventure content", fixtureIds);
+  return buildPassedResult(context.output, "Adventure content", fixtureIds, assertionResults);
 }
 
 async function createOpenAIAdventureContentGenerator(): Promise<AdventureContentEvalGenerator> {

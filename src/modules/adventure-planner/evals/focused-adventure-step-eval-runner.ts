@@ -10,12 +10,17 @@ import {
   loadOpenAIAdventureXpBalancerConfig,
   type OpenAIGameMasterInterviewerConfig,
 } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
-import type { AdventureQualityDiagnostic } from "./generate-adventure-eval-types";
+import type { AdventureQualityAssertionOutcome, AdventureQualityDiagnostic } from "./generate-adventure-eval-types";
 
 export type FocusedAdventureStep = "content" | "linking" | "xp";
 
 export type FocusedAdventureStepDiagnostic = AdventureQualityDiagnostic & {
   fixtureId: string;
+};
+
+export type FocusedAdventureStepAssertionResult = {
+  fixtureId: string;
+  assertions: AdventureQualityAssertionOutcome[];
 };
 
 export type EvalOutput = Pick<NodeJS.WriteStream, "write">;
@@ -24,6 +29,7 @@ export type FocusedAdventureStepRunResult = {
   passed: boolean;
   fixtureIds: string[];
   diagnostics: FocusedAdventureStepDiagnostic[];
+  assertionResults: FocusedAdventureStepAssertionResult[];
 };
 
 export type FocusedAdventureStepRunContext = {
@@ -167,21 +173,23 @@ export function buildPassedResult(
   output: EvalOutput,
   label: string,
   fixtureIds: string[],
+  assertionResults: FocusedAdventureStepAssertionResult[] = [],
 ): FocusedAdventureStepRunResult {
   output.write(`${label} evals passed: ${fixtureIds.join(", ")}\n`);
-  return { passed: true, fixtureIds, diagnostics: [] };
+  return { passed: true, fixtureIds, diagnostics: [], assertionResults };
 }
 
 export function buildFailedResult(
   errorOutput: EvalOutput,
   fixtureIds: string[],
   diagnostics: FocusedAdventureStepDiagnostic[],
+  assertionResults: FocusedAdventureStepAssertionResult[] = [],
 ): FocusedAdventureStepRunResult {
   for (const diagnostic of diagnostics) {
     writeFocusedDiagnostic(errorOutput, diagnostic);
   }
 
-  return { passed: false, fixtureIds, diagnostics };
+  return { passed: false, fixtureIds, diagnostics, assertionResults };
 }
 
 export function loadFocusedStepConfig(

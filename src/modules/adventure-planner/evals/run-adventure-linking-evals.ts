@@ -69,14 +69,17 @@ export async function runAdventureLinkingEvals(
   }
 
   const diagnostics: FocusedAdventureStepDiagnostic[] = [];
+  const assertionResults: FocusedAdventureStepRunResult["assertionResults"] = [];
   for (const fixture of fixtures) {
     try {
       const links = await linker.linkAdventureDependencies(fixture.content, {
         userId: `eval-user-${fixture.id}`,
         adventureId: `eval-adventure-${fixture.id}`,
       });
+      const qualityResult = checkAdventureLinkingQuality(fixture.content, links, fixture.expectations);
+      assertionResults.push({ fixtureId: fixture.id, assertions: qualityResult.assertions });
       diagnostics.push(
-        ...checkAdventureLinkingQuality(fixture.content, links, fixture.expectations).diagnostics.map(
+        ...qualityResult.diagnostics.map(
           (diagnostic) => ({ fixtureId: fixture.id, ...diagnostic }),
         ),
       );
@@ -91,10 +94,10 @@ export async function runAdventureLinkingEvals(
 
   const fixtureIds = fixtures.map((fixture) => fixture.id);
   if (diagnostics.length > 0) {
-    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics);
+    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults);
   }
 
-  return buildPassedResult(context.output, "Adventure dependency linking", fixtureIds);
+  return buildPassedResult(context.output, "Adventure dependency linking", fixtureIds, assertionResults);
 }
 
 export async function loadAdventureLinkingEvalFixtures(

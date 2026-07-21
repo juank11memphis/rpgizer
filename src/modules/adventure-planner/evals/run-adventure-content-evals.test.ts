@@ -51,7 +51,19 @@ describe("Adventure content eval runner", () => {
       errorOutput: errorOutput.stream,
     });
 
-    expect(result).toMatchObject({ passed: true, fixtureIds: ["spanish-eval"], diagnostics: [] });
+    expect(result).toMatchObject({
+      passed: true,
+      fixtureIds: ["spanish-eval"],
+      diagnostics: [],
+      assertionResults: [
+        {
+          fixtureId: "spanish-eval",
+          assertions: expect.arrayContaining([
+            { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+          ]),
+        },
+      ],
+    });
     expect(seenRequests).toEqual(["eval-adventure-spanish-eval"]);
     expect(output.output()).toBe("Adventure content evals passed: spanish-eval\n");
     expect(errorOutput.output()).toBe("");

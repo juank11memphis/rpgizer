@@ -51,9 +51,37 @@ describe("Adventure linking eval runner", () => {
       errorOutput: errorOutput.stream,
     });
 
-    expect(result.passed).toBe(true);
+    expect(result).toMatchObject({
+      passed: true,
+      fixtureIds: ["spanish-eval"],
+      diagnostics: [],
+      assertionResults: [
+        { fixtureId: "spanish-eval", assertions: [{ id: "adventure-references", label: "References", status: "passed" }] },
+      ],
+    });
     expect(seenContentTitles).toEqual(["Spanish Coffee Chat Quest"]);
     expect(errorOutput.output()).toBe("");
+  });
+
+  it("runs only the selected test case when scoped", async () => {
+    const seenContentTitles: string[] = [];
+
+    const result = await runAdventureLinkingEvals({
+      fixturesDirectory: await createFixtureDirectory(),
+      testCaseId: "spanish-eval",
+      environment: buildEnvironment(),
+      createLinker: () => ({
+        async linkAdventureDependencies(content) {
+          seenContentTitles.push(content.title);
+          return buildDependencyLinks();
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: createOutputCollector().stream,
+    });
+
+    expect(result).toMatchObject({ passed: true, fixtureIds: ["spanish-eval"] });
+    expect(seenContentTitles).toEqual(["Spanish Coffee Chat Quest"]);
   });
 
   it("reports missing configuration without a live OpenAI call", async () => {

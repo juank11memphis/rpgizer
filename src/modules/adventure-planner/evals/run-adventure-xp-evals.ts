@@ -77,14 +77,17 @@ export async function runAdventureXpEvals(
   }
 
   const diagnostics: FocusedAdventureStepDiagnostic[] = [];
+  const assertionResults: FocusedAdventureStepRunResult["assertionResults"] = [];
   for (const fixture of fixtures) {
     try {
       const xpBalance = await balancer.balanceAdventureXp(fixture.content, fixture.dependencies, {
         userId: `eval-user-${fixture.id}`,
         adventureId: `eval-adventure-${fixture.id}`,
       });
+      const qualityResult = checkAdventureXpQuality(fixture.content, fixture.dependencies, xpBalance);
+      assertionResults.push({ fixtureId: fixture.id, assertions: qualityResult.assertions });
       diagnostics.push(
-        ...checkAdventureXpQuality(fixture.content, fixture.dependencies, xpBalance).diagnostics.map(
+        ...qualityResult.diagnostics.map(
           (diagnostic) => ({ fixtureId: fixture.id, ...diagnostic }),
         ),
       );
@@ -99,10 +102,10 @@ export async function runAdventureXpEvals(
 
   const fixtureIds = fixtures.map((fixture) => fixture.id);
   if (diagnostics.length > 0) {
-    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics);
+    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults);
   }
 
-  return buildPassedResult(context.output, "Adventure XP balancing", fixtureIds);
+  return buildPassedResult(context.output, "Adventure XP balancing", fixtureIds, assertionResults);
 }
 
 export async function loadAdventureXpEvalFixtures(fixturesDirectory: string): Promise<AdventureXpEvalFixture[]> {

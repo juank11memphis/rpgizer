@@ -6,11 +6,19 @@ import {
   listGeneratedAdventureContentSkillKeys,
 } from "../domain/generated-adventure-content";
 import type { GeneratedAdventureDependencyLinks } from "../domain/generated-adventure-dependencies";
-import type { AdventureQualityDiagnostic } from "./generate-adventure-eval-types";
+import {
+  buildAdventureQualityAssertionOutcomes,
+  type AdventureQualityAssertionOutcome,
+  type AdventureQualityDiagnostic,
+  type AdventureQualityDiagnosticArea,
+} from "./generate-adventure-eval-types";
 
 export type AdventureLinkingQualityCheckResult = {
   diagnostics: AdventureQualityDiagnostic[];
+  assertions: AdventureQualityAssertionOutcome[];
 };
+
+const ADVENTURE_LINKING_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea[] = ["references"];
 
 export type AdventureLinkingExpectations = {
   expectedInventoryCoverage: string[];
@@ -55,7 +63,10 @@ export function checkAdventureLinkingQuality(
 
   checkNoXpFields(links, diagnostics);
 
-  return { diagnostics };
+  return {
+    diagnostics,
+    assertions: buildAdventureQualityAssertionOutcomes(ADVENTURE_LINKING_QUALITY_AREAS, diagnostics),
+  };
 }
 
 function checkCoverage(

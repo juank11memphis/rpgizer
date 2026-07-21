@@ -51,9 +51,37 @@ describe("Adventure XP eval runner", () => {
       errorOutput: errorOutput.stream,
     });
 
-    expect(result.passed).toBe(true);
+    expect(result).toMatchObject({
+      passed: true,
+      fixtureIds: ["spanish-eval"],
+      diagnostics: [],
+      assertionResults: [
+        { fixtureId: "spanish-eval", assertions: [{ id: "adventure-references", label: "References", status: "passed" }] },
+      ],
+    });
     expect(seenDependencyCounts).toEqual([3]);
     expect(errorOutput.output()).toBe("");
+  });
+
+  it("runs only the selected test case when scoped", async () => {
+    const seenDependencyCounts: number[] = [];
+
+    const result = await runAdventureXpEvals({
+      fixturesDirectory: await createFixtureDirectory(),
+      testCaseId: "spanish-eval",
+      environment: buildEnvironment(),
+      createBalancer: () => ({
+        async balanceAdventureXp(_content, dependencies) {
+          seenDependencyCounts.push(dependencies.questLinks.length + dependencies.bossFightLinks.length);
+          return buildXpBalance();
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: createOutputCollector().stream,
+    });
+
+    expect(result).toMatchObject({ passed: true, fixtureIds: ["spanish-eval"] });
+    expect(seenDependencyCounts).toEqual([3]);
   });
 
   it("reports missing configuration without a live OpenAI call", async () => {

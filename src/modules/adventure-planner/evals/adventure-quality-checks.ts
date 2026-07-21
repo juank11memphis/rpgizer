@@ -4,6 +4,7 @@ import type {
   GeneratedAdventureQuest,
   GeneratedAdventureSkillReward,
 } from "../domain/generated-adventure";
+import { buildAdventureQualityAssertionOutcomes } from "./generate-adventure-eval-types";
 import type {
   AdventureQualityCheckResult,
   AdventureQualityDiagnostic,
@@ -135,6 +136,20 @@ const GENERIC_NEXT_ACTION_PATTERNS = [
   "keep going",
 ];
 
+const GENERATED_ADVENTURE_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea[] = [
+  "required structure",
+  "done condition",
+  "side quest quality",
+  "boss fight quality",
+  "inventory quality",
+  "skill quality",
+  "achievement quality",
+  "next action quality",
+  "references",
+  "fixture grounding",
+  "safety",
+];
+
 const NON_AUTHORITATIVE_SAFETY_TERMS = [
   "professional",
   "expert",
@@ -162,7 +177,11 @@ export function checkGeneratedAdventureQuality(
   checkFixtureGrounding(adventure, fixture, diagnostics);
   checkHighStakesSafety(adventure, fixture, diagnostics);
 
-  return { fixtureId: fixture.id, diagnostics };
+  return {
+    fixtureId: fixture.id,
+    diagnostics,
+    assertions: buildAdventureQualityAssertionOutcomes(GENERATED_ADVENTURE_QUALITY_AREAS, diagnostics),
+  };
 }
 
 function checkRequiredStructure(

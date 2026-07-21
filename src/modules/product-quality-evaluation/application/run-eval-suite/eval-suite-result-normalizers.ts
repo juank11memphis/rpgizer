@@ -22,6 +22,7 @@ import {
 } from "../../domain/eval-matrix";
 import type { FocusedAdventureStepRunResult } from "@/modules/adventure-planner/evals/focused-adventure-step-eval-runner";
 import type { GenerateAdventureEvalRunResult } from "@/modules/adventure-planner/evals/run-generate-adventure-evals";
+import type { AdventureQualityAssertionOutcome } from "@/modules/adventure-planner/evals/generate-adventure-eval-types";
 import type {
   GameMasterInterviewEvalCell,
   GameMasterInterviewEvalRunResult,
@@ -202,13 +203,15 @@ function buildAdventurePlannerMatrix(
 ): EvalMatrix {
   const fixtureIds = collectAdventureFixtureIds(result);
   const diagnosticsByFixture = groupDiagnosticsByFixture(result.diagnostics);
+  const assertionsByFixture = groupAssertionsByFixture(result.assertionResults ?? []);
 
   return {
     testCases: fixtureIds.map((fixtureId) => buildAdventurePlannerTestCase(fixtureId)),
     variants: [{ ...DEFAULT_VARIANT, promptLabel: ADVENTURE_SUITE_LABELS[suiteId] }],
     cells: fixtureIds.map((fixtureId) => {
       const diagnostics = diagnosticsByFixture.get(fixtureId) ?? [];
-      return buildAdventurePlannerCell(fixtureId, diagnostics);
+      const assertions = assertionsByFixture.get(fixtureId) ?? [];
+      return buildAdventurePlannerCell(fixtureId, diagnostics, assertions);
     }),
   };
 }
@@ -247,7 +250,11 @@ function buildAdventurePlannerTestCase(fixtureId: string): EvalTestCase {
   };
 }
 
-function buildAdventurePlannerCell(fixtureId: string, diagnostics: AdventurePlannerDiagnostic[]): EvalCell {
+function buildAdventurePlannerCell(
+  fixtureId: string,
+  diagnostics: AdventurePlannerDiagnostic[],
+  assertions: AdventureQualityAssertionOutcome[],
+): EvalCell {
   const status: EvalCellStatus = diagnostics.length === 0 ? "passed" : "failed";
 
   return {
@@ -258,7 +265,9 @@ function buildAdventurePlannerCell(fixtureId: string, diagnostics: AdventurePlan
     outputPreview: null,
     outputMarkdown: null,
     metrics: createUnreportedEvalCellMetrics(),
-    assertions: diagnostics.length === 0 ? [buildPassedAdventureAssertion(fixtureId)] : diagnostics.map(buildFailedAdventureAssertion),
+    assertions: assertions.length > 0
+      ? assertions.map(buildAdventureAssertion)
+      : diagnostics.map(buildFailedAdventureAssertion),
     diagnostics: diagnostics.map((diagnostic) => ({
       scope: "fixture",
       fixtureId: diagnostic.fixtureId,
@@ -269,11 +278,24 @@ function buildAdventurePlannerCell(fixtureId: string, diagnostics: AdventurePlan
   };
 }
 
-function buildPassedAdventureAssertion(fixtureId: string): EvalAssertion {
+function groupAssertionsByFixture(
+  assertionResults: AdventurePlannerEvalRunResult["assertionResults"],
+): Map<string, AdventureQualityAssertionOutcome[]> {
+  const grouped = new Map<string, AdventureQualityAssertionOutcome[]>();
+
+  for (const result of assertionResults) {
+    grouped.set(result.fixtureId, result.assertions);
+  }
+
+  return grouped;
+}
+
+function buildAdventureAssertion(assertion: AdventureQualityAssertionOutcome): EvalAssertion {
   return {
-    id: `${fixtureId}::quality-checks`,
-    label: "Quality checks passed",
-    status: "passed",
+    id: assertion.id,
+    label: assertion.label,
+    status: assertion.status,
+    message: assertion.message === undefined ? undefined : sanitizeDiagnosticMessage(assertion.message),
   };
 }
 

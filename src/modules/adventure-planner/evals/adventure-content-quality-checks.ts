@@ -1,7 +1,9 @@
 import type { GeneratedAdventureContent } from "../domain/generated-adventure-content";
+import { buildAdventureQualityAssertionOutcomes } from "./generate-adventure-eval-types";
 import type {
   AdventureQualityCheckResult,
   AdventureQualityDiagnostic,
+  AdventureQualityDiagnosticArea,
   GenerateAdventureEvalFixture,
 } from "./generate-adventure-eval-types";
 
@@ -48,6 +50,18 @@ const CAPABILITY_TERMS = [
   "track",
 ];
 const GENERIC_NEXT_ACTION_PATTERNS = ["start working", "make progress", "do your best", "begin the journey", "keep going"];
+const ADVENTURE_CONTENT_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea[] = [
+  "required structure",
+  "done condition",
+  "skill quality",
+  "inventory quality",
+  "achievement quality",
+  "next action quality",
+  "fixture grounding",
+  "safety",
+  "references",
+];
+
 const NON_AUTHORITATIVE_SAFETY_TERMS = ["professional", "expert", "educational", "not medical", "not financial", "not legal", "consult", "licensed", "structural"];
 
 export function checkGeneratedAdventureContentQuality(
@@ -66,7 +80,11 @@ export function checkGeneratedAdventureContentQuality(
   checkHighStakesSafety(content, fixture, diagnostics);
   checkNoDependencyOrXpFields(content, diagnostics);
 
-  return { fixtureId: fixture.id, diagnostics };
+  return {
+    fixtureId: fixture.id,
+    diagnostics,
+    assertions: buildAdventureQualityAssertionOutcomes(ADVENTURE_CONTENT_QUALITY_AREAS, diagnostics),
+  };
 }
 
 function checkRequiredStructure(

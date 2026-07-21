@@ -5,11 +5,19 @@ import {
 } from "../domain/generated-adventure-xp";
 import type { GeneratedAdventureContent } from "../domain/generated-adventure-content";
 import type { GeneratedAdventureDependencyLinks } from "../domain/generated-adventure-dependencies";
-import type { AdventureQualityDiagnostic } from "./generate-adventure-eval-types";
+import {
+  buildAdventureQualityAssertionOutcomes,
+  type AdventureQualityAssertionOutcome,
+  type AdventureQualityDiagnostic,
+  type AdventureQualityDiagnosticArea,
+} from "./generate-adventure-eval-types";
 
 export type AdventureXpQualityCheckResult = {
   diagnostics: AdventureQualityDiagnostic[];
+  assertions: AdventureQualityAssertionOutcome[];
 };
+
+const ADVENTURE_XP_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea[] = ["references"];
 
 export function checkAdventureXpQuality(
   content: GeneratedAdventureContent,
@@ -45,7 +53,10 @@ export function checkAdventureXpQuality(
   checkBossFightProportionality(xpBalance, diagnostics);
   checkNoRewriteFields(content, dependencies, xpBalance, diagnostics);
 
-  return { diagnostics };
+  return {
+    diagnostics,
+    assertions: buildAdventureQualityAssertionOutcomes(ADVENTURE_XP_QUALITY_AREAS, diagnostics),
+  };
 }
 
 function checkXpCoverage(

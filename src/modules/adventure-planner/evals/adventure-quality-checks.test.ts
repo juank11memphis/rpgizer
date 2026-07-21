@@ -46,8 +46,17 @@ function messagesFor(payload = buildGeneratedAdventureBoundaryPayload(), fixture
 }
 
 describe("checkGeneratedAdventureQuality", () => {
-  it("passes a strong parser-compatible generated Adventure", () => {
-    expect(checkPayload().diagnostics).toEqual([]);
+  it("passes a strong parser-compatible generated Adventure with named assertions", () => {
+    const result = checkPayload();
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.assertions).toEqual(
+      expect.arrayContaining([
+        { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+        { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
+      ]),
+    );
+    expect(result.assertions.length).toBeGreaterThan(1);
   });
 
   it("fails vague Quest and Boss Fight done conditions with concise diagnostics", () => {
@@ -203,6 +212,30 @@ describe("checkGeneratedAdventureQuality", () => {
 
     expect(messages).toEqual(
       expect.arrayContaining([expect.stringContaining("missing non-authoritative safety note")]),
+    );
+  });
+
+  it("reports named failed assertions with existing diagnostic detail", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload({ safetyNotes: ["Stay focused on the plan."] });
+    const result = checkPayload(
+      payload,
+      buildFixture({
+        expectations: {
+          ...buildFixture().expectations,
+          highStakesSafety: true,
+        },
+      }),
+    );
+
+    expect(result.assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "adventure-safety",
+          label: "Safety",
+          status: "failed",
+          message: "missing non-authoritative safety note.",
+        },
+      ]),
     );
   });
 });

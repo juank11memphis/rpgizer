@@ -9,7 +9,15 @@ describe("Adventure content quality checks", () => {
   it("accepts grounded unlinked content without Skill rewards or Inventory links", () => {
     const content = parseGeneratedAdventureContent(buildContentPayload());
 
-    expect(checkGeneratedAdventureContentQuality(content, buildFixture()).diagnostics).toEqual([]);
+    const result = checkGeneratedAdventureContentQuality(content, buildFixture());
+
+    expect(result.diagnostics).toEqual([]);
+    expect(result.assertions).toEqual(
+      expect.arrayContaining([
+        { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+        { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
+      ]),
+    );
   });
 
   it("reports missing fixture grounding and weak next actions", () => {
