@@ -36,8 +36,8 @@ import type {
 
 export type GameMasterInterviewEvalRunner = (input?: { testCaseId?: string }) => Promise<GameMasterInterviewEvalRunResult>;
 export type InterviewOutputArtifactEvalRunner = (input?: { testCaseId?: string }) => Promise<InterviewOutputArtifactEvalRunResult>;
-export type GenerateAdventureEvalRunner = () => Promise<GenerateAdventureEvalRunResult>;
-export type FocusedAdventureStepEvalRunner = () => Promise<FocusedAdventureStepRunResult>;
+export type GenerateAdventureEvalRunner = (input?: { testCaseId?: string }) => Promise<GenerateAdventureEvalRunResult>;
+export type FocusedAdventureStepEvalRunner = (input?: { testCaseId?: string }) => Promise<FocusedAdventureStepRunResult>;
 
 export type RunEvalSuiteDependencies = {
   runGameMasterInterviewEvals: GameMasterInterviewEvalRunner;
@@ -126,21 +126,21 @@ async function runKnownEvalSuite(
   }
 
   if (input.suiteId === GENERATE_ADVENTURE_EVAL_SUITE_ID) {
-    const result = await dependencies.runGenerateAdventureEvals();
+    const result = await dependencies.runGenerateAdventureEvals(buildScopedRunnerInput(input.testCaseId));
     return normalizeAdventurePlannerResult(input.suiteId, result, Date.now() - startedAt);
   }
 
   if (input.suiteId === ADVENTURE_CONTENT_EVAL_SUITE_ID) {
-    const result = await dependencies.runAdventureContentEvals();
+    const result = await dependencies.runAdventureContentEvals(buildScopedRunnerInput(input.testCaseId));
     return normalizeAdventurePlannerResult(input.suiteId, result, Date.now() - startedAt);
   }
 
   if (input.suiteId === ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID) {
-    const result = await dependencies.runAdventureLinkingEvals();
+    const result = await dependencies.runAdventureLinkingEvals(buildScopedRunnerInput(input.testCaseId));
     return normalizeAdventurePlannerResult(input.suiteId, result, Date.now() - startedAt);
   }
 
-  const result = await dependencies.runAdventureXpEvals();
+  const result = await dependencies.runAdventureXpEvals(buildScopedRunnerInput(input.testCaseId));
   return normalizeAdventurePlannerResult(input.suiteId, result, Date.now() - startedAt);
 }
 

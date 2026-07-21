@@ -177,6 +177,31 @@ describe("Generate Adventure eval runner", () => {
     expect(errorOutput.output()).toBe("");
   });
 
+  it("runs only the selected test case when scoped", async () => {
+    const directory = await createFixtureDirectory([
+      buildFixture({ id: "first-eval", name: "First eval" }),
+      buildFixture({ id: "selected-eval", name: "Selected eval" }),
+    ]);
+    const seenRequests: string[] = [];
+
+    const result = await runGenerateAdventureEvals({
+      fixturesDirectory: directory,
+      testCaseId: "selected-eval",
+      environment: buildEnvironment(),
+      createGenerator: () => ({
+        async generateAdventure(input) {
+          seenRequests.push(input.adventureId);
+          return parseGeneratedAdventure(buildGeneratedAdventureBoundaryPayload());
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: createOutputCollector().stream,
+    });
+
+    expect(result).toMatchObject({ passed: true, fixtureIds: ["selected-eval"], diagnostics: [] });
+    expect(seenRequests).toEqual(["eval-adventure-selected-eval"]);
+  });
+
   it("formats generation failures without leaking SDK internals", async () => {
     const directory = await createFixtureDirectory([buildFixture()]);
     const errorOutput = createOutputCollector();

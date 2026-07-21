@@ -321,6 +321,23 @@ describe("runEvalSuite", () => {
     });
   });
 
+  it("passes selected test case scope to Adventure eval runners", async () => {
+    const cases = [
+      [GENERATE_ADVENTURE_EVAL_SUITE_ID, "runGenerateAdventureEvals"],
+      [ADVENTURE_CONTENT_EVAL_SUITE_ID, "runAdventureContentEvals"],
+      [ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID, "runAdventureLinkingEvals"],
+      [ADVENTURE_XP_BALANCING_EVAL_SUITE_ID, "runAdventureXpEvals"],
+    ] as const;
+
+    for (const [suiteId, selectedRunner] of cases) {
+      const dependencies = createDependencies();
+
+      await runEvalSuite({ suiteId, testCaseId: "learn-a-skill" }, dependencies);
+
+      expect(dependencies[selectedRunner]).toHaveBeenCalledWith({ testCaseId: "learn-a-skill" });
+    }
+  });
+
   it("normalizes Interview Output Artifact failures, blockers, and errors", async () => {
     const failed = await runEvalSuite(
       { suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID },

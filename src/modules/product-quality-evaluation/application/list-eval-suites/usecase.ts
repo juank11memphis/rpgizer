@@ -57,15 +57,6 @@ const EVAL_SUITES: EvalSuiteSummary[] = [
     ...defaultVariantFields,
   },
   {
-    id: GENERATE_ADVENTURE_EVAL_SUITE_ID,
-    name: "Adventure Generation",
-    shortDescription: "Checks full playable roadmap generation.",
-    purpose:
-      "Checks whether the Adventure generation pipeline turns interview context into coherent quests, milestones, inventory, dependencies, and XP balance.",
-    readyTestCases: adventureRequestReadyTestCases,
-    ...defaultVariantFields,
-  },
-  {
     id: ADVENTURE_CONTENT_EVAL_SUITE_ID,
     name: "Adventure Content",
     shortDescription: "Checks generated Adventure content quality.",
@@ -90,6 +81,15 @@ const EVAL_SUITES: EvalSuiteSummary[] = [
     purpose:
       "Checks whether Adventure XP balancing produces practical skill progression without unrealistic or misleading rewards.",
     readyTestCases: adventureFocusedReadyTestCases,
+    ...defaultVariantFields,
+  },
+  {
+    id: GENERATE_ADVENTURE_EVAL_SUITE_ID,
+    name: "Adventure Generation",
+    shortDescription: "Checks full playable roadmap generation.",
+    purpose:
+      "Checks whether the Adventure generation pipeline turns interview context into coherent quests, milestones, inventory, dependencies, and XP balance.",
+    readyTestCases: adventureRequestReadyTestCases,
     ...defaultVariantFields,
   },
 ];

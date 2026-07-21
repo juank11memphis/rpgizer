@@ -90,6 +90,21 @@ export function buildRunnerDiagnostic(
   return { fixtureId: "runner", area, message };
 }
 
+export function selectEvalFixtures<TFixture extends { id: string }>(
+  fixtures: TFixture[],
+  testCaseId: string | undefined,
+): TFixture[] {
+  if (!testCaseId) {
+    return fixtures;
+  }
+
+  return fixtures.filter((fixture) => fixture.id === testCaseId);
+}
+
+export function buildMissingTestCaseDiagnostic(testCaseId: string): FocusedAdventureStepDiagnostic {
+  return buildRunnerDiagnostic("configuration", `No eval fixture found for Test Case "${testCaseId}".`);
+}
+
 export function formatFocusedDiagnostic(diagnostic: FocusedAdventureStepDiagnostic): string {
   return `[${diagnostic.fixtureId}] ${diagnostic.area}: ${diagnostic.message}`;
 }

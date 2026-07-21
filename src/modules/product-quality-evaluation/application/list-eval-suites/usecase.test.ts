@@ -17,18 +17,18 @@ describe("listEvalSuites", () => {
     expect(suites.map((suite) => suite.id)).toEqual([
       GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
       INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
-      GENERATE_ADVENTURE_EVAL_SUITE_ID,
       ADVENTURE_CONTENT_EVAL_SUITE_ID,
       ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID,
       ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
+      GENERATE_ADVENTURE_EVAL_SUITE_ID,
     ]);
     expect(suites.map((suite) => suite.name)).toEqual([
       "Interview",
       "Interview Artifact",
-      "Adventure Generation",
       "Adventure Content",
       "Dependency Links",
       "XP Balance",
+      "Adventure Generation",
     ]);
   });
 

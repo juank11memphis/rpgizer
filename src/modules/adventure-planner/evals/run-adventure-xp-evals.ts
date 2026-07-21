@@ -10,12 +10,14 @@ import type { GeneratedAdventureXpBalance } from "../domain/generated-adventure-
 import { checkAdventureXpQuality } from "./adventure-xp-quality-checks";
 import {
   buildFailedResult,
+  buildMissingTestCaseDiagnostic,
   buildPassedResult,
   buildRunnerDiagnostic,
   formatEvalError,
   formatFocusedProviderError,
   loadJsonFixtures,
   prepareFocusedAdventureStepRun,
+  selectEvalFixtures,
   validateFocusedOpenAIConfiguration,
   type FocusedAdventureStepDiagnostic,
   type FocusedAdventureStepRunResult,
@@ -43,6 +45,7 @@ export type AdventureXpEvalBalancer = {
 
 export type AdventureXpEvalRunOptions = {
   fixturesDirectory?: string;
+  testCaseId?: string;
   environment?: NodeJS.ProcessEnv;
   createBalancer?: () => Promise<AdventureXpEvalBalancer> | AdventureXpEvalBalancer;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -61,7 +64,13 @@ export async function runAdventureXpEvals(
   let fixtures: AdventureXpEvalFixture[];
   let balancer: AdventureXpEvalBalancer;
   try {
-    fixtures = await loadAdventureXpEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY);
+    fixtures = selectEvalFixtures(
+      await loadAdventureXpEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY),
+      options.testCaseId,
+    );
+    if (fixtures.length === 0 && options.testCaseId) {
+      return buildFailedResult(context.errorOutput, [], [buildMissingTestCaseDiagnostic(options.testCaseId)]);
+    }
     balancer = await (options.createBalancer ?? createOpenAIAdventureXpBalancer)();
   } catch (error) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", formatEvalError(error))]);

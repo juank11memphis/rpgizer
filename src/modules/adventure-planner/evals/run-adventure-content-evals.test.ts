@@ -17,9 +17,16 @@ function createOutputCollector(): { output: () => string; stream: Pick<NodeJS.Wr
   return { output: () => output, stream: { write: (chunk) => { output += String(chunk); return true; } } };
 }
 
-async function createFixtureDirectory(): Promise<string> {
+async function createFixtureDirectory(fixtures = [buildFixture()]): Promise<string> {
   const directory = await mkdtemp(path.join(os.tmpdir(), "adventure-content-evals-"));
-  await writeFile(path.join(directory, "01-spanish.json"), JSON.stringify(buildFixture()));
+  await Promise.all(
+    fixtures.map((fixture, index) =>
+      writeFile(
+        path.join(directory, `${String(index + 1).padStart(2, "0")}-${fixture.id}.json`),
+        JSON.stringify(fixture),
+      ),
+    ),
+  );
   return directory;
 }
 
@@ -48,6 +55,31 @@ describe("Adventure content eval runner", () => {
     expect(seenRequests).toEqual(["eval-adventure-spanish-eval"]);
     expect(output.output()).toBe("Adventure content evals passed: spanish-eval\n");
     expect(errorOutput.output()).toBe("");
+  });
+
+  it("runs only the selected test case when scoped", async () => {
+    const fixturesDirectory = await createFixtureDirectory([
+      buildFixture({ id: "first-eval", name: "First eval" }),
+      buildFixture({ id: "selected-eval", name: "Selected eval" }),
+    ]);
+    const seenRequests: string[] = [];
+
+    const result = await runAdventureContentEvals({
+      fixturesDirectory,
+      testCaseId: "selected-eval",
+      environment: buildEnvironment(),
+      createGenerator: () => ({
+        async generateAdventureContent(input) {
+          seenRequests.push(input.adventureId);
+          return parseGeneratedAdventureContent(buildContentPayload());
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: createOutputCollector().stream,
+    });
+
+    expect(result).toMatchObject({ passed: true, fixtureIds: ["selected-eval"], diagnostics: [] });
+    expect(seenRequests).toEqual(["eval-adventure-selected-eval"]);
   });
 
   it("returns clear configuration diagnostics before creating a live provider", async () => {

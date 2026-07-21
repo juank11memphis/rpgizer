@@ -17,6 +17,7 @@ import {
   loadOpenAIAdventureXpBalancerConfig,
 } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
 import { checkGeneratedAdventureQuality } from "./adventure-quality-checks";
+import { buildMissingTestCaseDiagnostic, selectEvalFixtures } from "./focused-adventure-step-eval-runner";
 import { parseGenerateAdventureEvalFixture } from "./generate-adventure-eval-fixture-parser";
 import type {
   AdventureQualityDiagnostic,
@@ -35,6 +36,7 @@ export type GenerateAdventureEvalGenerator = {
 
 export type GenerateAdventureEvalRunOptions = {
   fixturesDirectory?: string;
+  testCaseId?: string;
   environment?: NodeJS.ProcessEnv;
   createGenerator?: () => Promise<GenerateAdventureEvalGenerator> | GenerateAdventureEvalGenerator;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -70,9 +72,15 @@ export async function runGenerateAdventureEvals(
   let generator: GenerateAdventureEvalGenerator;
 
   try {
-    fixtures = await loadGenerateAdventureEvalFixtures(
-      options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY,
+    fixtures = selectEvalFixtures(
+      await loadGenerateAdventureEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY),
+      options.testCaseId,
     );
+    if (fixtures.length === 0 && options.testCaseId) {
+      const diagnostic = buildMissingTestCaseDiagnostic(options.testCaseId);
+      writeDiagnostic(errorOutput, diagnostic);
+      return { passed: false, fixtureIds: [], diagnostics: [diagnostic] };
+    }
     generator = await (options.createGenerator ?? createProductionAdventureGenerator)();
   } catch (error) {
     const diagnostic = buildRunDiagnostic("configuration", formatEvalError(error));

@@ -6,12 +6,14 @@ import type { GeneratedAdventureDependencyLinks } from "../domain/generated-adve
 import { checkAdventureLinkingQuality } from "./adventure-linking-quality-checks";
 import {
   buildFailedResult,
+  buildMissingTestCaseDiagnostic,
   buildPassedResult,
   buildRunnerDiagnostic,
   formatEvalError,
   formatFocusedProviderError,
   loadJsonFixtures,
   prepareFocusedAdventureStepRun,
+  selectEvalFixtures,
   validateFocusedOpenAIConfiguration,
   type FocusedAdventureStepDiagnostic,
   type FocusedAdventureStepRunResult,
@@ -35,6 +37,7 @@ export type AdventureLinkingEvalLinker = {
 
 export type AdventureLinkingEvalRunOptions = {
   fixturesDirectory?: string;
+  testCaseId?: string;
   environment?: NodeJS.ProcessEnv;
   createLinker?: () => Promise<AdventureLinkingEvalLinker> | AdventureLinkingEvalLinker;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -53,7 +56,13 @@ export async function runAdventureLinkingEvals(
   let fixtures: AdventureLinkingEvalFixture[];
   let linker: AdventureLinkingEvalLinker;
   try {
-    fixtures = await loadAdventureLinkingEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY);
+    fixtures = selectEvalFixtures(
+      await loadAdventureLinkingEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY),
+      options.testCaseId,
+    );
+    if (fixtures.length === 0 && options.testCaseId) {
+      return buildFailedResult(context.errorOutput, [], [buildMissingTestCaseDiagnostic(options.testCaseId)]);
+    }
     linker = await (options.createLinker ?? createOpenAIAdventureDependencyLinker)();
   } catch (error) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", formatEvalError(error))]);

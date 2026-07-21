@@ -11,11 +11,13 @@ import {
 } from "./run-generate-adventure-evals";
 import {
   buildFailedResult,
+  buildMissingTestCaseDiagnostic,
   buildPassedResult,
   buildRunnerDiagnostic,
   formatEvalError,
   formatFocusedProviderError,
   prepareFocusedAdventureStepRun,
+  selectEvalFixtures,
   validateFocusedOpenAIConfiguration,
   type FocusedAdventureStepDiagnostic,
   type FocusedAdventureStepRunResult,
@@ -32,6 +34,7 @@ export type AdventureContentEvalGenerator = {
 
 export type AdventureContentEvalRunOptions = {
   fixturesDirectory?: string;
+  testCaseId?: string;
   environment?: NodeJS.ProcessEnv;
   createGenerator?: () => Promise<AdventureContentEvalGenerator> | AdventureContentEvalGenerator;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -50,9 +53,13 @@ export async function runAdventureContentEvals(
   let fixtures: GenerateAdventureEvalFixture[];
   let generator: AdventureContentEvalGenerator;
   try {
-    fixtures = await loadGenerateAdventureEvalFixtures(
-      options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY,
+    fixtures = selectEvalFixtures(
+      await loadGenerateAdventureEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY),
+      options.testCaseId,
     );
+    if (fixtures.length === 0 && options.testCaseId) {
+      return buildFailedResult(context.errorOutput, [], [buildMissingTestCaseDiagnostic(options.testCaseId)]);
+    }
     generator = await (options.createGenerator ?? createOpenAIAdventureContentGenerator)();
   } catch (error) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", formatEvalError(error))]);
