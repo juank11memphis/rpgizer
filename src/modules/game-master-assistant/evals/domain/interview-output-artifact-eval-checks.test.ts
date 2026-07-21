@@ -64,6 +64,19 @@ describe("checkInterviewOutputArtifactEvalAssertions", () => {
       expect.objectContaining({ assertionId: "expect-safetyBoundaries-includes-financial-advice" }),
     );
   });
+
+  it("passes an alternative include expectation when any phrase is present", () => {
+    const result = checkInterviewOutputArtifactEvalAssertions(
+      alternativeExpectationFixture(),
+      validArtifact({ currentStage: "Ready; rent was missed and support is available." }),
+    );
+
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        assertionId: "expect-currentStage-includes-any-missed-rent-or-rent-was-missed",
+      }),
+    );
+  });
 });
 
 function validArtifact(overrides: Partial<InterviewOutputArtifact> = {}): InterviewOutputArtifact {
@@ -115,6 +128,16 @@ function highStakesFixture(): InterviewOutputArtifactEvalFixture {
     expectations: {
       ...buildFixture().expectations,
       safetyBoundaries: { includes: ["financial advice", "risky"] },
+    },
+  };
+}
+
+function alternativeExpectationFixture(): InterviewOutputArtifactEvalFixture {
+  return {
+    ...buildFixture(),
+    expectations: {
+      ...buildFixture().expectations,
+      currentStage: { includesAny: [["missed rent", "rent was missed"]] },
     },
   };
 }

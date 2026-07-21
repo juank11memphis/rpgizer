@@ -25,15 +25,22 @@ export function checkInterviewOutputArtifactEvalAssertions(
     ...INTERVIEW_OUTPUT_ARTIFACT_REQUIRED_TEXT_ARRAY_FIELDS.map((field) =>
       checkRequiredTextArrayField(artifact, field),
     ),
-    ...Object.entries(fixture.expectations).flatMap(([field, expectation]) =>
-      expectation.includes.map((expectedText) =>
+    ...Object.entries(fixture.expectations).flatMap(([field, expectation]) => [
+      ...(expectation.includes ?? []).map((expectedText) =>
         checkExpectedTextInField({
           artifact,
           field: field as keyof InterviewOutputArtifact,
           expectedText,
         }),
       ),
-    ),
+      ...(expectation.includesAny ?? []).map((expectedAlternatives) =>
+        checkAnyExpectedTextInField({
+          artifact,
+          field: field as keyof InterviewOutputArtifact,
+          expectedAlternatives,
+        }),
+      ),
+    ]),
   ];
 
   const diagnostics = assertions
@@ -93,6 +100,29 @@ function checkExpectedTextInField(input: {
       ? {}
       : {
           message: `expected ${input.field} to include '${input.expectedText}'.`,
+        }),
+  };
+}
+
+function checkAnyExpectedTextInField(input: {
+  artifact: InterviewOutputArtifact;
+  field: keyof InterviewOutputArtifact;
+  expectedAlternatives: string[];
+}): InterviewOutputArtifactEvalAssertion {
+  const actualText = normalizeText(readArtifactFieldAsText(input.artifact, input.field));
+  const expectedAlternatives = input.expectedAlternatives.map(normalizeText);
+  const passed = expectedAlternatives.some((expectedText) => actualText.includes(expectedText));
+  const assertionId = `expect-${input.field}-includes-any-${expectedAlternatives.map(slugify).join("-or-")}`;
+  const expectedText = input.expectedAlternatives.join("' or '");
+
+  return {
+    id: assertionId,
+    label: `${input.field} includes ${expectedText}`,
+    status: passed ? "passed" : "failed",
+    ...(passed
+      ? {}
+      : {
+          message: `expected ${input.field} to include '${expectedText}'.`,
         }),
   };
 }

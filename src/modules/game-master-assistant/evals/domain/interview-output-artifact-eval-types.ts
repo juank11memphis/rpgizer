@@ -35,7 +35,8 @@ export type InterviewOutputArtifactEvalContext = {
 };
 
 export type InterviewOutputArtifactFieldExpectation = {
-  includes: string[];
+  includes?: string[];
+  includesAny?: string[][];
 };
 
 export type InterviewOutputArtifactEvalExpectations = {

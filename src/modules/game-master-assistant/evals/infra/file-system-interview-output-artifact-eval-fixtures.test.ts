@@ -16,6 +16,9 @@ describe("loadInterviewOutputArtifactEvalFixtures", () => {
     ]);
     expect(fixtures[0]?.expectations.goalSummary.includes).toContain("confident");
     expect(fixtures[1]?.expectations.safetyBoundaries.includes).toContain("financial advice");
+    expect(fixtures[1]?.expectations.currentStage.includesAny).toEqual([
+      ["missed rent", "rent was missed"],
+    ]);
   });
 
   it("rejects malformed fixtures with safe actionable errors", async () => {
@@ -40,7 +43,7 @@ describe("loadInterviewOutputArtifactEvalFixtures", () => {
       );
 
       await expect(loadInterviewOutputArtifactEvalFixtures(directory)).rejects.toThrow(
-        "bad.json: expectations.goalSummary.includes must be a non-empty array.",
+        "bad.json: expectations.goalSummary must define includes or includesAny.",
       );
     } finally {
       await rm(directory, { recursive: true, force: true });

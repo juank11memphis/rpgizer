@@ -24,7 +24,7 @@
     "goalSummary": { "includes": ["finances", "rent"] },
     "coreWhy": { "includes": ["stabilize"] },
     "successDefinition": { "includes": ["cash flow"] },
-    "currentStage": { "includes": ["missed rent"] },
+    "currentStage": { "includesAny": [["missed rent", "rent was missed"]] },
     "blockers": { "includes": ["scared"] },
     "constraints": { "includes": ["evenings"] },
     "existingResources": { "includes": ["landlord", "nonprofit"] },

@@ -132,22 +132,79 @@ function parseFieldExpectation(value: unknown, fixtureName: string, fieldName: s
     throw new Error(`${fixtureName}: expectations.${fieldName} must be an object.`);
   }
 
-  const includes = value.includes;
-  if (!Array.isArray(includes) || includes.length === 0) {
-    throw new Error(`${fixtureName}: expectations.${fieldName}.includes must be a non-empty array.`);
+  const includes = parseOptionalStringArrayExpectation(
+    value.includes,
+    fixtureName,
+    `expectations.${fieldName}.includes`,
+  );
+  const includesAny = parseOptionalStringArrayGroupsExpectation(
+    value.includesAny,
+    fixtureName,
+    `expectations.${fieldName}.includesAny`,
+  );
+
+  if (includes.length === 0 && includesAny.length === 0) {
+    throw new Error(
+      `${fixtureName}: expectations.${fieldName} must define includes or includesAny.`,
+    );
   }
 
   return {
-    includes: includes.map((item, index) => {
+    ...(includes.length > 0 ? { includes } : {}),
+    ...(includesAny.length > 0 ? { includesAny } : {}),
+  };
+}
+
+function parseOptionalStringArrayExpectation(
+  value: unknown,
+  fixtureName: string,
+  fieldPath: string,
+): string[] {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(`${fixtureName}: ${fieldPath} must be an array.`);
+  }
+
+  return value.map((item, index) => {
+    if (typeof item !== "string" || item.trim().length === 0) {
+      throw new Error(`${fixtureName}: ${fieldPath}[${index}] must be a non-empty string.`);
+    }
+
+    return item.trim();
+  });
+}
+
+function parseOptionalStringArrayGroupsExpectation(
+  value: unknown,
+  fixtureName: string,
+  fieldPath: string,
+): string[][] {
+  if (value === undefined) {
+    return [];
+  }
+
+  if (!Array.isArray(value)) {
+    throw new Error(`${fixtureName}: ${fieldPath} must be an array.`);
+  }
+
+  return value.map((group, groupIndex) => {
+    if (!Array.isArray(group) || group.length === 0) {
+      throw new Error(`${fixtureName}: ${fieldPath}[${groupIndex}] must be a non-empty array.`);
+    }
+
+    return group.map((item, itemIndex) => {
       if (typeof item !== "string" || item.trim().length === 0) {
         throw new Error(
-          `${fixtureName}: expectations.${fieldName}.includes[${index}] must be a non-empty string.`,
+          `${fixtureName}: ${fieldPath}[${groupIndex}][${itemIndex}] must be a non-empty string.`,
         );
       }
 
       return item.trim();
-    }),
-  };
+    });
+  });
 }
 
 function readRequiredString(
