@@ -77,6 +77,22 @@ describe("checkInterviewOutputArtifactEvalAssertions", () => {
       }),
     );
   });
+
+  it("accepts semantic alternatives for high-stakes success definitions", () => {
+    const result = checkInterviewOutputArtifactEvalAssertions(
+      highStakesSuccessDefinitionFixture(),
+      validArtifact({
+        successDefinition:
+          "A realistic, low-risk way to get current and keep money steady enough to address rent, bills, and immediate tenant support needs.",
+      }),
+    );
+
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        assertionId: "expect-successDefinition-includes-any-cash-flow-or-money-steady-or-steady-enough",
+      }),
+    );
+  });
 });
 
 function validArtifact(overrides: Partial<InterviewOutputArtifact> = {}): InterviewOutputArtifact {
@@ -138,6 +154,16 @@ function alternativeExpectationFixture(): InterviewOutputArtifactEvalFixture {
     expectations: {
       ...buildFixture().expectations,
       currentStage: { includesAny: [["missed rent", "rent was missed", "behind on rent"]] },
+    },
+  };
+}
+
+function highStakesSuccessDefinitionFixture(): InterviewOutputArtifactEvalFixture {
+  return {
+    ...buildFixture(),
+    expectations: {
+      ...buildFixture().expectations,
+      successDefinition: { includesAny: [["cash flow", "money steady", "steady enough"]] },
     },
   };
 }

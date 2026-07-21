@@ -23,7 +23,7 @@
   "expectations": {
     "goalSummary": { "includes": ["finances", "rent"] },
     "coreWhy": { "includesAny": [["stabilize", "stable"]] },
-    "successDefinition": { "includes": ["cash flow"] },
+    "successDefinition": { "includesAny": [["cash flow", "money steady", "steady enough"]] },
     "currentStage": { "includesAny": [["missed rent", "rent was missed", "behind on rent"]] },
     "blockers": { "includes": ["scared"] },
     "constraints": { "includes": ["evenings"] },

@@ -60,6 +60,52 @@ describe("checkGameMasterInterviewEvalAssertions", () => {
       ]),
     );
   });
+
+  it("recognizes natural past friction wording in the next question", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({
+        requiredUncoveredSignals: ["pastFriction"],
+        requiredQuestionTargets: ["pastFriction"],
+      }),
+      buildResult({
+        messageToUser:
+          "You’ve got a solid starter kit. What’s been the biggest snag so far: sticking to the routine, remembering vocab, speaking out loud, or finding the right practice balance?",
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "question-target-pastFriction",
+          label: "asks about pastFriction",
+          status: "passed",
+        },
+      ]),
+    );
+  });
+
+  it("recognizes off-track past friction wording in the next question", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({
+        requiredUncoveredSignals: ["pastFriction"],
+        requiredQuestionTargets: ["pastFriction"],
+      }),
+      buildResult({
+        messageToUser:
+          "You’ve got a solid kit already. What’s the biggest thing that usually throws you off track: motivation dips, forgetting to study, not enough time, getting overwhelmed, or something else?",
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "question-target-pastFriction",
+          label: "asks about pastFriction",
+          status: "passed",
+        },
+      ]),
+    );
+  });
 });
 
 function buildFixture(

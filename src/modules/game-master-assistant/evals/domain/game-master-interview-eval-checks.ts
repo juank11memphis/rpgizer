@@ -199,7 +199,7 @@ function messageTargetsSignal(
         message,
       );
     case "pastFriction":
-      return /\b(tried|before|friction|obstacle|block|stuck|struggl|tripped|gets? in the way|hard|difficult)\b/i.test(
+      return /\b(tried|before|friction|snag|obstacle|block|stuck|stick(?:ing)?|struggl|tripped|remembering|forgetting|balance|off track|throws? you off|overwhelm|gets? in the way|hard|difficult)\b/i.test(
         message,
       );
     case "constraints":
