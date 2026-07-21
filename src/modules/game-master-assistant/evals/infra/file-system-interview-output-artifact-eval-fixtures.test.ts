@@ -15,9 +15,12 @@ describe("loadInterviewOutputArtifactEvalFixtures", () => {
       "high-stakes-financial-stability",
     ]);
     expect(fixtures[0]?.expectations.goalSummary.includes).toContain("confident");
+    expect(fixtures[1]?.expectations.coreWhy.includesAny).toEqual([
+      ["stabilize", "stable"],
+    ]);
     expect(fixtures[1]?.expectations.safetyBoundaries.includes).toContain("financial advice");
     expect(fixtures[1]?.expectations.currentStage.includesAny).toEqual([
-      ["missed rent", "rent was missed"],
+      ["missed rent", "rent was missed", "behind on rent"],
     ]);
   });
 

@@ -22,9 +22,9 @@
   ],
   "expectations": {
     "goalSummary": { "includes": ["finances", "rent"] },
-    "coreWhy": { "includes": ["stabilize"] },
+    "coreWhy": { "includesAny": [["stabilize", "stable"]] },
     "successDefinition": { "includes": ["cash flow"] },
-    "currentStage": { "includesAny": [["missed rent", "rent was missed"]] },
+    "currentStage": { "includesAny": [["missed rent", "rent was missed", "behind on rent"]] },
     "blockers": { "includes": ["scared"] },
     "constraints": { "includes": ["evenings"] },
     "existingResources": { "includes": ["landlord", "nonprofit"] },

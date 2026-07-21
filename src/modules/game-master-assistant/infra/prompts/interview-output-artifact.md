@@ -15,7 +15,7 @@ Required artifact signals:
 - constraints
 - existing resources
 - likely missing resources
-- safety boundaries
+- safety boundaries: preserve explicit safety-boundary wording from the transcript, especially "no", "avoid", or "without" boundaries around advice or risk
 - preferences: preserve stated preference terms such as timing, style, quantity, and difficulty. Examples only: weeknight, vegetarian, three, low-stress
 - compact source summary: include the most important concrete transcript facts, including stated constraints, preferences, safety boundaries, and gaps. Examples only: missing habits, tools, support, resources
 

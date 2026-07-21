@@ -68,12 +68,12 @@ describe("checkInterviewOutputArtifactEvalAssertions", () => {
   it("passes an alternative include expectation when any phrase is present", () => {
     const result = checkInterviewOutputArtifactEvalAssertions(
       alternativeExpectationFixture(),
-      validArtifact({ currentStage: "Ready; rent was missed and support is available." }),
+      validArtifact({ currentStage: "Ready; the user is behind on rent and support is available." }),
     );
 
     expect(result.diagnostics).not.toContainEqual(
       expect.objectContaining({
-        assertionId: "expect-currentStage-includes-any-missed-rent-or-rent-was-missed",
+        assertionId: "expect-currentStage-includes-any-missed-rent-or-rent-was-missed-or-behind-on-rent",
       }),
     );
   });
@@ -137,7 +137,7 @@ function alternativeExpectationFixture(): InterviewOutputArtifactEvalFixture {
     ...buildFixture(),
     expectations: {
       ...buildFixture().expectations,
-      currentStage: { includesAny: [["missed rent", "rent was missed"]] },
+      currentStage: { includesAny: [["missed rent", "rent was missed", "behind on rent"]] },
     },
   };
 }
