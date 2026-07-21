@@ -20,6 +20,7 @@ import {
   validateFocusedOpenAIConfiguration,
   type FocusedAdventureStepDiagnostic,
   type FocusedAdventureStepRunResult,
+  type FocusedAdventureStepCellOutput,
 } from "./focused-adventure-step-eval-runner";
 
 const DEFAULT_FIXTURES_DIRECTORY = path.join(
@@ -66,12 +67,15 @@ export async function runAdventureContentEvals(
 
   const diagnostics: FocusedAdventureStepDiagnostic[] = [];
   const assertionResults: FocusedAdventureStepRunResult["assertionResults"] = [];
+  const cellOutputs: FocusedAdventureStepCellOutput[] = [];
 
   for (const fixture of fixtures) {
     try {
-      const content = await generator.generateAdventureContent(buildAdventureGeneratorRequest(fixture));
+      const request = buildAdventureGeneratorRequest(fixture);
+      const content = await generator.generateAdventureContent(request);
       const qualityResult = checkGeneratedAdventureContentQuality(content, fixture);
       assertionResults.push({ fixtureId: fixture.id, assertions: qualityResult.assertions });
+      cellOutputs.push(buildContentCellOutput(fixture, request, content));
       diagnostics.push(
         ...qualityResult.diagnostics.map((diagnostic) => ({
           fixtureId: fixture.id,
@@ -89,10 +93,10 @@ export async function runAdventureContentEvals(
 
   const fixtureIds = fixtures.map((fixture) => fixture.id);
   if (diagnostics.length > 0) {
-    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults);
+    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults, cellOutputs);
   }
 
-  return buildPassedResult(context.output, "Adventure content", fixtureIds, assertionResults);
+  return buildPassedResult(context.output, "Adventure content", fixtureIds, assertionResults, cellOutputs);
 }
 
 async function createOpenAIAdventureContentGenerator(): Promise<AdventureContentEvalGenerator> {
@@ -100,3 +104,39 @@ async function createOpenAIAdventureContentGenerator(): Promise<AdventureContent
   return new OpenAIAdventureContentGenerator();
 }
 
+function buildContentCellOutput(
+  fixture: GenerateAdventureEvalFixture,
+  request: AdventureGeneratorRequest,
+  content: GeneratedAdventureContent,
+): FocusedAdventureStepCellOutput {
+  const outputMarkdown = JSON.stringify(content, null, 2);
+
+  return {
+    fixtureId: fixture.id,
+    outputMarkdown,
+    outputPreview: content.title,
+    artifacts: [
+      {
+        id: "generated-content",
+        label: "Generated content",
+        redactionState: "redacted",
+        value: outputMarkdown,
+        preview: content.title,
+      },
+      {
+        id: "generator-request",
+        label: "Generator request",
+        redactionState: "redacted",
+        value: JSON.stringify(request, null, 2),
+        preview: request.goalText,
+      },
+      {
+        id: "eval-fixture",
+        label: "Eval fixture",
+        redactionState: "redacted",
+        value: JSON.stringify(fixture, null, 2),
+        preview: fixture.name,
+      },
+    ],
+  };
+}

@@ -23,6 +23,21 @@ export type FocusedAdventureStepAssertionResult = {
   assertions: AdventureQualityAssertionOutcome[];
 };
 
+export type FocusedAdventureStepCellArtifact = {
+  id: string;
+  label: string;
+  redactionState: "not_available" | "redacted";
+  value?: string;
+  preview?: string;
+};
+
+export type FocusedAdventureStepCellOutput = {
+  fixtureId: string;
+  outputMarkdown: string;
+  outputPreview: string;
+  artifacts: FocusedAdventureStepCellArtifact[];
+};
+
 export type EvalOutput = Pick<NodeJS.WriteStream, "write">;
 
 export type FocusedAdventureStepRunResult = {
@@ -30,6 +45,7 @@ export type FocusedAdventureStepRunResult = {
   fixtureIds: string[];
   diagnostics: FocusedAdventureStepDiagnostic[];
   assertionResults: FocusedAdventureStepAssertionResult[];
+  cellOutputs: FocusedAdventureStepCellOutput[];
 };
 
 export type FocusedAdventureStepRunContext = {
@@ -174,9 +190,10 @@ export function buildPassedResult(
   label: string,
   fixtureIds: string[],
   assertionResults: FocusedAdventureStepAssertionResult[] = [],
+  cellOutputs: FocusedAdventureStepCellOutput[] = [],
 ): FocusedAdventureStepRunResult {
   output.write(`${label} evals passed: ${fixtureIds.join(", ")}\n`);
-  return { passed: true, fixtureIds, diagnostics: [], assertionResults };
+  return { passed: true, fixtureIds, diagnostics: [], assertionResults, cellOutputs };
 }
 
 export function buildFailedResult(
@@ -184,12 +201,13 @@ export function buildFailedResult(
   fixtureIds: string[],
   diagnostics: FocusedAdventureStepDiagnostic[],
   assertionResults: FocusedAdventureStepAssertionResult[] = [],
+  cellOutputs: FocusedAdventureStepCellOutput[] = [],
 ): FocusedAdventureStepRunResult {
   for (const diagnostic of diagnostics) {
     writeFocusedDiagnostic(errorOutput, diagnostic);
   }
 
-  return { passed: false, fixtureIds, diagnostics, assertionResults };
+  return { passed: false, fixtureIds, diagnostics, assertionResults, cellOutputs };
 }
 
 export function loadFocusedStepConfig(

@@ -561,10 +561,20 @@ describe("runEvalSuite", () => {
         cells: [{ status: "passed", assertions: [
           { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
           { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
-        ] }],
+        ], outputPreview: "Generated learn-spanish", outputMarkdown: "Generated markdown for learn-spanish" }],
       },
       aggregates: { passRate: 1, averageLatencyMs: null },
     });
+    expect(passed.matrix?.cells[0]?.artifacts).toEqual([
+      {
+        id: "raw-output",
+        label: "Raw output",
+        localOnly: true,
+        redactionState: "redacted",
+        value: "Generated markdown for learn-spanish",
+        preview: "Generated learn-spanish",
+      },
+    ]);
     expect(passed.matrix?.cells[0]?.metrics).toEqual({
       latency: { value: null, unit: "ms", reported: false },
       tokens: { value: null, unit: "tokens", reported: false },
@@ -597,6 +607,21 @@ describe("runEvalSuite", () => {
               ],
             },
           ],
+          cellOutputs: [
+            {
+              fixtureId: "learn-spanish",
+              outputMarkdown: "{\"title\":\"Broken content\"}",
+              outputPreview: "Broken content",
+              artifacts: [
+                {
+                  id: "generated-content",
+                  label: "Generated content",
+                  redactionState: "redacted",
+                  value: "{\"title\":\"Broken content\"}",
+                },
+              ],
+            },
+          ],
         }),
       }),
     );
@@ -607,6 +632,19 @@ describe("runEvalSuite", () => {
       diagnostics: [{ scope: "fixture", fixtureId: "learn-spanish", code: "fixture grounding" }],
       matrix: { cells: [{ status: "failed", assertions: [{ label: "Fixture Grounding", status: "failed" }] }] },
     });
+    expect(failed.matrix?.cells[0]).toMatchObject({
+      outputPreview: "Broken content",
+      outputMarkdown: "{\"title\":\"Broken content\"}",
+      artifacts: [
+        {
+          id: "generated-content",
+          label: "Generated content",
+          localOnly: true,
+          redactionState: "redacted",
+          value: "{\"title\":\"Broken content\"}",
+        },
+      ],
+    });
 
     const blocked = await runEvalSuite(
       { suiteId: ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID },
@@ -616,6 +654,7 @@ describe("runEvalSuite", () => {
           fixtureIds: [],
           diagnostics: [{ fixtureId: "runner", area: "configuration", message: "OPENAI_API_KEY is required." }],
           assertionResults: [],
+          cellOutputs: [],
         }),
       }),
     );
@@ -735,6 +774,20 @@ function buildPassedAdventureResult(fixtureIds = ["learn-a-skill"]): GenerateAdv
       assertions: [
         { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
         { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
+      ],
+    })),
+    cellOutputs: fixtureIds.map((fixtureId) => ({
+      fixtureId,
+      outputMarkdown: `Generated markdown for ${fixtureId}`,
+      outputPreview: `Generated ${fixtureId}`,
+      artifacts: [
+        {
+          id: "raw-output",
+          label: "Raw output",
+          redactionState: "redacted",
+          value: `Generated markdown for ${fixtureId}`,
+          preview: `Generated ${fixtureId}`,
+        },
       ],
     })),
   };

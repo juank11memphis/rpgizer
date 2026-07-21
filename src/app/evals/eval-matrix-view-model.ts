@@ -62,39 +62,40 @@ export function createRunningEvalMatrixViewModel(
   currentViewModel: EvalMatrixViewModel,
   options: { testCaseId?: string } = {},
 ): EvalMatrixViewModel {
-  const scopedRows = options.testCaseId
-    ? currentViewModel.rows.filter((row) => row.testCase.id === options.testCaseId)
-    : currentViewModel.rows;
-  const isSingleTestCaseRun = scopedRows.length === 1;
-  const rows: EvalMatrixTestCaseRow[] = scopedRows.map((row, index) => {
+  const isSingleTestCaseRun = options.testCaseId !== undefined;
+  const rows: EvalMatrixTestCaseRow[] = currentViewModel.rows.map((row, index) => {
     const status: EvalMatrixShellCell["status"] = isSingleTestCaseRun || index === 0
       ? "running"
       : "queued";
-    const statusLabel = formatCellStatus(status);
+    const scopedStatus: EvalMatrixShellCell["status"] = row.testCase.id === options.testCaseId ? "running" : row.cells[0]?.status ?? "not_run";
+    const cellStatus = isSingleTestCaseRun ? scopedStatus : status;
 
     return {
       ...row,
       cells: row.cells.map((cell) => ({
         ...cell,
-        status,
-        statusLabel,
-        assertionSummary: status === "running" ? "In progress" : "Waiting",
-        metricSummary: "Metrics pending",
-        diagnosticsSummary: "Diagnostics pending",
-        outputPreview: "Output will appear here.",
-        detail: undefined,
+        status: cellStatus,
+        statusLabel: formatCellStatus(cellStatus),
+        assertionSummary: cellStatus === "running" ? "In progress" : cell.assertionSummary,
+        metricSummary: cellStatus === "running" ? "Metrics pending" : cell.metricSummary,
+        diagnosticsSummary: cellStatus === "running" ? "Diagnostics pending" : cell.diagnosticsSummary,
+        outputPreview: cellStatus === "running" ? "Output will appear here." : cell.outputPreview,
+        detail: cellStatus === "running" ? undefined : cell.detail,
       })),
     };
   });
-  const completed = rows.flatMap((row) => row.cells).filter((cell) => cell.status === "passed").length;
-  const total = rows.reduce((count, row) => count + row.cells.length, 0);
+  const runCells = isSingleTestCaseRun
+    ? rows.flatMap((row) => row.cells).filter((cell) => cell.testCaseId === options.testCaseId)
+    : rows.flatMap((row) => row.cells);
+  const completed = runCells.filter((cell) => cell.status === "passed").length;
+  const total = runCells.length;
 
   return {
     ...currentViewModel,
     status: "running",
     statusLabel: "Running",
     statusMessage: isSingleTestCaseRun
-      ? `Running ${rows[0]?.testCase.name ?? "selected test case"} locally.`
+      ? `Running ${findTestCaseName(rows, options.testCaseId) ?? "selected test case"} locally.`
       : `${currentViewModel.selectedSuite.name} eval is running locally.`,
     action: { label: "Running...", disabled: true },
     summaryStats: createRunningSummaryStats(completed, total),
@@ -109,6 +110,7 @@ export function createRunningEvalMatrixViewModel(
 export function createEvalMatrixViewModelFromRunResult(
   currentViewModel: EvalMatrixViewModel,
   result: EvalRunResult,
+  options: { scopedTestCaseId?: string } = {},
 ): EvalMatrixViewModel {
   if (result.status === "blocked") {
     const blockerMessage = result.diagnostics[0]?.message ?? "Local eval configuration is missing or invalid.";
@@ -142,7 +144,9 @@ export function createEvalMatrixViewModelFromRunResult(
 
   const matrix = result.matrix;
   const aggregates = result.aggregates;
-  const rows = matrix ? createRowsFromMatrix(matrix) : currentViewModel.rows;
+  const rows = matrix
+    ? createRowsFromMatrixOrMergeScopedResult(currentViewModel.rows, matrix, options.scopedTestCaseId)
+    : currentViewModel.rows;
   const total = aggregates?.totalCells ?? rows.reduce((count, row) => count + row.cells.length, 0);
   const completed = aggregates?.completedCells ?? total;
 
@@ -160,6 +164,25 @@ export function createEvalMatrixViewModelFromRunResult(
     matrixUnavailableMessage: undefined,
     progress: { completed, total, label: `Progress ${completed}/${total}` },
   };
+}
+
+function createRowsFromMatrixOrMergeScopedResult(
+  currentRows: EvalMatrixTestCaseRow[],
+  matrix: EvalMatrix,
+  scopedTestCaseId: string | undefined,
+): EvalMatrixTestCaseRow[] {
+  const resultRows = createRowsFromMatrix(matrix);
+
+  if (!scopedTestCaseId) {
+    return resultRows;
+  }
+
+  const resultRowsByTestCaseId = new Map(resultRows.map((row) => [row.testCase.id, row]));
+  return currentRows.map((row) => resultRowsByTestCaseId.get(row.testCase.id) ?? row);
+}
+
+function findTestCaseName(rows: EvalMatrixTestCaseRow[], testCaseId: string | undefined): string | undefined {
+  return rows.find((row) => row.testCase.id === testCaseId)?.testCase.name;
 }
 
 export function filterEvalMatrixRows(input: {

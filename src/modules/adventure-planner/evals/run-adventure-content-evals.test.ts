@@ -55,6 +55,18 @@ describe("Adventure content eval runner", () => {
       passed: true,
       fixtureIds: ["spanish-eval"],
       diagnostics: [],
+      cellOutputs: [
+        {
+          fixtureId: "spanish-eval",
+          outputPreview: "Spanish Coffee Chat Quest",
+          outputMarkdown: expect.stringContaining("Spanish Coffee Chat Quest"),
+          artifacts: expect.arrayContaining([
+            expect.objectContaining({ id: "generated-content", label: "Generated content" }),
+            expect.objectContaining({ id: "generator-request", label: "Generator request" }),
+            expect.objectContaining({ id: "eval-fixture", label: "Eval fixture" }),
+          ]),
+        },
+      ],
       assertionResults: [
         {
           fixtureId: "spanish-eval",

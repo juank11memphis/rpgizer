@@ -219,18 +219,57 @@ describe("eval matrix view model", () => {
     expect(variableRows.map((row) => row.testCase.name)).toEqual(["high-stakes-finance"]);
   });
 
-  it("creates a one-row running state for a scoped test case run", () => {
+  it("keeps the full test case list while a scoped test case run is in progress", () => {
     const viewModel = createReadyViewModel();
     const runningViewModel = createRunningEvalMatrixViewModel(viewModel, { testCaseId: "high-stakes-finance" });
 
-    expect(runningViewModel.rows.map((row) => row.testCase.id)).toEqual(["high-stakes-finance"]);
-    expect(runningViewModel.rows[0].cells[0]).toMatchObject({
+    expect(runningViewModel.rows.map((row) => row.testCase.id)).toEqual([
+      "become-a-chef-initial",
+      "become-a-chef",
+      "high-stakes-finance",
+      "learn-a-language",
+    ]);
+    expect(runningViewModel.rows[0].cells[0].status).toBe("not_run");
+    expect(runningViewModel.rows[2].cells[0]).toMatchObject({
       status: "running",
       statusLabel: "Running...",
       assertionSummary: "In progress",
     });
     expect(runningViewModel.progress).toEqual({ completed: 0, total: 1, label: "Progress 0/1" });
     expect(runningViewModel.statusMessage).toContain("high-stakes-finance");
+  });
+
+  it("merges scoped test case results without dropping the rest of the suite", () => {
+    const scopedRunResult = createRunResult();
+    scopedRunResult.matrix = {
+      ...scopedRunResult.matrix!,
+      testCases: [scopedRunResult.matrix!.testCases[1]],
+      cells: [scopedRunResult.matrix!.cells[1]],
+    };
+    scopedRunResult.aggregates = buildEvalRunAggregates(scopedRunResult.matrix);
+
+    const runningViewModel = createRunningEvalMatrixViewModel(
+      createReadyViewModel(),
+      { testCaseId: "high-stakes-finance" },
+    );
+    const resultViewModel = createEvalMatrixViewModelFromRunResult(
+      runningViewModel,
+      scopedRunResult,
+      { scopedTestCaseId: "high-stakes-finance" },
+    );
+
+    expect(resultViewModel.rows.map((row) => row.testCase.id)).toEqual([
+      "become-a-chef-initial",
+      "become-a-chef",
+      "high-stakes-finance",
+      "learn-a-language",
+    ]);
+    expect(resultViewModel.rows[0].cells[0].status).toBe("not_run");
+    expect(resultViewModel.rows[2].cells[0]).toMatchObject({
+      status: "failed",
+      assertionSummary: "1 failed / 2 assertions",
+    });
+    expect(resultViewModel.progress).toEqual({ completed: 1, total: 1, label: "Progress 1/1" });
   });
 
 

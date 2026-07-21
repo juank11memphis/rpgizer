@@ -204,6 +204,7 @@ function buildAdventurePlannerMatrix(
   const fixtureIds = collectAdventureFixtureIds(result);
   const diagnosticsByFixture = groupDiagnosticsByFixture(result.diagnostics);
   const assertionsByFixture = groupAssertionsByFixture(result.assertionResults ?? []);
+  const cellOutputsByFixture = groupCellOutputsByFixture(getFocusedCellOutputs(result));
 
   return {
     testCases: fixtureIds.map((fixtureId) => buildAdventurePlannerTestCase(fixtureId)),
@@ -211,7 +212,8 @@ function buildAdventurePlannerMatrix(
     cells: fixtureIds.map((fixtureId) => {
       const diagnostics = diagnosticsByFixture.get(fixtureId) ?? [];
       const assertions = assertionsByFixture.get(fixtureId) ?? [];
-      return buildAdventurePlannerCell(fixtureId, diagnostics, assertions);
+      const cellOutput = cellOutputsByFixture.get(fixtureId);
+      return buildAdventurePlannerCell(fixtureId, diagnostics, assertions, cellOutput);
     }),
   };
 }
@@ -254,6 +256,7 @@ function buildAdventurePlannerCell(
   fixtureId: string,
   diagnostics: AdventurePlannerDiagnostic[],
   assertions: AdventureQualityAssertionOutcome[],
+  cellOutput: FocusedAdventureStepRunResult["cellOutputs"][number] | undefined,
 ): EvalCell {
   const status: EvalCellStatus = diagnostics.length === 0 ? "passed" : "failed";
 
@@ -262,8 +265,8 @@ function buildAdventurePlannerCell(
     testCaseId: fixtureId,
     variantId: DEFAULT_VARIANT.id,
     status,
-    outputPreview: null,
-    outputMarkdown: null,
+    outputPreview: cellOutput?.outputPreview ?? null,
+    outputMarkdown: cellOutput?.outputMarkdown ?? null,
     metrics: createUnreportedEvalCellMetrics(),
     assertions: assertions.length > 0
       ? assertions.map(buildAdventureAssertion)
@@ -274,8 +277,33 @@ function buildAdventurePlannerCell(
       code: diagnostic.area,
       message: sanitizeDiagnosticMessage(diagnostic.message),
     })),
-    artifacts: [],
+    artifacts: cellOutput?.artifacts.map((artifact) => ({
+      id: artifact.id,
+      label: artifact.label,
+      localOnly: true,
+      redactionState: artifact.redactionState,
+      value: artifact.value,
+      preview: artifact.preview,
+    })) ?? [],
   };
+}
+
+function groupCellOutputsByFixture(
+  cellOutputs: FocusedAdventureStepRunResult["cellOutputs"],
+): Map<string, FocusedAdventureStepRunResult["cellOutputs"][number]> {
+  const grouped = new Map<string, FocusedAdventureStepRunResult["cellOutputs"][number]>();
+
+  for (const output of cellOutputs) {
+    grouped.set(output.fixtureId, output);
+  }
+
+  return grouped;
+}
+
+function getFocusedCellOutputs(
+  result: AdventurePlannerEvalRunResult,
+): FocusedAdventureStepRunResult["cellOutputs"] {
+  return "cellOutputs" in result ? result.cellOutputs : [];
 }
 
 function groupAssertionsByFixture(

@@ -86,24 +86,32 @@ export function EvalMatrixClient({
           scope.type === "test_case" ? { testCaseId: scope.testCaseId } : {},
         );
         setViewModel((currentViewModel) =>
-          createEvalMatrixViewModelFromRunResult(currentViewModel, result),
+          createEvalMatrixViewModelFromRunResult(
+            currentViewModel,
+            result,
+            scope.type === "test_case" ? { scopedTestCaseId: scope.testCaseId } : {},
+          ),
         );
       } catch {
         setViewModel((currentViewModel) =>
-          createEvalMatrixViewModelFromRunResult(currentViewModel, {
-            suiteId,
-            status: "error",
-            summary: "The eval did not finish.",
-            diagnostics: [
-              {
-                scope: "run",
-                code: "server_action_invocation_failed",
-                message: "The eval could not finish. Try again after checking local setup.",
-              },
-            ],
-            durationMs: 0,
-            errorCode: "server_action_invocation_failed",
-          }),
+          createEvalMatrixViewModelFromRunResult(
+            currentViewModel,
+            {
+              suiteId,
+              status: "error",
+              summary: "The eval did not finish.",
+              diagnostics: [
+                {
+                  scope: "run",
+                  code: "server_action_invocation_failed",
+                  message: "The eval could not finish. Try again after checking local setup.",
+                },
+              ],
+              durationMs: 0,
+              errorCode: "server_action_invocation_failed",
+            },
+            scope.type === "test_case" ? { scopedTestCaseId: scope.testCaseId } : {},
+          ),
         );
       }
     });
