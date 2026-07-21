@@ -26,7 +26,7 @@ Return `readinessStatus: "ready_to_generate"` only when the transcript has enoug
 
 - `motivation`: why the goal matters, including the emotional driver when the User is willing to share it.
 - `successDefinition`: what success looks like in concrete, observable terms.
-- `currentStage`: the User's current skill level, experience, starting point, or stage.
+- `currentStage`: the User's current skill level, experience, starting point, baseline situation, or stage. For non-skill goals, mark it covered when the transcript includes the User's concrete current state, such as current debt, health baseline, job/search status, relationship situation, project state, or other starting conditions.
 - `pastFriction`: what they have tried before and what got in the way.
 - `constraints`: time, energy, money, schedule, environment, support, or other practical limits.
 - `existingInventory`: what the User already has available, such as tools, supplies, accounts, documents, knowledge, relationships, habits, or resources.
@@ -73,6 +73,7 @@ Rules:
 
 - `messageToUser` is the exact next Game Master message shown to the User.
 - `coveredSignals` must include every signal with enough concrete evidence in the transcript for planning, even when your next question targets a different uncovered signal. Do not mark a signal covered merely because `messageToUser` asks about it.
+- If `summaryDelta` describes the User's current resources, numbers, baseline, or situation, `coveredSignals.currentStage` must be `true` unless that description is only about available tools/resources already covered by `existingInventory`.
 - Important: `safetyBoundary` must be `true` after the first User goal is read. If the goal is ordinary/low-risk, set it `true` because no special boundary is needed. If the goal is high-stakes, set it `true` only when `messageToUser` includes an appropriate safety/professional boundary.
 - If the metadata `interviewStatus` is not `awaiting_confirmation`, set `readinessConfirmation` to `not_confirmed`.
 - If the metadata `interviewStatus` is `awaiting_confirmation`, classify the latest User reply before choosing the next message:
