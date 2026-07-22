@@ -20,7 +20,8 @@ Product semantics:
 Quality contract:
 - doneCondition is one observable proof sentence with an artifact/action/result the user can verify.
 - description includes real-world action, context, and why it matters.
-- Boss Fights use proof/test/demo/launch/pressure/challenge language.
+- Boss Fights use proof/test/demo/launch/pressure/challenge language and culminate in a visible milestone, artifact review, rehearsal, or decision gate.
+- Boss Fights are not passive reminders or boundary statements. In high-stakes goals, turn safety boundaries into observable review gates: classify facts, unknowns, and professional questions; complete a checklist; rehearse a safe handoff; or save a no-decision summary. Avoid weak doneConditions such as “can point to,” “understands,” or “feels ready.”
 - Inventory purpose explains how the item/tool/resource will be used in practice.
 - Skill description starts from a verb-based capability the user can improve.
 - Achievement unlockCondition uses explicit observable wording such as “Unlocked when/after/once...”.
