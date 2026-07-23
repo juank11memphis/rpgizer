@@ -11,6 +11,7 @@ import {
   GENERATE_ADVENTURE_EVAL_SUITE_ID,
   type EvalSuiteSummary,
 } from "@/modules/product-quality-evaluation/domain/eval-suite";
+import { buildEvalLlmConfiguration } from "@/modules/product-quality-evaluation/domain/eval-llm-model-configuration";
 
 import type { EvalMatrixShellCell, EvalMatrixTestCaseRow } from "./eval-matrix-types";
 import {
@@ -36,6 +37,8 @@ const suites: EvalSuiteSummary[] = [
     ],
     defaultVariantLabel: "Default variant",
     defaultModelLabel: "Default model",
+    defaultModel: "gpt-5.4-mini",
+    llmConfiguration: buildEvalLlmConfiguration("gpt-5.4-mini"),
   },
   {
     id: GENERATE_ADVENTURE_EVAL_SUITE_ID,
@@ -48,6 +51,8 @@ const suites: EvalSuiteSummary[] = [
     ],
     defaultVariantLabel: "Default variant",
     defaultModelLabel: "Default model",
+    defaultModel: "gpt-5.4-mini",
+    llmConfiguration: buildEvalLlmConfiguration("gpt-5.4-mini"),
   },
 ];
 

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { buildEvalLlmConfiguration } from "@/modules/product-quality-evaluation/domain/eval-llm-model-configuration";
 import { GAME_MASTER_INTERVIEW_EVAL_SUITE_ID } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
 import { EvalMatrixScreen } from "./eval-matrix-screen";
@@ -22,6 +23,8 @@ describe("legacy eval console route shell", () => {
               ],
               defaultVariantLabel: "Default variant",
               defaultModelLabel: "Default model",
+              defaultModel: "gpt-5.4-mini",
+              llmConfiguration: buildEvalLlmConfiguration("gpt-5.4-mini"),
             },
           ],
           GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,

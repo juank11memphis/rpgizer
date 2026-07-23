@@ -5,9 +5,14 @@ import {
   type EvalSuiteSummary,
 } from "../../domain/eval-suite";
 import { buildScopedRunnerInput, normalizeAdventurePlannerEvalSuiteResult } from "../../application/run-eval-suite/eval-suite-result-normalizers";
+import {
+  buildEvalSuiteModelDefaults,
+  resolveAdventureXpBalancingDefaultModel,
+  type EvalSuiteModelEnvironment,
+} from "../suite-model-defaults";
 import type { FocusedAdventureStepEvalRunner } from "../registry";
 
-export const xpBalanceSuiteSummary: EvalSuiteSummary = {
+const xpBalanceSuiteBaseSummary: Omit<EvalSuiteSummary, "defaultVariantLabel" | "defaultModelLabel" | "defaultModel" | "llmConfiguration"> = {
   id: ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
   name: "XP Balance",
   shortDescription: "Checks skill progression and XP balance.",
@@ -18,19 +23,33 @@ export const xpBalanceSuiteSummary: EvalSuiteSummary = {
     { id: "home-studio-podcast-launch", name: "home-studio-podcast-launch", inputVariables: { fixtureId: "home-studio-podcast-launch" } },
     { id: "spanish-coffee-chat", name: "spanish-coffee-chat", inputVariables: { fixtureId: "spanish-coffee-chat" } },
   ],
-  defaultVariantLabel: "Default variant",
-  defaultModelLabel: "Default model",
 };
 
-export function createXpBalanceSuite(runAdventureXpEvals: FocusedAdventureStepEvalRunner): EvalSuiteDefinition {
+export function createXpBalanceSuiteSummary(
+  environment?: EvalSuiteModelEnvironment,
+): EvalSuiteSummary {
   return {
-    ...xpBalanceSuiteSummary,
-    variants: [{ id: "default", name: "Default variant", promptLabel: "Adventure XP Balance", modelLabel: "Default model" }],
-    testCases: xpBalanceSuiteSummary.readyTestCases,
+    ...xpBalanceSuiteBaseSummary,
+    ...buildEvalSuiteModelDefaults(resolveAdventureXpBalancingDefaultModel(environment)),
+  };
+}
+
+export const xpBalanceSuiteSummary: EvalSuiteSummary = createXpBalanceSuiteSummary();
+
+export function createXpBalanceSuite(
+  runAdventureXpEvals: FocusedAdventureStepEvalRunner,
+  environment?: EvalSuiteModelEnvironment,
+): EvalSuiteDefinition {
+  const summary = createXpBalanceSuiteSummary(environment);
+
+  return {
+    ...summary,
+    variants: [{ id: summary.defaultModel, name: summary.defaultModel, promptLabel: "Adventure XP Balance", modelLabel: summary.defaultModel }],
+    testCases: summary.readyTestCases,
     async run(input: EvalSuiteRunInput) {
       const startedAt = Date.now();
-      const result = await runAdventureXpEvals(buildScopedRunnerInput(input.testCaseId));
-      return normalizeAdventurePlannerEvalSuiteResult(ADVENTURE_XP_BALANCING_EVAL_SUITE_ID, result, Date.now() - startedAt);
+      const result = await runAdventureXpEvals(buildScopedRunnerInput(input.testCaseId, input.model));
+      return normalizeAdventurePlannerEvalSuiteResult(ADVENTURE_XP_BALANCING_EVAL_SUITE_ID, result, Date.now() - startedAt, { modelLabel: input.model });
     },
   };
 }

@@ -5,9 +5,14 @@ import {
   type EvalSuiteSummary,
 } from "../../domain/eval-suite";
 import { buildScopedRunnerInput, normalizeAdventurePlannerEvalSuiteResult } from "../../application/run-eval-suite/eval-suite-result-normalizers";
+import {
+  buildEvalSuiteModelDefaults,
+  resolveAdventureGenerationDefaultModel,
+  type EvalSuiteModelEnvironment,
+} from "../suite-model-defaults";
 import type { GenerateAdventureEvalRunner } from "../registry";
 
-export const adventureGenerationSuiteSummary: EvalSuiteSummary = {
+const adventureGenerationSuiteBaseSummary: Omit<EvalSuiteSummary, "defaultVariantLabel" | "defaultModelLabel" | "defaultModel" | "llmConfiguration"> = {
   id: GENERATE_ADVENTURE_EVAL_SUITE_ID,
   name: "Adventure Generation",
   shortDescription: "Checks full playable roadmap generation.",
@@ -19,19 +24,33 @@ export const adventureGenerationSuiteSummary: EvalSuiteSummary = {
     { id: "fitness-habit", name: "fitness-habit", inputVariables: { goal: "Build fitness habit" } },
     { id: "high-stakes-boundary", name: "high-stakes-boundary", inputVariables: { goal: "High-stakes boundary" } },
   ],
-  defaultVariantLabel: "Default variant",
-  defaultModelLabel: "Default model",
 };
 
-export function createAdventureGenerationSuite(runGenerateAdventureEvals: GenerateAdventureEvalRunner): EvalSuiteDefinition {
+export function createAdventureGenerationSuiteSummary(
+  environment?: EvalSuiteModelEnvironment,
+): EvalSuiteSummary {
   return {
-    ...adventureGenerationSuiteSummary,
-    variants: [{ id: "default", name: "Default variant", promptLabel: "Generate Adventure", modelLabel: "Default model" }],
-    testCases: adventureGenerationSuiteSummary.readyTestCases,
+    ...adventureGenerationSuiteBaseSummary,
+    ...buildEvalSuiteModelDefaults(resolveAdventureGenerationDefaultModel(environment)),
+  };
+}
+
+export const adventureGenerationSuiteSummary: EvalSuiteSummary = createAdventureGenerationSuiteSummary();
+
+export function createAdventureGenerationSuite(
+  runGenerateAdventureEvals: GenerateAdventureEvalRunner,
+  environment?: EvalSuiteModelEnvironment,
+): EvalSuiteDefinition {
+  const summary = createAdventureGenerationSuiteSummary(environment);
+
+  return {
+    ...summary,
+    variants: [{ id: summary.defaultModel, name: summary.defaultModel, promptLabel: "Generate Adventure", modelLabel: summary.defaultModel }],
+    testCases: summary.readyTestCases,
     async run(input: EvalSuiteRunInput) {
       const startedAt = Date.now();
-      const result = await runGenerateAdventureEvals(buildScopedRunnerInput(input.testCaseId));
-      return normalizeAdventurePlannerEvalSuiteResult(GENERATE_ADVENTURE_EVAL_SUITE_ID, result, Date.now() - startedAt);
+      const result = await runGenerateAdventureEvals(buildScopedRunnerInput(input.testCaseId, input.model));
+      return normalizeAdventurePlannerEvalSuiteResult(GENERATE_ADVENTURE_EVAL_SUITE_ID, result, Date.now() - startedAt, { modelLabel: input.model });
     },
   };
 }

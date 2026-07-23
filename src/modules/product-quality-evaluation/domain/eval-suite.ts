@@ -6,6 +6,7 @@ import type {
   EvalRunAggregates,
   EvalTestCase,
 } from "./eval-matrix";
+import type { EvalLlmConfiguration } from "./eval-llm-model-configuration";
 
 export const GAME_MASTER_INTERVIEW_EVAL_SUITE_ID = "game-master-interview";
 export const INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID = "interview-output-artifact";
@@ -39,12 +40,15 @@ export type EvalSuiteSummary = {
   readyTestCases: EvalSuiteReadyTestCase[];
   defaultVariantLabel: string;
   defaultModelLabel: string;
+  defaultModel: string;
+  llmConfiguration: EvalLlmConfiguration;
 };
 
 export type EvalSuiteTestCase = EvalTestCase;
 
 export type EvalSuiteRunInput = {
   testCaseId?: string;
+  model?: string;
 };
 
 export type EvalSuiteRunStatus = "passed" | "failed" | "blocked" | "error";
@@ -74,6 +78,13 @@ export function cloneEvalSuiteSummary(suite: EvalSuiteSummary): EvalSuiteSummary
   return {
     ...suite,
     readyTestCases: suite.readyTestCases.map(cloneReadyTestCase),
+    llmConfiguration: {
+      ...suite.llmConfiguration,
+      modelGroups: suite.llmConfiguration.modelGroups.map((group) => ({
+        ...group,
+        models: group.models.map((model) => ({ ...model })),
+      })),
+    },
   };
 }
 

@@ -62,9 +62,10 @@ const ADVENTURE_SUITE_LABELS: Record<
 export function normalizeStructuredEvalSuiteResult(
   suiteId: typeof GAME_MASTER_INTERVIEW_EVAL_SUITE_ID | typeof INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
   result: StructuredEvalRunResult,
+  options: { modelLabel?: string } = {},
 ): EvalSuiteRunResult {
   if (result.status === "passed") {
-    const matrix = buildMatrixFromStructuredCells(result.cells, { modelLabel: result.modelLabel });
+    const matrix = buildMatrixFromStructuredCells(result.cells, { modelLabel: options.modelLabel ?? result.modelLabel });
 
     return {
       status: "passed",
@@ -83,7 +84,7 @@ export function normalizeStructuredEvalSuiteResult(
       code: "assertionId" in diagnostic ? diagnostic.assertionId : undefined,
       message: sanitizeDiagnosticMessage(diagnostic.message),
     }));
-    const matrix = buildMatrixFromStructuredCells(result.cells, { modelLabel: result.modelLabel });
+    const matrix = buildMatrixFromStructuredCells(result.cells, { modelLabel: options.modelLabel ?? result.modelLabel });
 
     return {
       status: "failed",
@@ -126,6 +127,7 @@ export function normalizeAdventurePlannerEvalSuiteResult(
   suiteId: keyof typeof ADVENTURE_SUITE_LABELS,
   result: AdventurePlannerEvalRunResult,
   durationMs: number,
+  options: { modelLabel?: string } = {},
 ): EvalSuiteRunResult {
   const configurationDiagnostics = result.diagnostics.filter(isConfigurationDiagnostic);
   if (!result.passed && configurationDiagnostics.length > 0) {
@@ -142,7 +144,7 @@ export function normalizeAdventurePlannerEvalSuiteResult(
     };
   }
 
-  const matrix = buildAdventurePlannerMatrix(suiteId, result);
+  const matrix = buildAdventurePlannerMatrix(suiteId, result, options);
   const aggregates = buildEvalRunAggregates(matrix);
 
   if (result.passed) {
@@ -189,17 +191,37 @@ export function normalizeUnexpectedEvalSuiteError(error: unknown, durationMs: nu
   };
 }
 
-export function buildScopedRunnerInput(testCaseId: string | undefined): { testCaseId: string } | undefined {
-  return testCaseId ? { testCaseId } : undefined;
+export function buildScopedRunnerInput(
+  testCaseId: string | undefined,
+  model: string | undefined,
+): { testCaseId?: string; model?: string } | undefined {
+  const input = {
+    ...(testCaseId ? { testCaseId } : {}),
+    ...(model ? { model } : {}),
+  };
+
+  return Object.keys(input).length > 0 ? input : undefined;
 }
 
 function isConfigurationDiagnostic(diagnostic: AdventurePlannerDiagnostic): boolean {
   return diagnostic.area === "configuration" || diagnostic.fixtureId === "runner";
 }
 
+function buildDefaultVariant(options: { promptLabel?: string; modelLabel?: string } = {}): EvalPromptModelVariant {
+  const modelLabel = options.modelLabel ?? DEFAULT_VARIANT.modelLabel;
+
+  return {
+    ...DEFAULT_VARIANT,
+    name: modelLabel === DEFAULT_VARIANT.modelLabel ? DEFAULT_VARIANT.name : modelLabel,
+    promptLabel: options.promptLabel ?? DEFAULT_VARIANT.promptLabel,
+    modelLabel,
+  };
+}
+
 function buildAdventurePlannerMatrix(
   suiteId: keyof typeof ADVENTURE_SUITE_LABELS,
   result: AdventurePlannerEvalRunResult,
+  options: { modelLabel?: string } = {},
 ): EvalMatrix {
   const fixtureIds = collectAdventureFixtureIds(result);
   const diagnosticsByFixture = groupDiagnosticsByFixture(result.diagnostics);
@@ -208,7 +230,7 @@ function buildAdventurePlannerMatrix(
 
   return {
     testCases: fixtureIds.map((fixtureId) => buildAdventurePlannerTestCase(fixtureId)),
-    variants: [{ ...DEFAULT_VARIANT, promptLabel: ADVENTURE_SUITE_LABELS[suiteId] }],
+    variants: [buildDefaultVariant({ promptLabel: ADVENTURE_SUITE_LABELS[suiteId], modelLabel: options.modelLabel })],
     cells: fixtureIds.map((fixtureId) => {
       const diagnostics = diagnosticsByFixture.get(fixtureId) ?? [];
       const assertions = assertionsByFixture.get(fixtureId) ?? [];
@@ -342,7 +364,7 @@ function buildMatrixFromStructuredCells(
 ): EvalMatrix {
   return {
     testCases: cells.map(buildTestCase),
-    variants: [{ ...DEFAULT_VARIANT, modelLabel: options.modelLabel ?? DEFAULT_VARIANT.modelLabel }],
+    variants: [buildDefaultVariant({ modelLabel: options.modelLabel })],
     cells: cells.map(buildCell),
   };
 }

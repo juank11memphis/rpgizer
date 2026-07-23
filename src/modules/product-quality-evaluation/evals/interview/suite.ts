@@ -5,9 +5,14 @@ import {
   type EvalSuiteSummary,
 } from "../../domain/eval-suite";
 import { buildScopedRunnerInput, normalizeStructuredEvalSuiteResult } from "../../application/run-eval-suite/eval-suite-result-normalizers";
+import {
+  buildEvalSuiteModelDefaults,
+  resolveGameMasterInterviewDefaultModel,
+  type EvalSuiteModelEnvironment,
+} from "../suite-model-defaults";
 import type { GameMasterInterviewEvalRunner } from "../registry";
 
-export const interviewSuiteSummary: EvalSuiteSummary = {
+const interviewSuiteBaseSummary: Omit<EvalSuiteSummary, "defaultVariantLabel" | "defaultModelLabel" | "defaultModel" | "llmConfiguration"> = {
   id: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
   name: "Interview",
   shortDescription: "Checks focused, useful interview turns.",
@@ -19,18 +24,32 @@ export const interviewSuiteSummary: EvalSuiteSummary = {
     { id: "high-stakes-finance", name: "high-stakes-finance", inputVariables: { topic: "finance" } },
     { id: "learn-a-language", name: "learn-a-language", inputVariables: { topic: "language learning" } },
   ],
-  defaultVariantLabel: "Default variant",
-  defaultModelLabel: "Default model",
 };
 
-export function createInterviewSuite(runGameMasterInterviewEvals: GameMasterInterviewEvalRunner): EvalSuiteDefinition {
+export function createInterviewSuiteSummary(
+  environment?: EvalSuiteModelEnvironment,
+): EvalSuiteSummary {
   return {
-    ...interviewSuiteSummary,
-    variants: [{ id: "default", name: "Default variant", promptLabel: "Default prompt", modelLabel: "Default model" }],
-    testCases: interviewSuiteSummary.readyTestCases,
+    ...interviewSuiteBaseSummary,
+    ...buildEvalSuiteModelDefaults(resolveGameMasterInterviewDefaultModel(environment)),
+  };
+}
+
+export const interviewSuiteSummary: EvalSuiteSummary = createInterviewSuiteSummary();
+
+export function createInterviewSuite(
+  runGameMasterInterviewEvals: GameMasterInterviewEvalRunner,
+  environment?: EvalSuiteModelEnvironment,
+): EvalSuiteDefinition {
+  const summary = createInterviewSuiteSummary(environment);
+
+  return {
+    ...summary,
+    variants: [{ id: summary.defaultModel, name: summary.defaultModel, promptLabel: "Default prompt", modelLabel: summary.defaultModel }],
+    testCases: summary.readyTestCases,
     async run(input: EvalSuiteRunInput) {
-      const result = await runGameMasterInterviewEvals(buildScopedRunnerInput(input.testCaseId));
-      return normalizeStructuredEvalSuiteResult(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, result);
+      const result = await runGameMasterInterviewEvals(buildScopedRunnerInput(input.testCaseId, input.model));
+      return normalizeStructuredEvalSuiteResult(GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, result, { modelLabel: input.model });
     },
   };
 }

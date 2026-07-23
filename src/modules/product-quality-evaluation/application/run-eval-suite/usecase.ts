@@ -1,3 +1,5 @@
+import type { EvalDiagnostic } from "../../domain/eval-matrix";
+import { normalizeEvalLlmModel, validateEvalLlmModel } from "../../domain/eval-llm-model-configuration";
 import type { EvalSuiteId, EvalSuiteRunResult } from "../../domain/eval-suite";
 import { findRegisteredEvalSuite, type EvalSuiteRegistryDependencies } from "../../evals/registry";
 import { normalizeUnexpectedEvalSuiteError } from "./eval-suite-result-normalizers";
@@ -36,12 +38,54 @@ export async function runEvalSuite(
     };
   }
 
+  const resolvedModel = resolveEffectiveModel(input.model, suite.defaultModel);
+  const modelValidation = validateEvalLlmModel(
+    resolvedModel.model,
+    resolvedModel.source,
+  );
+
+  if (modelValidation.status === "blocked") {
+    return buildModelConfigurationBlockedResult(
+      suite.id,
+      modelValidation.diagnostic,
+      Date.now() - startedAt,
+    );
+  }
+
   try {
-    const result = await suite.run({ testCaseId: input.testCaseId });
+    const result = await suite.run({ testCaseId: input.testCaseId, model: modelValidation.model });
     return addSuiteId(suite.id, result);
   } catch (error) {
     return addSuiteId(suite.id, normalizeUnexpectedEvalSuiteError(error, Date.now() - startedAt));
   }
+}
+
+function resolveEffectiveModel(
+  selectedModel: string | undefined,
+  defaultModel: string,
+): { model: string; source: "selected" | "default" } {
+  const normalizedSelectedModel = normalizeEvalLlmModel(selectedModel ?? "");
+
+  if (normalizedSelectedModel.length > 0) {
+    return { model: normalizedSelectedModel, source: "selected" };
+  }
+
+  return { model: defaultModel, source: "default" };
+}
+
+function buildModelConfigurationBlockedResult(
+  suiteId: EvalSuiteId,
+  diagnostic: EvalDiagnostic,
+  durationMs: number,
+): EvalRunResult {
+  return {
+    suiteId,
+    status: "blocked",
+    summary: "Local configuration is missing or invalid.",
+    diagnostics: [diagnostic],
+    blocker: diagnostic.code ?? "configuration",
+    durationMs,
+  };
 }
 
 function addSuiteId(suiteId: EvalSuiteId, result: EvalSuiteRunResult): EvalRunResult {

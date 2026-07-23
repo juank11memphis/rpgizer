@@ -12,7 +12,7 @@ import { listEvalSuites } from "./usecase";
 
 describe("listEvalSuites", () => {
   it("returns the six selectable Product Quality Evaluation suites", () => {
-    const suites = listEvalSuites();
+    const suites = listEvalSuites({});
 
     expect(suites.map((suite) => suite.id)).toEqual([
       GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
@@ -33,7 +33,7 @@ describe("listEvalSuites", () => {
   });
 
   it("provides maintainer-facing metadata without checking runtime configuration", () => {
-    const suites = listEvalSuites();
+    const suites = listEvalSuites({});
 
     expect(suites).toEqual(
       expect.arrayContaining([
@@ -73,21 +73,24 @@ describe("listEvalSuites", () => {
     for (const suite of suites) {
       expect(suite.purpose).not.toContain("OPENAI_API_KEY");
       expect(suite.shortDescription).not.toContain("OPENAI_API_KEY");
-      expect(suite.defaultVariantLabel).toBe("Default variant");
-      expect(suite.defaultModelLabel).toBe("Default model");
+      expect(suite.defaultVariantLabel).toBe("gpt-5.4-mini");
+      expect(suite.defaultModelLabel).toBe("gpt-5.4-mini");
+      expect(suite.defaultModel).toBe("gpt-5.4-mini");
+      expect(suite.llmConfiguration.selectedModel).toBe("gpt-5.4-mini");
       expect(suite.readyTestCases.length).toBeGreaterThan(0);
     }
   });
 
   it("lists Interview suite Test Cases from the framework registry", () => {
-    const interviewSuite = listEvalSuites().find((suite) => suite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID);
+    const interviewSuite = listEvalSuites({}).find((suite) => suite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID);
 
     expect(interviewSuite).toEqual(
       expect.objectContaining({
         id: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
         name: "Interview",
-        defaultVariantLabel: "Default variant",
-        defaultModelLabel: "Default model",
+        defaultVariantLabel: "gpt-5.4-mini",
+        defaultModelLabel: "gpt-5.4-mini",
+        defaultModel: "gpt-5.4-mini",
         readyTestCases: [
           { id: "become-a-chef-initial", name: "become-a-chef-initial", inputVariables: { topic: "baking", initial: "true" } },
           { id: "become-a-chef", name: "become-a-chef", inputVariables: { topic: "baking" } },
@@ -99,14 +102,15 @@ describe("listEvalSuites", () => {
   });
 
   it("lists Interview Artifact suite Test Cases from the framework registry", () => {
-    const artifactSuite = listEvalSuites().find((suite) => suite.id === INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID);
+    const artifactSuite = listEvalSuites({}).find((suite) => suite.id === INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID);
 
     expect(artifactSuite).toEqual(
       expect.objectContaining({
         id: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
         name: "Interview Artifact",
-        defaultVariantLabel: "Default variant",
-        defaultModelLabel: "Default model",
+        defaultVariantLabel: "gpt-5.4-mini",
+        defaultModelLabel: "gpt-5.4-mini",
+        defaultModel: "gpt-5.4-mini",
         readyTestCases: [
           {
             id: "become-a-confident-home-chef",
@@ -124,14 +128,35 @@ describe("listEvalSuites", () => {
   });
 
   it("returns cloned suite and Test Case data on each call", () => {
-    const first = listEvalSuites();
-    const second = listEvalSuites();
+    const first = listEvalSuites({});
+    const second = listEvalSuites({});
 
     first[0]!.readyTestCases[0]!.inputVariables.topic = "mutated";
     first[0]!.readyTestCases.push({ id: "mutated", name: "mutated", inputVariables: {} });
 
     expect(second[0]!.readyTestCases).not.toContainEqual(expect.objectContaining({ id: "mutated" }));
     expect(second[0]!.readyTestCases[0]!.inputVariables).toEqual({ topic: "baking", initial: "true" });
-    expect(listEvalSuites()[0]!.readyTestCases[0]!.inputVariables).toEqual({ topic: "baking", initial: "true" });
+    expect(listEvalSuites({})[0]!.readyTestCases[0]!.inputVariables).toEqual({ topic: "baking", initial: "true" });
   });
+
+  it("resolves suite defaults from local model configuration without sharing mutable model groups", () => {
+    const suites = listEvalSuites({
+      OPENAI_GAME_MASTER_MODEL: "gpt-4o-mini",
+      OPENAI_ADVENTURE_GENERATION_MODEL: "o4-mini",
+      OPENAI_ADVENTURE_CONTENT_MODEL: "gpt-5.4",
+    });
+
+    const interviewSuite = suites.find((suite) => suite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID);
+    const adventureContentSuite = suites.find((suite) => suite.id === ADVENTURE_CONTENT_EVAL_SUITE_ID);
+    const dependencySuite = suites.find((suite) => suite.id === ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID);
+
+    expect(interviewSuite?.defaultModel).toBe("gpt-4o-mini");
+    expect(interviewSuite?.defaultModelLabel).toBe("gpt-4o-mini");
+    expect(adventureContentSuite?.defaultModel).toBe("gpt-5.4");
+    expect(dependencySuite?.defaultModel).toBe("o4-mini");
+
+    suites[0]!.llmConfiguration.modelGroups[0]!.models[0]!.label = "mutated";
+    expect(listEvalSuites({})[0]!.llmConfiguration.modelGroups[0]!.models[0]!.label).toBe("gpt-5.4-nano");
+  });
+
 });

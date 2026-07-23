@@ -40,6 +40,7 @@ function createDependencies(
   overrides: Partial<RunEvalSuiteDependencies> = {},
 ): RunEvalSuiteDependencies {
   return {
+    environment: {},
     runGameMasterInterviewEvals: vi.fn<GameMasterInterviewEvalRunner>().mockResolvedValue(buildPassedGameMasterResult()),
     runInterviewOutputArtifactEvals: vi.fn<InterviewOutputArtifactEvalRunner>().mockResolvedValue(buildPassedInterviewOutputArtifactResult()),
     runGenerateAdventureEvals: vi.fn<GenerateAdventureEvalRunner>().mockResolvedValue(buildPassedAdventureResult()),
@@ -84,9 +85,9 @@ describe("runEvalSuite", () => {
         variants: [
             {
               id: "default",
-              name: "Default variant",
+              name: "gpt-5.4-mini",
               promptLabel: "Default prompt",
-              modelLabel: "gpt-test-model",
+              modelLabel: "gpt-5.4-mini",
             },
         ],
         cells: [
@@ -103,7 +104,7 @@ describe("runEvalSuite", () => {
               cost: { value: null, unit: "usd", reported: false },
             },
             assertions: [
-              { id: "asks-one-question", label: "asks one focused question", status: "passed" },
+              { id: "asks-one-question", label: "asks one focused question", status: "passed", message: undefined },
             ],
             diagnostics: [],
             artifacts: [
@@ -186,7 +187,7 @@ describe("runEvalSuite", () => {
     ]);
     expect(result.matrix).toMatchObject({
       testCases: [{ id: "high-stakes-finance", name: "High stakes finance" }],
-      variants: [{ id: "default", name: "Default variant" }],
+      variants: [{ id: "default", name: "gpt-5.4-mini" }],
       cells: [
         {
           id: "high-stakes-finance::default",
@@ -277,7 +278,7 @@ describe("runEvalSuite", () => {
       { ...createDependencies(), runGameMasterInterviewEvals },
     );
 
-    expect(runGameMasterInterviewEvals).toHaveBeenCalledWith({ testCaseId: "high-stakes-finance" });
+    expect(runGameMasterInterviewEvals).toHaveBeenCalledWith({ testCaseId: "high-stakes-finance", model: "gpt-5.4-mini" });
     expect(result.matrix?.testCases).toEqual([
       expect.objectContaining({ id: "high-stakes-finance", name: "High stakes finance" }),
     ]);
@@ -301,8 +302,8 @@ describe("runEvalSuite", () => {
       createDependencies({ runInterviewOutputArtifactEvals }),
     );
 
-    expect(runGameMasterInterviewEvals).toHaveBeenCalledWith(undefined);
-    expect(runInterviewOutputArtifactEvals).toHaveBeenCalledWith(undefined);
+    expect(runGameMasterInterviewEvals).toHaveBeenCalledWith({ model: "gpt-5.4-mini" });
+    expect(runInterviewOutputArtifactEvals).toHaveBeenCalledWith({ model: "gpt-5.4-mini" });
   });
 
 
@@ -322,6 +323,10 @@ describe("runEvalSuite", () => {
       await runEvalSuite({ suiteId }, dependencies);
 
       for (const [runnerName, runner] of Object.entries(dependencies)) {
+        if (runnerName === "environment") {
+          continue;
+        }
+
         expect(runner, `${suiteId} should only call ${selectedRunner}; checked ${runnerName}`).toHaveBeenCalledTimes(
           runnerName === selectedRunner ? 1 : 0,
         );
@@ -339,7 +344,7 @@ describe("runEvalSuite", () => {
       createDependencies({ runInterviewOutputArtifactEvals }),
     );
 
-    expect(runInterviewOutputArtifactEvals).toHaveBeenCalledWith({ testCaseId: "chef-artifact" });
+    expect(runInterviewOutputArtifactEvals).toHaveBeenCalledWith({ testCaseId: "chef-artifact", model: "gpt-5.4-mini" });
     expect(result).toMatchObject({
       suiteId: INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID,
       status: "passed",
@@ -361,7 +366,7 @@ describe("runEvalSuite", () => {
 
       await runEvalSuite({ suiteId, testCaseId: "learn-a-skill" }, dependencies);
 
-      expect(dependencies[selectedRunner]).toHaveBeenCalledWith({ testCaseId: "learn-a-skill" });
+      expect(dependencies[selectedRunner]).toHaveBeenCalledWith({ testCaseId: "learn-a-skill", model: "gpt-5.4-mini" });
     }
   });
 
@@ -674,6 +679,75 @@ describe("runEvalSuite", () => {
     });
   });
 
+
+  it("passes a selected allowed model through to the selected suite runner", async () => {
+    const runAdventureContentEvals = vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue(
+      buildPassedAdventureResult(["learn-a-skill"]),
+    );
+
+    const result = await runEvalSuite(
+      { suiteId: ADVENTURE_CONTENT_EVAL_SUITE_ID, model: "o4-mini" },
+      createDependencies({ runAdventureContentEvals }),
+    );
+
+    expect(runAdventureContentEvals).toHaveBeenCalledWith({ model: "o4-mini" });
+    expect(result).toMatchObject({
+      status: "passed",
+      matrix: { variants: [{ id: "default", name: "o4-mini", modelLabel: "o4-mini" }] },
+    });
+  });
+
+  it("blocks unlisted selected models before invoking suite runners", async () => {
+    const runAdventureContentEvals = vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue(
+      buildPassedAdventureResult(),
+    );
+
+    const result = await runEvalSuite(
+      { suiteId: ADVENTURE_CONTENT_EVAL_SUITE_ID, model: "not-in-list" },
+      createDependencies({ runAdventureContentEvals }),
+    );
+
+    expect(runAdventureContentEvals).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: "blocked",
+      blocker: "unsupported_selected_eval_model",
+      diagnostics: [
+        {
+          scope: "configuration",
+          code: "unsupported_selected_eval_model",
+          message: "The selected model is not in the allowed eval model list. Choose one of the supported eval models.",
+        },
+      ],
+    });
+  });
+
+  it("blocks unlisted default models before invoking suite runners", async () => {
+    const runAdventureContentEvals = vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue(
+      buildPassedAdventureResult(),
+    );
+
+    const result = await runEvalSuite(
+      { suiteId: ADVENTURE_CONTENT_EVAL_SUITE_ID },
+      createDependencies({
+        environment: { OPENAI_ADVENTURE_CONTENT_MODEL: "legacy-default" },
+        runAdventureContentEvals,
+      }),
+    );
+
+    expect(runAdventureContentEvals).not.toHaveBeenCalled();
+    expect(result).toMatchObject({
+      status: "blocked",
+      blocker: "unsupported_default_eval_model",
+      diagnostics: [
+        {
+          scope: "configuration",
+          code: "unsupported_default_eval_model",
+          message: "The suite default model is not in the allowed eval model list. Choose a supported eval model before running this suite.",
+        },
+      ],
+    });
+  });
+
   it("returns a safe error without invoking the runner for unknown suites", async () => {
     const runGameMasterInterviewEvals = vi.fn<GameMasterInterviewEvalRunner>();
 
@@ -841,7 +915,7 @@ function buildGameMasterCell(
       costUsd: { value: null, reported: false },
     },
     assertions: overrides.assertions ?? [
-      { id: "asks-one-question", label: "asks one focused question", status: "passed" },
+      { id: "asks-one-question", label: "asks one focused question", status: "passed", message: undefined },
     ],
     diagnostics: overrides.diagnostics ?? [],
     artifacts: overrides.artifacts ?? [
