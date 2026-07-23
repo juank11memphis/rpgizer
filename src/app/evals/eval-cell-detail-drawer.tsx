@@ -106,13 +106,6 @@ export function EvalCellDetailDrawer({ cell, onClose }: EvalCellDetailDrawerProp
           </button>
         </div>
 
-        <CopyablePreBlock
-          title="Output"
-          copyLabel="Copy output"
-          content={detail.outputMarkdown}
-          className="mt-4"
-        />
-
         <section className="mt-4">
           <h3 className="text-sm font-semibold text-slate-100">Assertions</h3>
           <ul className="mt-2 flex flex-col gap-2">
@@ -131,15 +124,6 @@ export function EvalCellDetailDrawer({ cell, onClose }: EvalCellDetailDrawerProp
             })}
           </ul>
         </section>
-
-        {detail.expectedGolden ? (
-          <CopyablePreBlock
-            title="Expected / Golden"
-            copyLabel="Copy expected / golden"
-            content={detail.expectedGolden}
-            className="mt-4"
-          />
-        ) : null}
 
         <section className="mt-4">
           <h3 className="text-sm font-semibold text-slate-100">Diagnostics</h3>

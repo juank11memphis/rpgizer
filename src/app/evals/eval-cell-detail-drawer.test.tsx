@@ -79,26 +79,6 @@ describe("EvalCellDetailDrawer", () => {
     expect(document.activeElement).toBe(lastFocusableElement);
   });
 
-  it("copies Output and shows visible success feedback", async () => {
-    const writeText = stubClipboardSuccess();
-    renderDrawer();
-
-    await clickAsync(getButton("Copy output"));
-
-    expect(writeText).toHaveBeenCalledWith("Generated output\nline two");
-    expect(getButton("Copy output").textContent).toBe("Copied");
-  });
-
-  it("copies Expected / Golden and shows visible failure feedback", async () => {
-    const writeText = stubClipboardFailure();
-    renderDrawer();
-
-    await clickAsync(getButton("Copy expected / golden"));
-
-    expect(writeText).toHaveBeenCalledWith("Expected safer framing.");
-    expect(getButton("Copy expected / golden").textContent).toBe("Copy failed");
-  });
-
   it("keeps raw artifacts collapsed by default and copies expanded artifact content", async () => {
     const writeText = stubClipboardSuccess();
     renderDrawer();
@@ -225,16 +205,6 @@ function keyDown(element: Element, key: string, options: { shiftKey?: boolean } 
 
 function stubClipboardSuccess() {
   const writeText = vi.fn<Clipboard["writeText"]>().mockResolvedValue(undefined);
-  Object.defineProperty(navigator, "clipboard", {
-    configurable: true,
-    value: { writeText },
-  });
-
-  return writeText;
-}
-
-function stubClipboardFailure() {
-  const writeText = vi.fn<Clipboard["writeText"]>().mockRejectedValue(new Error("clipboard unavailable"));
   Object.defineProperty(navigator, "clipboard", {
     configurable: true,
     value: { writeText },
