@@ -107,6 +107,29 @@ describe("checkGameMasterInterviewEvalAssertions", () => {
     );
   });
 
+  it("recognizes trip-up wording as a past friction question", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({
+        requiredUncoveredSignals: ["pastFriction"],
+        requiredQuestionTargets: ["pastFriction"],
+      }),
+      buildResult({
+        messageToUser:
+          "Nice, you’ve got a solid starter kit. What’s most likely to trip you up here: consistency, speaking anxiety, grammar overload, or something else?",
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "question-target-pastFriction",
+          label: "asks about pastFriction",
+          status: "passed",
+        },
+      ]),
+    );
+  });
+
   it("recognizes target-shape wording as a success definition question", () => {
     const assertions = checkGameMasterInterviewEvalAssertions(
       buildFixture({
