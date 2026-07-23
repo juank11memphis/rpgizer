@@ -39,6 +39,7 @@ export type AdventureQualityDiagnosticArea =
   | "achievement quality"
   | "next action quality"
   | "references"
+  | "progression balance"
   | "fixture grounding"
   | "safety"
   | "configuration"

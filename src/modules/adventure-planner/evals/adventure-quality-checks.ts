@@ -4,6 +4,10 @@ import type {
   GeneratedAdventureQuest,
   GeneratedAdventureSkillReward,
 } from "../domain/generated-adventure";
+import {
+  MAX_GENERATED_ADVENTURE_REWARD_XP,
+  MIN_GENERATED_ADVENTURE_REWARD_XP,
+} from "../domain/generated-adventure-xp";
 import { buildAdventureQualityAssertionOutcomes } from "./generate-adventure-eval-types";
 import type {
   AdventureQualityCheckResult,
@@ -53,6 +57,15 @@ const OBSERVABLE_DONE_TERMS = [
   "weeks",
   "session",
   "sessions",
+];
+
+const FILLER_QUEST_PATTERNS = [
+  "random quest",
+  "do something",
+  "do some stuff",
+  "work on the goal",
+  "advance the adventure",
+  "continue your journey",
 ];
 
 const FILLER_SIDE_QUEST_PATTERNS = [
@@ -115,6 +128,24 @@ const PRACTICAL_INVENTORY_TERMS = [
   "streak",
 ];
 
+const CAPABILITY_TERMS = [
+  "choose",
+  "plan",
+  "practice",
+  "prepare",
+  "build",
+  "review",
+  "measure",
+  "write",
+  "decide",
+  "test",
+  "communicate",
+  "research",
+  "organize",
+  "learn",
+  "track",
+];
+
 const DECORATIVE_SKILL_NAMES = [
   "strength",
   "dexterity",
@@ -139,6 +170,7 @@ const GENERIC_NEXT_ACTION_PATTERNS = [
 const GENERATED_ADVENTURE_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea[] = [
   "required structure",
   "done condition",
+  "quest quality",
   "side quest quality",
   "boss fight quality",
   "inventory quality",
@@ -146,6 +178,7 @@ const GENERATED_ADVENTURE_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea
   "achievement quality",
   "next action quality",
   "references",
+  "progression balance",
   "fixture grounding",
   "safety",
 ];
@@ -172,8 +205,9 @@ export function checkGeneratedAdventureQuality(
   checkActs(adventure, fixture, diagnostics);
   checkInventory(adventure, fixture, diagnostics);
   checkSkills(adventure, fixture, diagnostics);
-  checkAchievements(adventure, diagnostics);
+  checkAchievements(adventure, fixture, diagnostics);
   checkFocusedNextActions(adventure, diagnostics);
+  checkProgressionBalance(adventure, diagnostics);
   checkFixtureGrounding(adventure, fixture, diagnostics);
   checkHighStakesSafety(adventure, fixture, diagnostics);
 
@@ -252,8 +286,9 @@ function checkActs(
       diagnostics,
     );
 
-    for (const quest of [...act.mainQuests, ...act.sideQuests]) {
+    for (const quest of act.mainQuests) {
       checkDoneCondition(quest.title, quest.doneCondition, diagnostics);
+      checkMainQuest(quest, contextTerms, diagnostics);
       checkRewardsAndReferences(
         quest.title,
         quest.skillRewards,
@@ -265,7 +300,16 @@ function checkActs(
     }
 
     for (const sideQuest of act.sideQuests) {
+      checkDoneCondition(sideQuest.title, sideQuest.doneCondition, diagnostics);
       checkSideQuest(sideQuest, contextTerms, diagnostics);
+      checkRewardsAndReferences(
+        sideQuest.title,
+        sideQuest.skillRewards,
+        sideQuest.inventoryItemKeys,
+        skillKeys,
+        inventoryItemKeys,
+        diagnostics,
+      );
     }
 
     for (const bossFight of act.bossFights) {
@@ -306,17 +350,45 @@ function checkRewardsAndReferences(
   inventoryItemKeysByAdventure: ReadonlySet<string>,
   diagnostics: AdventureQualityDiagnostic[],
 ): void {
+  if (skillRewards.length === 0) {
+    addDiagnostic(diagnostics, "references", `'${title}' expected at least one Skill XP reward.`);
+  }
+
+  if (inventoryItemKeys.length === 0) {
+    addDiagnostic(diagnostics, "references", `'${title}' expected at least one relevant Inventory Item link.`);
+  }
+
+  const seenRewardSkillKeys = new Set<string>();
   for (const reward of skillRewards) {
+    if (seenRewardSkillKeys.has(reward.skillKey)) {
+      addDiagnostic(diagnostics, "references", `'${title}' has duplicate XP for Skill '${reward.skillKey}'.`);
+    }
+    seenRewardSkillKeys.add(reward.skillKey);
+
     if (!skillKeys.has(reward.skillKey)) {
       addDiagnostic(diagnostics, "references", `'${title}' references unknown Skill '${reward.skillKey}'.`);
     }
 
-    if (!Number.isFinite(reward.xp) || reward.xp <= 0) {
-      addDiagnostic(diagnostics, "references", `'${title}' must award positive Skill XP.`);
+    if (
+      !Number.isInteger(reward.xp) ||
+      reward.xp < MIN_GENERATED_ADVENTURE_REWARD_XP ||
+      reward.xp > MAX_GENERATED_ADVENTURE_REWARD_XP
+    ) {
+      addDiagnostic(
+        diagnostics,
+        "references",
+        `'${title}'.${reward.skillKey} XP must be an integer from ${MIN_GENERATED_ADVENTURE_REWARD_XP} to ${MAX_GENERATED_ADVENTURE_REWARD_XP}.`,
+      );
     }
   }
 
+  const seenInventoryItemKeys = new Set<string>();
   for (const inventoryItemKey of inventoryItemKeys) {
+    if (seenInventoryItemKeys.has(inventoryItemKey)) {
+      addDiagnostic(diagnostics, "references", `'${title}' has duplicate Inventory Item link '${inventoryItemKey}'.`);
+    }
+    seenInventoryItemKeys.add(inventoryItemKey);
+
     if (!inventoryItemKeysByAdventure.has(inventoryItemKey)) {
       addDiagnostic(
         diagnostics,
@@ -327,12 +399,37 @@ function checkRewardsAndReferences(
   }
 }
 
+function checkMainQuest(
+  quest: GeneratedAdventureQuest,
+  contextTerms: string[],
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  const text = normalize(`${quest.title} ${quest.description} ${quest.doneCondition} ${quest.rewardIntent}`);
+
+  if (containsAny(text, FILLER_QUEST_PATTERNS)) {
+    addDiagnostic(
+      diagnostics,
+      "quest quality",
+      `'${quest.title}' looks generic instead of a concrete goal-connected Main Quest.`,
+    );
+    return;
+  }
+
+  if (!hasAnyWord(text, contextTerms)) {
+    addDiagnostic(
+      diagnostics,
+      "quest quality",
+      `'${quest.title}' should mention the user's goal, constraints, resources, or context.`,
+    );
+  }
+}
+
 function checkSideQuest(
   sideQuest: GeneratedAdventureQuest,
   contextTerms: string[],
   diagnostics: AdventureQualityDiagnostic[],
 ): void {
-  const text = normalize(`${sideQuest.title} ${sideQuest.description} ${sideQuest.doneCondition}`);
+  const text = normalize(`${sideQuest.title} ${sideQuest.description} ${sideQuest.doneCondition} ${sideQuest.rewardIntent}`);
 
   if (containsAny(text, FILLER_SIDE_QUEST_PATTERNS)) {
     addDiagnostic(
@@ -347,7 +444,7 @@ function checkSideQuest(
     addDiagnostic(
       diagnostics,
       "side quest quality",
-      `'${sideQuest.title}' should mention the user's goal or context.`,
+      `'${sideQuest.title}' should mention the user's goal, constraints, resources, or context.`,
     );
   }
 }
@@ -356,11 +453,11 @@ function checkBossFight(
   bossFight: GeneratedAdventureBossFight, diagnostics: AdventureQualityDiagnostic[]): void {
   const text = normalize(`${bossFight.title} ${bossFight.description} ${bossFight.doneCondition}`);
 
-  if (containsAny(text, GENERIC_BOSS_FIGHT_PATTERNS)) {
+  if (containsAny(text, GENERIC_BOSS_FIGHT_PATTERNS) || !containsAny(text, OBSERVABLE_DONE_TERMS)) {
     addDiagnostic(
       diagnostics,
       "boss fight quality",
-      `'${bossFight.title}' should read like a milestone, proof point, or challenge.`,
+      `'${bossFight.title}' should read like an observable milestone, proof point, or challenge.`,
     );
   }
 }
@@ -412,6 +509,10 @@ function checkSkills(
   const allSkillText = normalize(
     adventure.skills.map((skill) => `${skill.name} ${skill.description}`).join(" "),
   );
+
+  if (!containsAny(allSkillText, CAPABILITY_TERMS)) {
+    addDiagnostic(diagnostics, "skill quality", "expected Skills to describe real capabilities.");
+  }
   const adventureText = normalize(JSON.stringify(adventure));
   for (const expectedTheme of fixture.expectations.expectedSkillThemes) {
     if (!allSkillText.includes(normalize(expectedTheme)) && !adventureText.includes(normalize(expectedTheme))) {
@@ -426,8 +527,10 @@ function checkSkills(
 
 function checkAchievements(
   adventure: GeneratedAdventure,
+  fixture: GenerateAdventureEvalFixture,
   diagnostics: AdventureQualityDiagnostic[],
 ): void {
+  const contextTerms = buildContextTerms(fixture);
   for (const achievement of adventure.achievements) {
     const unlockCondition = normalize(achievement.unlockCondition);
 
@@ -439,6 +542,16 @@ function checkAchievements(
         diagnostics,
         "achievement quality",
         `'${achievement.name}' needs a concrete unlock condition.`,
+      );
+      continue;
+    }
+
+    const achievementText = normalize(`${achievement.name} ${achievement.description} ${achievement.unlockCondition}`);
+    if (!hasAnyWord(achievementText, contextTerms)) {
+      addDiagnostic(
+        diagnostics,
+        "achievement quality",
+        `'${achievement.name}' should connect to the user's goal or generated progression.`,
       );
     }
   }
@@ -459,6 +572,79 @@ function checkFocusedNextActions(
       );
     }
   }
+}
+
+
+function checkProgressionBalance(
+  adventure: GeneratedAdventure,
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  const allRows = adventure.acts.flatMap((act) => [...act.mainQuests, ...act.sideQuests, ...act.bossFights]);
+  const rewardedSkillKeys = new Set(allRows.flatMap((row) => row.skillRewards.map((reward) => reward.skillKey)));
+  const referencedInventoryItemKeys = new Set(allRows.flatMap((row) => row.inventoryItemKeys));
+
+  for (const skill of adventure.skills) {
+    if (!rewardedSkillKeys.has(skill.key)) {
+      addDiagnostic(
+        diagnostics,
+        "progression balance",
+        `Skill '${skill.name}' is never rewarded by any Quest or Boss Fight.`,
+      );
+    }
+  }
+
+  for (const item of adventure.inventoryItems) {
+    if (!referencedInventoryItemKeys.has(item.key)) {
+      addDiagnostic(
+        diagnostics,
+        "progression balance",
+        `Inventory Item '${item.name}' is never used by any Quest or Boss Fight.`,
+      );
+    }
+  }
+
+  const questRewardTotals = adventure.acts.flatMap((act) =>
+    [...act.mainQuests, ...act.sideQuests].map((quest) => ({
+      key: quest.key,
+      xp: sumRewards(quest.skillRewards),
+    })),
+  );
+  const bossFightRewardTotals = adventure.acts.flatMap((act) =>
+    act.bossFights.map((bossFight) => ({
+      key: bossFight.key,
+      xp: sumRewards(bossFight.skillRewards),
+    })),
+  );
+  const maxQuestXp = Math.max(0, ...questRewardTotals.map((entry) => entry.xp));
+  const maxBossFightXp = Math.max(0, ...bossFightRewardTotals.map((entry) => entry.xp));
+
+  if (maxQuestXp > 0 && maxBossFightXp > 0 && maxBossFightXp < maxQuestXp) {
+    addDiagnostic(
+      diagnostics,
+      "progression balance",
+      "expected at least one Boss Fight reward total to be as high as the strongest Quest reward total.",
+    );
+  }
+
+  for (const act of adventure.acts) {
+    const maxActQuestXp = Math.max(
+      0,
+      ...[...act.mainQuests, ...act.sideQuests].map((quest) => sumRewards(quest.skillRewards)),
+    );
+    const maxActBossFightXp = Math.max(0, ...act.bossFights.map((bossFight) => sumRewards(bossFight.skillRewards)));
+
+    if (maxActQuestXp > 0 && maxActBossFightXp > 0 && maxActBossFightXp < maxActQuestXp) {
+      addDiagnostic(
+        diagnostics,
+        "progression balance",
+        `Act '${act.title}' expected a Boss Fight reward total at least as high as its strongest Quest reward total.`,
+      );
+    }
+  }
+}
+
+function sumRewards(rewards: readonly GeneratedAdventureSkillReward[]): number {
+  return rewards.reduce((total, reward) => total + reward.xp, 0);
 }
 
 function checkFixtureGrounding(

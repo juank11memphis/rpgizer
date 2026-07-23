@@ -53,6 +53,9 @@ describe("checkGeneratedAdventureQuality", () => {
     expect(result.assertions).toEqual(
       expect.arrayContaining([
         { id: "adventure-required-structure", label: "Required Structure", status: "passed" },
+        { id: "adventure-quest-quality", label: "Quest Quality", status: "passed" },
+        { id: "adventure-references", label: "References", status: "passed" },
+        { id: "adventure-progression-balance", label: "Progression Balance", status: "passed" },
         { id: "adventure-fixture-grounding", label: "Fixture Grounding", status: "passed" },
       ]),
     );
@@ -105,6 +108,28 @@ describe("checkGeneratedAdventureQuality", () => {
     });
 
     expect(messages).toEqual(expect.arrayContaining([expect.stringContaining("side quest quality")]));
+  });
+
+  it("fails generic Main Quests", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const messages = messagesFor({
+      ...payload,
+      acts: [
+        {
+          ...payload.acts[0],
+          mainQuests: [
+            {
+              ...payload.acts[0].mainQuests[0],
+              title: "Advance the Adventure",
+              description: "Continue your journey and work on the goal.",
+              doneCondition: "One planning note is written.",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(messages).toEqual(expect.arrayContaining([expect.stringContaining("quest quality")]));
   });
 
   it("fails random fantasy Inventory", () => {
@@ -174,6 +199,99 @@ describe("checkGeneratedAdventureQuality", () => {
 
     expect(messages).toEqual(
       expect.arrayContaining([expect.stringContaining("expected generated Adventure")]),
+    );
+  });
+
+  it("fails duplicate references and out-of-range XP rewards", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const messages = messagesFor({
+      ...payload,
+      acts: [
+        {
+          ...payload.acts[0],
+          mainQuests: [
+            {
+              ...payload.acts[0].mainQuests[0],
+              skillRewards: [
+                { skillKey: "meal-planning", xp: 200 },
+                { skillKey: "meal-planning", xp: 25 },
+              ],
+              inventoryItemKeys: ["weekly-menu-template", "weekly-menu-template"],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("duplicate XP"),
+        expect.stringContaining("XP must be an integer from"),
+        expect.stringContaining("duplicate Inventory Item link"),
+      ]),
+    );
+  });
+
+  it("fails unused Skills and Inventory Items in the final progression", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const messages = messagesFor({
+      ...payload,
+      skills: [
+        ...payload.skills,
+        {
+          key: "unused-food-budgeting",
+          name: "Food Budgeting",
+          description: "Plan grocery spending for practical meals.",
+        },
+      ],
+      inventoryItems: [
+        ...payload.inventoryItems,
+        {
+          key: "unused-budget-template",
+          name: "Budget Template",
+          purpose: "A practical template for planning grocery spending.",
+        },
+      ],
+    });
+
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Skill 'Food Budgeting' is never rewarded"),
+        expect.stringContaining("Inventory Item 'Budget Template' is never used"),
+      ]),
+    );
+  });
+
+  it("fails Boss Fights that are weaker than Quest rewards", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const messages = messagesFor({
+      ...payload,
+      acts: [
+        {
+          ...payload.acts[0],
+          mainQuests: [
+            {
+              ...payload.acts[0].mainQuests[0],
+              skillRewards: [{ skillKey: "meal-planning", xp: 80 }],
+            },
+          ],
+          bossFights: [
+            {
+              ...payload.acts[0].bossFights[0],
+              skillRewards: [
+                { skillKey: "meal-planning", xp: 25 },
+                { skillKey: "knife-basics", xp: 20 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining("Boss Fight reward total at least as high"),
+      ]),
     );
   });
 

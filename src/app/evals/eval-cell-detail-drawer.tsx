@@ -2,7 +2,6 @@
 
 import { type KeyboardEvent, useEffect, useId, useRef } from "react";
 
-import { CopyablePreBlock } from "./eval-copyable-pre-block";
 import type { EvalMatrixShellCell } from "./eval-matrix-types";
 import { EvalRawArtifactDetail } from "./eval-raw-artifact-detail";
 

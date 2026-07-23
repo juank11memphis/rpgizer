@@ -183,6 +183,19 @@ describe("Generate Adventure eval runner", () => {
           ]),
         },
       ],
+      cellOutputs: [
+        {
+          fixtureId: "cooking-eval",
+          outputPreview: "The Hearthfire Cooking Quest",
+          outputMarkdown: expect.stringContaining("The Hearthfire Cooking Quest"),
+          artifacts: expect.arrayContaining([
+            expect.objectContaining({ id: "prompt", label: "Raw prompt", redactionState: "not_available" }),
+            expect.objectContaining({ id: "request", label: "Raw request" }),
+            expect.objectContaining({ id: "response", label: "Raw response" }),
+            expect.objectContaining({ id: "expected", label: "Expected / Golden" }),
+          ]),
+        },
+      ],
     });
     expect(seenRequests).toEqual(["eval-adventure-cooking-eval"]);
     expect(output.output()).toBe("Generate Adventure evals passed: cooking-eval\n");
