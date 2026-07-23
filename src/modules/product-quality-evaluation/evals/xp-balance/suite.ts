@@ -14,6 +14,8 @@ export const xpBalanceSuiteSummary: EvalSuiteSummary = {
   purpose:
     "Checks whether Adventure XP balancing produces practical skill progression without unrealistic or misleading rewards.",
   readyTestCases: [
+    { id: "community-garden-rescue", name: "community-garden-rescue", inputVariables: { fixtureId: "community-garden-rescue" } },
+    { id: "home-studio-podcast-launch", name: "home-studio-podcast-launch", inputVariables: { fixtureId: "home-studio-podcast-launch" } },
     { id: "spanish-coffee-chat", name: "spanish-coffee-chat", inputVariables: { fixtureId: "spanish-coffee-chat" } },
   ],
   defaultVariantLabel: "Default variant",

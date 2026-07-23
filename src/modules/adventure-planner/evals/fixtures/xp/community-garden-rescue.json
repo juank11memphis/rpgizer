@@ -1,0 +1,278 @@
+{
+  "id": "community-garden-rescue",
+  "name": "Community garden rescue",
+  "content": {
+    "title": "Community Garden Rescue Quest",
+    "themeSummary": "A neighborhood stewardship adventure for reviving an overgrown community garden with volunteers, budgets, planting plans, and maintenance rituals.",
+    "goalSummary": "Turn an abandoned garden plot into a safe, planted, and sustainably maintained community space before the next growing season.",
+    "safetyNotes": [
+      "Use gloves and safe lifting practices during cleanup.",
+      "Confirm local rules before applying soil amendments, installing structures, or hosting public events."
+    ],
+    "acts": [
+      {
+        "key": "act-1",
+        "title": "Scout the Overgrown Realm",
+        "summary": "Assess the site, recruit helpers, and create a safe cleanup plan with local approval.",
+        "mainQuests": [
+          {
+            "key": "quest-site-audit",
+            "title": "Complete the Garden Site Audit",
+            "description": "Map beds, water access, hazards, sunlight, soil concerns, tool needs, and accessibility barriers.",
+            "doneCondition": "The audit includes photos, a bed map, hazard list, water notes, and the top five restoration constraints.",
+            "rewardIntent": "Reward careful discovery before mobilizing volunteers."
+          },
+          {
+            "key": "quest-volunteer-roster",
+            "title": "Assemble the Volunteer Roster",
+            "description": "Recruit neighbors, clarify roles, gather availability, and assign cleanup leads, supply leads, and communications support.",
+            "doneCondition": "At least eight volunteers are listed with roles, contact details, and availability for the first workday.",
+            "rewardIntent": "Reward building the team needed for a larger restoration effort."
+          }
+        ],
+        "sideQuests": [
+          {
+            "key": "quest-permit-and-donation-check",
+            "title": "Secure Permission and Donations",
+            "description": "Confirm garden permissions, request donated compost or mulch, and identify any spending approvals needed.",
+            "doneCondition": "Permission status, donation leads, and budget constraints are documented before purchases happen.",
+            "rewardIntent": "Reward reducing logistical and financial risk."
+          }
+        ],
+        "bossFights": [
+          {
+            "key": "boss-safe-cleanup-day",
+            "title": "Lead the Safe Cleanup Day",
+            "description": "Coordinate volunteers to clear debris, weed beds, mark hazards, sort salvageable materials, and leave the site safer than it started.",
+            "doneCondition": "The cleanup day is completed with hazards removed or marked, debris disposed of, and next restoration tasks documented.",
+            "rewardIntent": "Reward converting plans and volunteers into visible site progress."
+          }
+        ]
+      },
+      {
+        "key": "act-2",
+        "title": "Plant the Living Stronghold",
+        "summary": "Design the planting plan, build maintenance systems, and launch a sustainable community rhythm.",
+        "mainQuests": [
+          {
+            "key": "quest-planting-design",
+            "title": "Design the Planting Plan",
+            "description": "Choose seasonal crops or native plants, assign beds, plan companion planting, and match plants to sunlight and watering constraints.",
+            "doneCondition": "A bed-by-bed planting plan lists plants, quantities, timing, water needs, and responsible caretakers.",
+            "rewardIntent": "Reward translating the restored space into a realistic growing plan."
+          },
+          {
+            "key": "quest-maintenance-rotation",
+            "title": "Create the Maintenance Rotation",
+            "description": "Set watering, weeding, harvesting, compost, and communication responsibilities for the first eight weeks.",
+            "doneCondition": "The shared rotation covers eight weeks and each week has named caretakers and escalation contacts.",
+            "rewardIntent": "Reward sustainability after the initial excitement fades."
+          }
+        ],
+        "sideQuests": [
+          {
+            "key": "quest-community-signage",
+            "title": "Install Community Signage",
+            "description": "Create welcoming signs with garden rules, contact info, harvest expectations, and upcoming volunteer dates.",
+            "doneCondition": "Weather-safe signs are installed at the garden entrance and near shared beds.",
+            "rewardIntent": "Reward clear communication for neighbors and visitors."
+          }
+        ],
+        "bossFights": [
+          {
+            "key": "boss-first-planting-weekend",
+            "title": "Complete the First Planting Weekend",
+            "description": "Coordinate supplies, volunteers, bed prep, planting, watering, signage, and the first maintenance handoff.",
+            "doneCondition": "Priority beds are planted, watered, labeled, and assigned to the maintenance rotation.",
+            "rewardIntent": "Reward the transition from rescue project to living community garden."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "key": "skill-site-assessment",
+        "name": "Site Assessment",
+        "description": "Evaluate garden conditions, hazards, sunlight, water, accessibility, and restoration constraints."
+      },
+      {
+        "key": "skill-volunteer-coordination",
+        "name": "Volunteer Coordination",
+        "description": "Recruit, schedule, brief, and support a neighborhood volunteer team."
+      },
+      {
+        "key": "skill-logistics-and-budgeting",
+        "name": "Logistics and Budgeting",
+        "description": "Manage permissions, donations, supply needs, budget limits, and workday sequencing."
+      },
+      {
+        "key": "skill-planting-design",
+        "name": "Planting Design",
+        "description": "Match plants, beds, seasons, sunlight, watering needs, and caretaker capacity."
+      },
+      {
+        "key": "skill-maintenance-systems",
+        "name": "Maintenance Systems",
+        "description": "Create shared rotations, rules, communication habits, and handoffs that keep the garden healthy."
+      }
+    ],
+    "inventoryItems": [
+      {
+        "key": "item-site-audit-map",
+        "name": "Site Audit Map",
+        "purpose": "Photos, bed map, water notes, hazards, and constraints for restoration planning."
+      },
+      {
+        "key": "item-volunteer-roster",
+        "name": "Volunteer Roster",
+        "purpose": "A contact and role list for cleanup, planting, supplies, and communications."
+      },
+      {
+        "key": "item-permission-donation-log",
+        "name": "Permission and Donation Log",
+        "purpose": "Permission status, donation leads, budget limits, and purchase approvals."
+      },
+      {
+        "key": "item-cleanup-safety-kit",
+        "name": "Cleanup Safety Kit",
+        "purpose": "Gloves, bags, first aid basics, hazard markers, and safety reminders for workdays."
+      },
+      {
+        "key": "item-planting-plan",
+        "name": "Planting Plan",
+        "purpose": "Bed assignments, plant quantities, timing, water needs, and caretaker names."
+      },
+      {
+        "key": "item-maintenance-calendar",
+        "name": "Maintenance Calendar",
+        "purpose": "An eight-week schedule for watering, weeding, harvesting, compost, and escalation contacts."
+      },
+      {
+        "key": "item-community-signage-pack",
+        "name": "Community Signage Pack",
+        "purpose": "Weather-safe signs for rules, contact information, harvest expectations, and volunteer dates."
+      }
+    ],
+    "achievements": [
+      {
+        "key": "achievement-safe-cleanup",
+        "name": "Garden Cleared Safely",
+        "description": "The abandoned plot is safer, mapped, and ready for planting preparation.",
+        "unlockCondition": "Unlocked when cleanup day is completed and next tasks are documented."
+      },
+      {
+        "key": "achievement-first-planting",
+        "name": "First Planting Weekend Complete",
+        "description": "Priority beds are planted and assigned to caretakers.",
+        "unlockCondition": "Unlocked when the planting weekend ends with watered, labeled, and assigned beds."
+      }
+    ],
+    "focusedNextActions": [
+      {
+        "title": "Walk the plot with a camera",
+        "description": "Capture photos and notes for hazards, water access, sunlight, and bed conditions."
+      },
+      {
+        "title": "Recruit three role leads",
+        "description": "Ask one neighbor each to lead cleanup, supplies, and communications."
+      }
+    ]
+  },
+  "dependencies": {
+    "questLinks": [
+      {
+        "questKey": "quest-site-audit",
+        "skillKeys": [
+          "skill-site-assessment"
+        ],
+        "inventoryItemKeys": [
+          "item-site-audit-map",
+          "item-cleanup-safety-kit"
+        ]
+      },
+      {
+        "questKey": "quest-volunteer-roster",
+        "skillKeys": [
+          "skill-volunteer-coordination"
+        ],
+        "inventoryItemKeys": [
+          "item-volunteer-roster"
+        ]
+      },
+      {
+        "questKey": "quest-permit-and-donation-check",
+        "skillKeys": [
+          "skill-logistics-and-budgeting",
+          "skill-volunteer-coordination"
+        ],
+        "inventoryItemKeys": [
+          "item-permission-donation-log",
+          "item-volunteer-roster"
+        ]
+      },
+      {
+        "questKey": "quest-planting-design",
+        "skillKeys": [
+          "skill-planting-design",
+          "skill-site-assessment"
+        ],
+        "inventoryItemKeys": [
+          "item-planting-plan",
+          "item-site-audit-map"
+        ]
+      },
+      {
+        "questKey": "quest-maintenance-rotation",
+        "skillKeys": [
+          "skill-maintenance-systems",
+          "skill-volunteer-coordination"
+        ],
+        "inventoryItemKeys": [
+          "item-maintenance-calendar",
+          "item-volunteer-roster"
+        ]
+      },
+      {
+        "questKey": "quest-community-signage",
+        "skillKeys": [
+          "skill-maintenance-systems",
+          "skill-logistics-and-budgeting"
+        ],
+        "inventoryItemKeys": [
+          "item-community-signage-pack",
+          "item-maintenance-calendar"
+        ]
+      }
+    ],
+    "bossFightLinks": [
+      {
+        "bossFightKey": "boss-safe-cleanup-day",
+        "skillKeys": [
+          "skill-site-assessment",
+          "skill-volunteer-coordination",
+          "skill-logistics-and-budgeting"
+        ],
+        "inventoryItemKeys": [
+          "item-site-audit-map",
+          "item-volunteer-roster",
+          "item-cleanup-safety-kit",
+          "item-permission-donation-log"
+        ]
+      },
+      {
+        "bossFightKey": "boss-first-planting-weekend",
+        "skillKeys": [
+          "skill-planting-design",
+          "skill-maintenance-systems",
+          "skill-volunteer-coordination"
+        ],
+        "inventoryItemKeys": [
+          "item-planting-plan",
+          "item-maintenance-calendar",
+          "item-community-signage-pack",
+          "item-volunteer-roster"
+        ]
+      }
+    ]
+  }
+}

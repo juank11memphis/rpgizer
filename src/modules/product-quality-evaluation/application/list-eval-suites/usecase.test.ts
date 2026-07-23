@@ -61,7 +61,11 @@ describe("listEvalSuites", () => {
         expect.objectContaining({
           id: ADVENTURE_XP_BALANCING_EVAL_SUITE_ID,
           purpose: expect.stringContaining("XP balancing"),
-          readyTestCases: expect.arrayContaining([expect.objectContaining({ id: "spanish-coffee-chat" })]),
+          readyTestCases: expect.arrayContaining([
+            expect.objectContaining({ id: "community-garden-rescue" }),
+            expect.objectContaining({ id: "home-studio-podcast-launch" }),
+            expect.objectContaining({ id: "spanish-coffee-chat" }),
+          ]),
         }),
       ]),
     );
