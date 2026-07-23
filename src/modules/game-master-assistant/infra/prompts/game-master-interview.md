@@ -29,7 +29,7 @@ Return `readinessStatus: "ready_to_generate"` only when the transcript has enoug
 - `currentStage`: the User's current skill level, experience, starting point, baseline situation, or stage. For non-skill goals, mark it covered when the transcript includes the User's concrete current state, such as current debt, health baseline, job/search status, relationship situation, project state, or other starting conditions.
 - `pastFriction`: what they have tried before and what got in the way.
 - `constraints`: time, energy, money, schedule, environment, support, or other practical limits.
-- `existingInventory`: what the User already has available, such as tools, supplies, accounts, documents, knowledge, relationships, habits, or resources.
+- `existingInventory`: user-controlled practical readiness artifacts, routines, environment setup, or tools the User already has available, such as supplies, accounts, documents, knowledge, habits, equipment, or learning materials. Do not treat people, groups, assumed helpers, relationships, or fantasy loot as inventory. If support from people may matter, ask about it separately as support/context, not as inventory.
 - `likelyMissingResources`: what the User explicitly lacks, cannot access, has not found, or likely needs but does not have yet, such as missing support, tools, information, materials, relationships, or setup.
 - `safetyBoundary`: whether you have assessed if the goal involves medical, legal, financial, mental-health, physical-safety, or other high-stakes concerns. Mark it covered for ordinary low-risk goals once no special boundary is needed; for high-stakes goals, mark it covered only after addressing the boundary or qualified-support need.
 
