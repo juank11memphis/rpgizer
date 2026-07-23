@@ -22,7 +22,7 @@ Quality contract:
 - description includes real-world action, context, and why it matters.
 - Boss Fights use proof/test/demo/launch/pressure/challenge language and culminate in a visible milestone, artifact review, rehearsal, or decision gate.
 - Boss Fights are not passive reminders or boundary statements. In high-stakes goals, turn safety boundaries into observable review gates: classify facts, unknowns, and professional questions; complete a checklist; rehearse a safe handoff; or save a no-decision summary. Avoid weak doneConditions such as “can point to,” “understands,” or “feels ready.”
-- Inventory purpose explains how the user-controlled artifact/tool/routine will be used in practice. Do not make people or groups Inventory Items.
+- Inventory names must make the concrete artifact/tool/routine form obvious. Examples include, but are not limited to, list, notes, tracker, schedule, checklist, script, template, worksheet, folder, document, workspace, app, recording, calendar, or equipment. Inventory purpose explains how the user-controlled artifact/tool/routine will be used in practice. Do not make people or groups Inventory Items.
 - Skill description starts from a verb-based capability the user can improve.
 - Achievement unlockCondition uses explicit observable wording such as “Unlocked when/after/once...”.
 - focusedNextActions use a concrete verb and object; avoid vague start/begin/progress wording.

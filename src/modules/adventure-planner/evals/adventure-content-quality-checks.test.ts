@@ -82,6 +82,56 @@ describe("Adventure content quality checks", () => {
     );
   });
 
+  it("accepts Boss Fights with rehearsal proof language", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        acts: [
+          {
+            key: "act-1",
+            title: "Practice in the Warm Light",
+            summary: "Use repeatable speaking sessions to reduce freezing.",
+            mainQuests: [
+              {
+                key: "mq-1",
+                title: "Practice recovery phrases",
+                description: "Practice simple Spanish recovery phrases for moments when a word is missing.",
+                doneCondition: "A practice note contains three recovery phrases written in Spanish.",
+                rewardIntent: "Reward preparing phrases for the coffee chat.",
+              },
+            ],
+            sideQuests: [
+              {
+                key: "sq-1",
+                title: "Shadow a short Spanish clip",
+                description: "Repeat a short Spanish dialogue out loud to copy rhythm.",
+                doneCondition: "A recording exists of the user shadowing one short dialogue from start to finish.",
+                rewardIntent: "Reward low-pressure Spanish speaking practice.",
+              },
+            ],
+            bossFights: [
+              {
+                key: "bf-2",
+                title: "Freeze-break rehearsal",
+                description:
+                  "Simulate the moment of freezing, then immediately use a recovery phrase and continue speaking to prove the conversation can survive hesitation.",
+                doneCondition:
+                  "A timed rehearsal recording shows the user hit a planned pause, used a recovery phrase, and resumed speaking within a few seconds without switching to English.",
+                rewardIntent:
+                  "This tests the exact failure point and builds confidence for the moment when anxiety tries to interrupt speech.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const result = checkGeneratedAdventureContentQuality(content, buildFixture());
+
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({ area: "boss fight quality" }),
+    );
+  });
+
   it("reports missing fixture grounding and weak next actions", () => {
     const fixture: GenerateAdventureEvalFixture = buildFixture({
       expectations: { ...buildFixture().expectations, expectedGoalTerms: ["Portuguese"], expectedSkillThemes: ["speaking"], expectedInventoryThemes: ["prompt"] },

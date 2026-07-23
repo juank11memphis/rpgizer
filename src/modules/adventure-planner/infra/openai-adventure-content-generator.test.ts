@@ -275,6 +275,8 @@ describe("OpenAIAdventureContentGenerator", () => {
     expect(prompt).toContain("must not contain skillRewards, inventoryItemKeys");
     expect(prompt).toContain("later steps will link Skills, Inventory Items, and XP");
     expect(prompt).toContain("Do not assume external people/resources exist unless the interview explicitly says they do");
+    expect(prompt).toContain("Examples include, but are not limited to");
+    expect(prompt).toContain("Inventory names must make the concrete artifact/tool/routine form obvious");
     expect(prompt).toContain("Do not make people or groups Inventory Items");
     expect(prompt).toContain("Do not imply RPGizer replaces expert advice");
   });

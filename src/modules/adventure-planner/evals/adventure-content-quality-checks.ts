@@ -51,6 +51,17 @@ const OBSERVABLE_DONE_TERMS = [
   "weeks",
   "session",
   "sessions",
+  "shows",
+  "confirmation",
+  "confirmed",
+  "recording",
+  "note",
+  "notes",
+  "reflection",
+  "transcript",
+  "witness",
+  "logged",
+  "log",
 ];
 const FILLER_QUEST_PATTERNS = [
   "random quest",
