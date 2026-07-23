@@ -191,7 +191,7 @@ function messageTargetsSignal(
     case "motivation":
       return /\b(why|reason|motivat|matters?|care|important|worthwhile)\b/i.test(message);
     case "successDefinition":
-      return /\b(success|successful|victory|win|outcome|result|goal|version|closest|look like)\b/i.test(
+      return /\b(success|successful|victory|win|outcome|result|goal|version|closest|look like|kind of|path|fits best|direction|aiming for)\b/i.test(
         message,
       );
     case "currentStage":

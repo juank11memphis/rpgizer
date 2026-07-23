@@ -106,6 +106,29 @@ describe("checkGameMasterInterviewEvalAssertions", () => {
       ]),
     );
   });
+
+  it("recognizes target-shape wording as a success definition question", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({
+        requiredUncoveredSignals: ["successDefinition"],
+        requiredQuestionTargets: ["successDefinition"],
+      }),
+      buildResult({
+        messageToUser:
+          "Nice, we’ve got the quest title—what kind of chef path fits best: cooking impressive meals at home, working in a restaurant kitchen, catering/events, starting a food business, or something else?",
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "question-target-successDefinition",
+          label: "asks about successDefinition",
+          status: "passed",
+        },
+      ]),
+    );
+  });
 });
 
 function buildFixture(
