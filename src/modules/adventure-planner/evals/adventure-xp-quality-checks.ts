@@ -50,7 +50,6 @@ export function checkAdventureXpQuality(
     diagnostics.push({ area: "references", message: "every Boss Fight expected at least one XP reward." });
   }
 
-  checkBossFightProportionality(xpBalance, diagnostics);
   checkNoRewriteFields(content, dependencies, xpBalance, diagnostics);
 
   return {
@@ -111,21 +110,6 @@ function checkRewards(
         message: `${rowKey}.${reward.skillKey} XP must be an integer from ${MIN_GENERATED_ADVENTURE_REWARD_XP} to ${MAX_GENERATED_ADVENTURE_REWARD_XP}.`,
       });
     }
-  }
-}
-
-function checkBossFightProportionality(
-  xpBalance: GeneratedAdventureXpBalance,
-  diagnostics: AdventureQualityDiagnostic[],
-): void {
-  const maxQuestXp = Math.max(0, ...xpBalance.questXp.flatMap((entry) => entry.skillRewards.map((reward) => reward.xp)));
-  const maxBossXp = Math.max(0, ...xpBalance.bossFightXp.flatMap((entry) => entry.skillRewards.map((reward) => reward.xp)));
-
-  if (maxBossXp > 0 && maxQuestXp > 0 && maxBossXp < maxQuestXp) {
-    diagnostics.push({
-      area: "references",
-      message: "expected at least one Boss Fight reward to be as high as the strongest Quest reward.",
-    });
   }
 }
 

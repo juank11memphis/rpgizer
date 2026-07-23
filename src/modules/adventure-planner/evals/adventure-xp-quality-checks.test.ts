@@ -26,4 +26,48 @@ describe("Adventure XP quality checks", () => {
     expect(diagnostics.map((diagnostic) => diagnostic.message).join("\n")).toContain("unlinked Skill");
     expect(diagnostics.map((diagnostic) => diagnostic.message).join("\n")).toContain("XP must be an integer");
   });
+
+  it("accepts Boss Fight XP that is meaningful but lower than a major Quest", () => {
+    const content = parseGeneratedAdventureContent(buildContentPayload());
+    const dependencies = buildDependencyLinks();
+    const result = checkAdventureXpQuality(content, dependencies, {
+      questXp: [
+        {
+          questKey: "quest-prompt-list",
+          skillRewards: [{ skillKey: "skill-conversation-planning", xp: 80 }],
+        },
+        {
+          questKey: "quest-speaking-sprint",
+          skillRewards: [{ skillKey: "skill-speaking-practice", xp: 25 }],
+        },
+      ],
+      bossFightXp: [
+        {
+          bossFightKey: "boss-coffee-chat",
+          skillRewards: [
+            { skillKey: "skill-speaking-practice", xp: 25 },
+            { skillKey: "skill-conversation-planning", xp: 20 },
+          ],
+        },
+      ],
+    });
+
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("still reports Boss Fights with no XP reward", () => {
+    const content = parseGeneratedAdventureContent(buildContentPayload());
+    const dependencies = buildDependencyLinks();
+    const diagnostics = checkAdventureXpQuality(content, dependencies, {
+      questXp: [
+        { questKey: "quest-prompt-list", skillRewards: [{ skillKey: "skill-conversation-planning", xp: 15 }] },
+        { questKey: "quest-speaking-sprint", skillRewards: [{ skillKey: "skill-speaking-practice", xp: 25 }] },
+      ],
+      bossFightXp: [{ bossFightKey: "boss-coffee-chat", skillRewards: [] }],
+    }).diagnostics;
+
+    expect(diagnostics.map((diagnostic) => diagnostic.message).join("\n")).toContain(
+      "expected at least one XP reward",
+    );
+  });
 });

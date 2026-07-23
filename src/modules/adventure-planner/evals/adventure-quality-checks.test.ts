@@ -356,9 +356,9 @@ describe("checkGeneratedAdventureQuality", () => {
     );
   });
 
-  it("fails Boss Fights that are weaker than Quest rewards", () => {
+  it("accepts meaningful Boss Fights with lower XP than a major Quest", () => {
     const payload = buildGeneratedAdventureBoundaryPayload();
-    const messages = messagesFor({
+    const result = checkPayload({
       ...payload,
       acts: [
         {
@@ -382,10 +382,11 @@ describe("checkGeneratedAdventureQuality", () => {
       ],
     });
 
-    expect(messages).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining("Boss Fight reward total at least as high"),
-      ]),
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        area: "progression balance",
+        message: expect.stringContaining("Boss Fight reward total"),
+      }),
     );
   });
 

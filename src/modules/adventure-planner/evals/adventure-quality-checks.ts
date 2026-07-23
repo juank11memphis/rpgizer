@@ -684,48 +684,6 @@ function checkProgressionBalance(
     }
   }
 
-  const questRewardTotals = adventure.acts.flatMap((act) =>
-    [...act.mainQuests, ...act.sideQuests].map((quest) => ({
-      key: quest.key,
-      xp: sumRewards(quest.skillRewards),
-    })),
-  );
-  const bossFightRewardTotals = adventure.acts.flatMap((act) =>
-    act.bossFights.map((bossFight) => ({
-      key: bossFight.key,
-      xp: sumRewards(bossFight.skillRewards),
-    })),
-  );
-  const maxQuestXp = Math.max(0, ...questRewardTotals.map((entry) => entry.xp));
-  const maxBossFightXp = Math.max(0, ...bossFightRewardTotals.map((entry) => entry.xp));
-
-  if (maxQuestXp > 0 && maxBossFightXp > 0 && maxBossFightXp < maxQuestXp) {
-    addDiagnostic(
-      diagnostics,
-      "progression balance",
-      "expected at least one Boss Fight reward total to be as high as the strongest Quest reward total.",
-    );
-  }
-
-  for (const act of adventure.acts) {
-    const maxActQuestXp = Math.max(
-      0,
-      ...[...act.mainQuests, ...act.sideQuests].map((quest) => sumRewards(quest.skillRewards)),
-    );
-    const maxActBossFightXp = Math.max(0, ...act.bossFights.map((bossFight) => sumRewards(bossFight.skillRewards)));
-
-    if (maxActQuestXp > 0 && maxActBossFightXp > 0 && maxActBossFightXp < maxActQuestXp) {
-      addDiagnostic(
-        diagnostics,
-        "progression balance",
-        `Act '${act.title}' expected a Boss Fight reward total at least as high as its strongest Quest reward total.`,
-      );
-    }
-  }
-}
-
-function sumRewards(rewards: readonly GeneratedAdventureSkillReward[]): number {
-  return rewards.reduce((total, reward) => total + reward.xp, 0);
 }
 
 function checkFixtureGrounding(

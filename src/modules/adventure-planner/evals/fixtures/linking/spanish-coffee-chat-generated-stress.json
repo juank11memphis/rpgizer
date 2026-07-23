@@ -1,0 +1,255 @@
+{
+  "id": "spanish-coffee-chat-generated-stress",
+  "name": "Spanish coffee chat generated stress case",
+  "content": {
+    "title": "The Ten-Minute Coffee Chat",
+    "themeSummary": "A beginner Spanish-speaking journey focused on practical conversation confidence, short consistent practice, reducing speaking freeze-ups, and completing a real ten-minute coffee chat.",
+    "goalSummary": "Build beginner Spanish conversation confidence so the user can complete a ten-minute coffee chat in Spanish, ask follow-up questions, and avoid switching back to English immediately.",
+    "safetyNotes": [
+      "Educational language-learning guidance only.",
+      "Use low-pressure practice and pause if frustration spikes."
+    ],
+    "acts": [
+      {
+        "key": "act-1-foundations-for-speaking",
+        "title": "Foundations for Speaking",
+        "summary": "Set up the tools and prompts that make speaking practice easier than freezing in the moment.",
+        "mainQuests": [
+          {
+            "key": "main-quest-1",
+            "title": "Build the coffee-chat prompt kit",
+            "description": "Create Spanish conversation topics, follow-up questions, and rescue phrases for practice and the real chat.",
+            "doneCondition": "A saved note contains at least five coffee-chat topics, three follow-up questions for each topic, and five recovery phrases in Spanish.",
+            "rewardIntent": "Turn scattered vocabulary into usable conversation support."
+          },
+          {
+            "key": "main-quest-2",
+            "title": "Set the speaking practice calendar",
+            "description": "Block weekday and weekend practice time around real constraints so Spanish speaking becomes routine.",
+            "doneCondition": "A calendar or checklist shows weekday practice blocks and one longer weekend practice block for the next two weeks.",
+            "rewardIntent": "Build consistency and protect practice time from daily distractions."
+          }
+        ],
+        "sideQuests": [
+          {
+            "key": "side-quest-1",
+            "title": "Sort the useful words",
+            "description": "Review scattered vocabulary and mark words most likely to come up in a coffee chat.",
+            "doneCondition": "A notebook page contains a labeled set of high-use coffee-chat words selected from existing vocabulary.",
+            "rewardIntent": "Connect study material to the exact speaking situation."
+          },
+          {
+            "key": "side-quest-2",
+            "title": "Audit the app lessons",
+            "description": "Identify which language app exercises help speaking and which ones do not move conversation forward.",
+            "doneCondition": "A short written audit identifies which app exercises felt useful for speaking and which ones did not.",
+            "rewardIntent": "Use the app as a tool instead of letting it dominate the learning plan."
+          }
+        ],
+        "bossFights": [
+          {
+            "key": "boss-fight-1",
+            "title": "First live mini-chat pressure test",
+            "description": "Hold a very short Spanish exchange using the prompt kit and recovery phrases.",
+            "doneCondition": "A live or recorded Spanish exchange of at least two minutes is saved, and notes show at least one recovery phrase was used instead of immediately switching to English.",
+            "rewardIntent": "Create a visible proof point that speaking anxiety is being faced with a safe, controlled test."
+          }
+        ]
+      },
+      {
+        "key": "act-2-building-conversation-stamina",
+        "title": "Building Conversation Stamina",
+        "summary": "Move from isolated phrases into repeated short conversations and answer-follow-up cycles.",
+        "mainQuests": [
+          {
+            "key": "main-quest-3",
+            "title": "Complete weekly speaking reps",
+            "description": "Use weekday practice slots to speak Spanish out loud, answer prompts, and rehearse mini-conversations.",
+            "doneCondition": "At least six weekday practice sessions are logged with a short note showing what was spoken and what felt difficult.",
+            "rewardIntent": "Build repetition so speech feels less foreign and more automatic."
+          },
+          {
+            "key": "main-quest-4",
+            "title": "Drill follow-up questions",
+            "description": "Practice turning one answer into two or three conversational turns by asking follow-up questions.",
+            "doneCondition": "A practice log or recording shows three separate drills where one prompt led to at least two follow-up questions in Spanish.",
+            "rewardIntent": "Strengthen the behavior that keeps a coffee chat alive."
+          },
+          {
+            "key": "main-quest-5",
+            "title": "Train the listen-and-respond loop",
+            "description": "Listen to short Spanish audio and answer with simple responses tied to key words heard.",
+            "doneCondition": "A recording or notes file shows at least three listening sessions with written responses or spoken replies tied to specific key words heard.",
+            "rewardIntent": "Bridge the gap between understanding fragments and participating in conversation."
+          }
+        ],
+        "sideQuests": [
+          {
+            "key": "side-quest-3",
+            "title": "Create shorthand speaking notes",
+            "description": "Condense the prompt kit into cue words that can be glanced at quickly during practice.",
+            "doneCondition": "A one-page cheat sheet contains abbreviated Spanish cues for topics, questions, and recovery phrases.",
+            "rewardIntent": "Support memory during live conversation without forcing full memorization."
+          },
+          {
+            "key": "side-quest-4",
+            "title": "Review one recording each week",
+            "description": "Listen back to one practice recording and identify one strength and one phrase to improve.",
+            "doneCondition": "One practice recording has a written review with one strength and one improvement note saved alongside it.",
+            "rewardIntent": "Build the habit of learning from evidence rather than vague self-judgment."
+          }
+        ],
+        "bossFights": [
+          {
+            "key": "boss-fight-2",
+            "title": "Five-minute Spanish conversation challenge",
+            "description": "Hold a five-minute conversation with prepared prompts, follow-up questions, and recovery phrases.",
+            "doneCondition": "A five-minute conversation is recorded or witnessed, and notes show at least two follow-up questions plus one moment of recovery without switching to English.",
+            "rewardIntent": "Prove endurance and recovery under real conversational pressure."
+          }
+        ]
+      },
+      {
+        "key": "act-3-the-coffee-chat",
+        "title": "The Coffee Chat",
+        "summary": "Prepare, rehearse, and complete the real ten-minute Spanish coffee chat.",
+        "mainQuests": [
+          {
+            "key": "main-quest-6",
+            "title": "Prepare the coffee-chat plan",
+            "description": "Assemble the topic list, follow-up questions, recovery phrases, and a short self-introduction into one ready-to-use note.",
+            "doneCondition": "A single coffee-chat note file is complete and ready to review before the conversation.",
+            "rewardIntent": "Lower friction right before the live chat."
+          },
+          {
+            "key": "main-quest-7",
+            "title": "Rehearse the ten-minute chat",
+            "description": "Run a timed practice version of the coffee conversation to test pacing, topic transitions, and recovery phrases.",
+            "doneCondition": "A timed rehearsal lasts ten minutes, and notes show which topics were covered and where help or simplification was needed.",
+            "rewardIntent": "Make the real chat feel familiar and reveal what still needs adjustment."
+          },
+          {
+            "key": "main-quest-8",
+            "title": "Complete the real coffee chat",
+            "description": "Hold the actual ten-minute coffee conversation in Spanish, use follow-up questions, and keep the exchange going without immediately switching to English.",
+            "doneCondition": "A post-chat reflection or message note confirms that the conversation lasted ten minutes, included follow-up questions, and stayed primarily in Spanish.",
+            "rewardIntent": "Produce the central real-world outcome the adventure is built to support."
+          }
+        ],
+        "sideQuests": [
+          {
+            "key": "side-quest-5",
+            "title": "Write the post-chat reflection",
+            "description": "Capture what worked, where freezing happened, and which phrases helped after the real conversation.",
+            "doneCondition": "A reflection entry is saved the same day as the chat and names at least one success and one improvement area.",
+            "rewardIntent": "Turn a single conversation into a reusable learning loop."
+          }
+        ],
+        "bossFights": [
+          {
+            "key": "boss-fight-3",
+            "title": "Coffee chat review gate",
+            "description": "Review the evidence from the real conversation and decide whether the next practice cycle needs more recovery phrases, more listening, or more live speaking reps.",
+            "doneCondition": "A written review summarizes the conversation length, follow-up questions used, moments of freezing, and the next adjustment to practice.",
+            "rewardIntent": "Convert the live chat into a stable next step instead of a one-off event."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "key": "speaking-under-pressure",
+        "name": "Speak under pressure",
+        "description": "Practice saying short Spanish phrases out loud when nervous or blank."
+      },
+      {
+        "key": "follow-up-questioning",
+        "name": "Ask follow-up questions",
+        "description": "Turn a simple reply into a longer exchange by asking clarifying or personal questions."
+      },
+      {
+        "key": "listening-for-key-words",
+        "name": "Listen for key words",
+        "description": "Catch familiar words, names, places, and basic verbs in spoken Spanish."
+      },
+      {
+        "key": "self-correction-and-recovery",
+        "name": "Recover after mistakes",
+        "description": "Pause, simplify, and rephrase when a word is missing instead of switching languages."
+      },
+      {
+        "key": "practice-routine-design",
+        "name": "Build a practice routine",
+        "description": "Set up a realistic weekday and weekend speaking routine that fits limited time."
+      }
+    ],
+    "inventoryItems": [
+      {
+        "key": "conversation-prompt-list",
+        "name": "Conversation prompt list",
+        "purpose": "Use this list of coffee-chat topics and follow-up questions to remove decision fatigue before speaking practice."
+      },
+      {
+        "key": "weekly-speaking-schedule",
+        "name": "Weekly speaking schedule",
+        "purpose": "Use this calendar or checklist to protect weekday practice time and reserve the longer weekend slot."
+      },
+      {
+        "key": "reflection-tracker",
+        "name": "Reflection tracker",
+        "purpose": "Record each practice session, what felt hard, what went well, and phrases to reuse next time."
+      },
+      {
+        "key": "recovery-phrase-notes",
+        "name": "Recovery phrase notes",
+        "purpose": "Keep rescue phrases for asking someone to repeat, slowing down, or staying in Spanish when stuck."
+      },
+      {
+        "key": "coffee-chat-notes",
+        "name": "Coffee chat notes",
+        "purpose": "Collect prepared topics, personal vocabulary, and follow-up questions for the real ten-minute conversation."
+      }
+    ],
+    "achievements": [
+      {
+        "key": "first-five-minute-spanish-chat",
+        "name": "First five-minute Spanish chat",
+        "description": "A short live conversation happens with follow-up questions and limited reliance on English.",
+        "unlockCondition": "Unlocked when a recorded live or practice conversation reaches five minutes in Spanish and the notes show at least two follow-up questions."
+      },
+      {
+        "key": "ten-minute-coffee-chat-complete",
+        "name": "Ten-minute coffee chat complete",
+        "description": "The target conversation is completed with prepared topics, follow-up questions, and a reflection afterward.",
+        "unlockCondition": "Unlocked when the coffee chat lasts ten minutes, includes at least three follow-up questions, and a written reflection is saved the same day."
+      }
+    ],
+    "focusedNextActions": [
+      {
+        "title": "Write a coffee-chat topic list",
+        "description": "List five simple topics to ask about in Spanish."
+      },
+      {
+        "title": "Schedule two practice slots",
+        "description": "Put one weekday practice session and one longer weekend speaking session on the calendar."
+      }
+    ]
+  },
+  "expectations": {
+    "expectedInventoryCoverage": [
+      "main-quest-1",
+      "main-quest-2",
+      "main-quest-3",
+      "main-quest-4",
+      "main-quest-6",
+      "main-quest-7",
+      "main-quest-8",
+      "side-quest-3",
+      "side-quest-4",
+      "side-quest-5",
+      "boss-fight-1",
+      "boss-fight-2",
+      "boss-fight-3"
+    ]
+  }
+}
