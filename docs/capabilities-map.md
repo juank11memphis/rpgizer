@@ -16,6 +16,7 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 - **Capture Goal Context One Question at a Time**: Guide the User through a focused Interview that gathers the minimum useful context without overwhelming them.
 - **Assess Adventure Readiness**: Decide whether enough context exists to generate a specific, actionable Adventure, or whether the Game Master should ask another question.
 - **Generate a Playable Roadmap**: Transform the clarified Goal into an RPG-style Roadmap with Acts, Main Quests, Side Quests, Boss Fights, Skills, Inventory, Achievements, and clear next actions.
+- **Communicate Adventure Generation Progress**: Help the User understand and trust the long-running forge from confirmed Interview to generated Adventure by showing truthful, RPG-facing progress, success, and recoverable failure states.
 - **Ground RPG Elements in Real Progress**: Ensure every generated quest, boss, skill, inventory item, and achievement maps back to real-world action or readiness.
 - **Create Goal-Specific RPG Flavor**: Give each Adventure a playful theme and old-school RPG feel while preserving clarity and usefulness.
 - **Maintain Coherent RPG Semantics**: Ensure quests, boss fights, skills, inventory, achievements, XP, and progression feel like one coherent RPG system rather than disconnected labels.
@@ -108,11 +109,12 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 5. **Capture Goal Context One Question at a Time** must happen before generation.
 6. **Assess Adventure Readiness** determines whether to continue the Interview or generate the Roadmap.
 7. **Generate a Playable Roadmap** creates the first usable Adventure Detail Page.
-8. **Adventure Presentation** must make the generated structure feel RPG-native and actionable.
-9. **Adventure Progression** capabilities let the User complete Quests, acquire Inventory, gain XP, level Skills, unlock Achievements, and build momentum.
-10. **Game Master Assistant roadmap updates** let the User adapt the Adventure through chat without direct manual content editing.
-11. **Safety & Trust** constrains public claims, generation, and update capabilities, especially for high-stakes Goals.
-12. **Product Quality Evaluation** supports maintainers before changes ship by selecting an Eval Suite, checking local configuration, running Test Cases, comparing Prompt / Model Variants, analyzing the Eval Matrix, focusing on failures or selected variants, inspecting local-only raw artifacts, reporting passed/failed/blocked outcomes, and surfacing safe diagnostics.
+8. **Communicate Adventure Generation Progress** keeps the User oriented during the forge when generation takes long enough that silent waiting would undermine trust.
+9. **Adventure Presentation** must make the generated structure feel RPG-native and actionable.
+10. **Adventure Progression** capabilities let the User complete Quests, acquire Inventory, gain XP, level Skills, unlock Achievements, and build momentum.
+11. **Game Master Assistant roadmap updates** let the User adapt the Adventure through chat without direct manual content editing.
+12. **Safety & Trust** constrains public claims, generation, and update capabilities, especially for high-stakes Goals.
+13. **Product Quality Evaluation** supports maintainers before changes ship by selecting an Eval Suite, checking local configuration, running Test Cases, comparing Prompt / Model Variants, analyzing the Eval Matrix, focusing on failures or selected variants, inspecting local-only raw artifacts, reporting passed/failed/blocked outcomes, and surfacing safe diagnostics.
 
 ## Known Gaps / Evolution Notes
 

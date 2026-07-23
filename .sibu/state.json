@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.17.1",
-  "templateVersion": "138",
+  "templateVersion": "139",
   "generatedAt": "2026-06-29T18:44:44.969Z",
-  "updatedAt": "2026-07-17T15:49:10.222Z",
+  "updatedAt": "2026-07-23T22:10:48.972Z",
   "selectedAgents": [
     "codex"
   ],
@@ -25,8 +25,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "35",
-      "sha256": "490f533a2b3e59910841653165cfe3a7e251e1373e1273f2a214dbd5e8a1f4d2",
+      "templateVersion": "36",
+      "sha256": "565101a7e8e5071e29094db44214f37239a28c06269efd80d0c5b7228502639d",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -73,8 +73,8 @@
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "22",
-      "sha256": "6773156f809f9aa6cca4a9a613243d285586f7eb3180d2dd3dacfb43ba74b55d",
+      "templateVersion": "23",
+      "sha256": "340d79bacd8bd8e055220e0c145d62957b7f0dec6c0c875c92c5e010d622a3fe",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
@@ -139,8 +139,8 @@
     },
     ".agents/skills/nextjs/SKILL.md": {
       "template": "skills/nextjs/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "5d9f759cd34c460620747942590b9602113a25070bf7e7af9c8548b68fce7605",
+      "templateVersion": "4",
+      "sha256": "04f6926faf9a759d7977fb2cfd3ff43e30acd3d632503b64fbe5c9109ce57bc0",
       "status": "managed"
     },
     ".agents/skills/postgresql-expert/SKILL.md": {
