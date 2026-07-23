@@ -86,7 +86,16 @@ const GENERIC_BOSS_FIGHT_PATTERNS = [
   "final task",
   "complete the task",
 ];
-const PRACTICAL_INVENTORY_TERMS = [
+const RANDOM_LOOT_PATTERNS = [
+  "magic sword",
+  "dragon scale",
+  "healing potion",
+  "mana potion",
+  "gold coins",
+  "enchanted shield",
+  "random loot",
+];
+const PRACTICAL_INVENTORY_ARTIFACT_TERMS = [
   "template",
   "checklist",
   "list",
@@ -95,12 +104,65 @@ const PRACTICAL_INVENTORY_TERMS = [
   "tool",
   "resource",
   "notes",
+  "note",
   "plan",
   "tracker",
   "equipment",
   "guide",
   "document",
   "workspace",
+  "sheet",
+  "card",
+  "phrase",
+  "phrases",
+  "app",
+  "log",
+  "folder",
+  "recording",
+  "recordings",
+  "bank",
+  "worksheet",
+  "journal",
+  "rubric",
+  "script",
+  "timer",
+];
+const PRACTICAL_INVENTORY_ACTION_TERMS = [
+  "use",
+  "record",
+  "review",
+  "track",
+  "log",
+  "write",
+  "schedule",
+  "store",
+  "capture",
+  "organize",
+  "prepare",
+  "practice",
+  "reference",
+  "reserve",
+  "block",
+];
+const PEOPLE_AS_INVENTORY_TERMS = [
+  "coworker",
+  "coworkers",
+  "co-worker",
+  "co-workers",
+  "friend",
+  "friends",
+  "partner",
+  "partners",
+  "mentor",
+  "mentors",
+  "teacher",
+  "teachers",
+  "coach",
+  "coaches",
+  "tutor",
+  "tutors",
+  "neighbor",
+  "neighbors",
 ];
 const CAPABILITY_TERMS = [
   "choose",
@@ -296,15 +358,49 @@ function checkInventory(
   fixture: GenerateAdventureEvalFixture,
   diagnostics: AdventureQualityDiagnostic[],
 ): void {
-  const searchable = normalize(
-    content.inventoryItems.map((item) => `${item.name} ${item.purpose}`).join(" "),
-  );
+  for (const item of content.inventoryItems) {
+    const text = normalize(`${item.name} ${item.purpose}`);
 
-  if (!includesAny(searchable, PRACTICAL_INVENTORY_TERMS)) {
-    diagnostics.push({ area: "inventory quality", message: "expected Inventory Items to be practical readiness items." });
+    if (includesAny(text, RANDOM_LOOT_PATTERNS)) {
+      diagnostics.push({
+        area: "inventory quality",
+        message: `'${item.name}' looks like random fantasy loot instead of practical readiness.`,
+      });
+      continue;
+    }
+
+    if (looksLikePeopleAsInventory(item.name)) {
+      diagnostics.push({
+        area: "inventory quality",
+        message: `'${item.name}' should be a user-controlled artifact, tool, or routine, not a person or group.`,
+      });
+      continue;
+    }
+
+    if (!isPracticalInventoryText(text, fixture.expectations.expectedInventoryThemes)) {
+      diagnostics.push({
+        area: "inventory quality",
+        message: `'${item.name}' should describe a practical readiness item.`,
+      });
+    }
   }
+}
 
-  void fixture;
+function looksLikePeopleAsInventory(itemName: string): boolean {
+  const name = normalize(itemName);
+
+  return (
+    includesAny(name, PEOPLE_AS_INVENTORY_TERMS) &&
+    !includesAny(name, PRACTICAL_INVENTORY_ARTIFACT_TERMS)
+  );
+}
+
+function isPracticalInventoryText(text: string, expectedInventoryThemes: readonly string[]): boolean {
+  return (
+    includesAny(text, PRACTICAL_INVENTORY_ARTIFACT_TERMS) ||
+    includesAny(text, PRACTICAL_INVENTORY_ACTION_TERMS) ||
+    includesAny(text, expectedInventoryThemes)
+  );
 }
 
 function checkAchievements(

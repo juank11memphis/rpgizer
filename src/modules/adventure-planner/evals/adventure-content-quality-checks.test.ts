@@ -150,4 +150,50 @@ describe("Adventure content quality checks", () => {
     expect(diagnostics.map((diagnostic) => diagnostic.area)).toContain("fixture grounding");
     expect(diagnostics.map((diagnostic) => diagnostic.area)).toContain("next action quality");
   });
+
+  it("accepts concrete user-controlled practice artifacts as Inventory", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        inventoryItems: [
+          {
+            key: "practice-audio-log",
+            name: "Practice Audio Log",
+            purpose:
+              "A phone recording folder for short speaking drills and self-review of pronunciation, pace, and hesitation patterns.",
+          },
+        ],
+      }),
+    );
+
+    const result = checkGeneratedAdventureContentQuality(content, buildFixture());
+
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({ area: "inventory quality" }),
+    );
+  });
+
+  it("fails people or groups modeled as Inventory", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        inventoryItems: [
+          {
+            key: "spanish-speaking-coworkers",
+            name: "Spanish-Speaking Coworkers",
+            purpose: "Offer short, real conversation reps and low-pressure practice exchanges when available.",
+          },
+        ],
+      }),
+    );
+
+    const result = checkGeneratedAdventureContentQuality(content, buildFixture());
+
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          area: "inventory quality",
+          message: expect.stringContaining("user-controlled artifact, tool, or routine"),
+        }),
+      ]),
+    );
+  });
 });

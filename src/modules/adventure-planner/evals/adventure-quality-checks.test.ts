@@ -175,6 +175,49 @@ describe("checkGeneratedAdventureQuality", () => {
     expect(messages).toEqual(expect.arrayContaining([expect.stringContaining("inventory quality")]));
   });
 
+  it("accepts concrete user-controlled practice artifacts as Inventory", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const result = checkPayload({
+      ...payload,
+      inventoryItems: [
+        {
+          key: "weekly-menu-template",
+          name: "Practice Audio Log",
+          purpose:
+            "A phone recording folder for short speaking drills and self-review of pronunciation, pace, and hesitation patterns.",
+        },
+        payload.inventoryItems[1],
+      ],
+    });
+
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({ area: "inventory quality" }),
+    );
+  });
+
+  it("fails people or groups modeled as Inventory", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const messages = messagesFor({
+      ...payload,
+      inventoryItems: [
+        {
+          key: "weekly-menu-template",
+          name: "Spanish-Speaking Coworkers",
+          purpose: "Offer short, real conversation reps and low-pressure practice exchanges when available.",
+        },
+        payload.inventoryItems[1],
+      ],
+    });
+
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining(
+          "'Spanish-Speaking Coworkers' should be a user-controlled artifact, tool, or routine",
+        ),
+      ]),
+    );
+  });
+
   it("fails decorative Skills", () => {
     const payload = buildGeneratedAdventureBoundaryPayload();
     const messages = messagesFor({

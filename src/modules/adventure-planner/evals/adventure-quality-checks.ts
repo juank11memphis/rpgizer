@@ -106,7 +106,7 @@ const RANDOM_LOOT_PATTERNS = [
   "random loot",
 ];
 
-const PRACTICAL_INVENTORY_TERMS = [
+const PRACTICAL_INVENTORY_ARTIFACT_TERMS = [
   "template",
   "checklist",
   "list",
@@ -115,6 +115,7 @@ const PRACTICAL_INVENTORY_TERMS = [
   "tool",
   "resource",
   "notes",
+  "note",
   "plan",
   "workspace",
   "tracker",
@@ -133,10 +134,57 @@ const PRACTICAL_INVENTORY_TERMS = [
   "phrase",
   "phrases",
   "fallback",
-  "partner",
-  "partners",
   "app",
   "streak",
+  "log",
+  "folder",
+  "recording",
+  "recordings",
+  "bank",
+  "worksheet",
+  "journal",
+  "rubric",
+  "script",
+  "timer",
+];
+
+const PRACTICAL_INVENTORY_ACTION_TERMS = [
+  "use",
+  "record",
+  "review",
+  "track",
+  "log",
+  "write",
+  "schedule",
+  "store",
+  "capture",
+  "organize",
+  "prepare",
+  "practice",
+  "reference",
+  "reserve",
+  "block",
+];
+
+const PEOPLE_AS_INVENTORY_TERMS = [
+  "coworker",
+  "coworkers",
+  "co-worker",
+  "co-workers",
+  "friend",
+  "friends",
+  "partner",
+  "partners",
+  "mentor",
+  "mentors",
+  "teacher",
+  "teachers",
+  "coach",
+  "coaches",
+  "tutor",
+  "tutors",
+  "neighbor",
+  "neighbors",
 ];
 
 const CAPABILITY_TERMS = [
@@ -486,7 +534,16 @@ function checkInventory(
       continue;
     }
 
-    if (!containsAny(text, [...PRACTICAL_INVENTORY_TERMS, ...fixture.expectations.expectedInventoryThemes])) {
+    if (looksLikePeopleAsInventory(item.name)) {
+      addDiagnostic(
+        diagnostics,
+        "inventory quality",
+        `'${item.name}' should be a user-controlled artifact, tool, or routine, not a person or group.`,
+      );
+      continue;
+    }
+
+    if (!isPracticalInventoryText(text, fixture.expectations.expectedInventoryThemes)) {
       addDiagnostic(
         diagnostics,
         "inventory quality",
@@ -494,6 +551,23 @@ function checkInventory(
       );
     }
   }
+}
+
+function looksLikePeopleAsInventory(itemName: string): boolean {
+  const name = normalize(itemName);
+
+  return (
+    containsAny(name, PEOPLE_AS_INVENTORY_TERMS) &&
+    !containsAny(name, PRACTICAL_INVENTORY_ARTIFACT_TERMS)
+  );
+}
+
+function isPracticalInventoryText(text: string, expectedInventoryThemes: readonly string[]): boolean {
+  return (
+    containsAny(text, PRACTICAL_INVENTORY_ARTIFACT_TERMS) ||
+    containsAny(text, PRACTICAL_INVENTORY_ACTION_TERMS) ||
+    containsAny(text, expectedInventoryThemes)
+  );
 }
 
 function checkSkills(
