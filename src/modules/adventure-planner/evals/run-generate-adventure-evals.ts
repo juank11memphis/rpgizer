@@ -14,11 +14,13 @@ import {
   loadOpenAIAdventureDependencyLinkerConfig,
   loadOpenAIAdventureGenerationConfig,
   loadOpenAIAdventureXpBalancerConfig,
+  type OpenAIGameMasterInterviewerConfig,
 } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
 import { checkGeneratedAdventureQuality } from "./adventure-quality-checks";
 import {
   buildMissingTestCaseDiagnostic,
   buildRawEvalArtifacts,
+  applyRunScopedModelOverride,
   selectEvalFixtures,
   type FocusedAdventureStepCellOutput,
 } from "./focused-adventure-step-eval-runner";
@@ -39,9 +41,16 @@ export type GenerateAdventureEvalGenerator = {
   generateAdventure(input: AdventureGeneratorRequest): Promise<GeneratedAdventure>;
 };
 
+export type GenerateAdventureEvalStepConfigs = {
+  content: OpenAIGameMasterInterviewerConfig;
+  dependencyLinker: OpenAIGameMasterInterviewerConfig;
+  xpBalancer: OpenAIGameMasterInterviewerConfig;
+};
+
 export type GenerateAdventureEvalRunOptions = {
   fixturesDirectory?: string;
   testCaseId?: string;
+  model?: string;
   environment?: NodeJS.ProcessEnv;
   createGenerator?: () => Promise<GenerateAdventureEvalGenerator> | GenerateAdventureEvalGenerator;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -73,7 +82,7 @@ export async function runGenerateAdventureEvals(
   loadNextEnvironmentWhenUsingProcessEnv(options.environment);
   const environment = options.environment ?? process.env;
 
-  const configurationError = validateOpenAIConfiguration(environment);
+  const configurationError = validateOpenAIConfiguration(environment, options.model);
   if (configurationError !== null) {
     const diagnostic = buildRunDiagnostic("configuration", configurationError);
     writeDiagnostic(errorOutput, diagnostic);
@@ -93,7 +102,7 @@ export async function runGenerateAdventureEvals(
       writeDiagnostic(errorOutput, diagnostic);
       return { passed: false, fixtureIds: [], diagnostics: [diagnostic], assertionResults: [], cellOutputs: [] };
     }
-    generator = await (options.createGenerator ?? createProductionAdventureGenerator)();
+    generator = await (options.createGenerator ?? (() => createProductionAdventureGenerator(environment, options.model)))();
   } catch (error) {
     const diagnostic = buildRunDiagnostic("configuration", formatEvalError(error));
     writeDiagnostic(errorOutput, diagnostic);
@@ -191,6 +200,7 @@ function loadNextEnvironmentWhenUsingProcessEnv(environment: NodeJS.ProcessEnv |
 
 export function validateOpenAIConfiguration(
   environment: NodeJS.ProcessEnv,
+  model?: string,
 ): string | null {
   try {
     const config = loadOpenAIAdventureGenerationConfig(environment);
@@ -199,16 +209,18 @@ export function validateOpenAIConfiguration(
       return "OPENAI_API_KEY appears to be a placeholder value.";
     }
 
-    const modelChecks = [
-      ["OPENAI_ADVENTURE_GENERATION_MODEL", config.model],
-      ["OPENAI_ADVENTURE_CONTENT_MODEL", loadOpenAIAdventureContentConfig(environment).model],
-      ["OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL", loadOpenAIAdventureDependencyLinkerConfig(environment).model],
-      ["OPENAI_ADVENTURE_XP_BALANCER_MODEL", loadOpenAIAdventureXpBalancerConfig(environment).model],
-    ] as const;
+    if (model === undefined || model.trim().length === 0) {
+      const modelChecks = [
+        ["OPENAI_ADVENTURE_GENERATION_MODEL", config.model],
+        ["OPENAI_ADVENTURE_CONTENT_MODEL", loadOpenAIAdventureContentConfig(environment).model],
+        ["OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL", loadOpenAIAdventureDependencyLinkerConfig(environment).model],
+        ["OPENAI_ADVENTURE_XP_BALANCER_MODEL", loadOpenAIAdventureXpBalancerConfig(environment).model],
+      ] as const;
 
-    for (const [name, model] of modelChecks) {
-      if (isPlaceholderValue(model)) {
-        return `${name} appears to be a placeholder value.`;
+      for (const [name, configuredModel] of modelChecks) {
+        if (isPlaceholderValue(configuredModel)) {
+          return `${name} appears to be a placeholder value.`;
+        }
       }
     }
 
@@ -248,6 +260,17 @@ export function buildAdventureGeneratorRequest(
   };
 }
 
+export function buildAdventureGenerationStepConfigs(
+  environment: NodeJS.ProcessEnv,
+  model?: string,
+): GenerateAdventureEvalStepConfigs {
+  return {
+    content: applyRunScopedModelOverride(loadOpenAIAdventureContentConfig(environment), model),
+    dependencyLinker: applyRunScopedModelOverride(loadOpenAIAdventureDependencyLinkerConfig(environment), model),
+    xpBalancer: applyRunScopedModelOverride(loadOpenAIAdventureXpBalancerConfig(environment), model),
+  };
+}
+
 function buildGenerateAdventureCellOutput(
   fixture: GenerateAdventureEvalFixture,
   request: AdventureGeneratorRequest,
@@ -272,9 +295,27 @@ export function formatDiagnostic(diagnostic: GenerateAdventureEvalFailureDiagnos
   return `[${diagnostic.fixtureId}] ${diagnostic.area}: ${diagnostic.message}`;
 }
 
-async function createProductionAdventureGenerator(): Promise<GenerateAdventureEvalGenerator> {
-  const { createAdventurePlannerComposition } = await import("../infra/adventure-planner-composition");
-  return createAdventurePlannerComposition().createAdventureGenerator();
+async function createProductionAdventureGenerator(
+  environment: NodeJS.ProcessEnv,
+  model?: string,
+): Promise<GenerateAdventureEvalGenerator> {
+  const { OpenAIAdventureContentGenerator } = await import("../infra/openai-adventure-content-generator");
+  const { OpenAIAdventureDependencyLinker } = await import("../infra/openai-adventure-dependency-linker");
+  const { OpenAIMultiStepAdventureGenerator } = await import("../infra/openai-multi-step-adventure-generator");
+  const { OpenAIAdventureXpBalancer } = await import("../infra/openai-adventure-xp-balancer");
+  const stepConfigs = buildAdventureGenerationStepConfigs(environment, model);
+
+  return new OpenAIMultiStepAdventureGenerator({
+    contentGenerator: new OpenAIAdventureContentGenerator({
+      config: stepConfigs.content,
+    }),
+    dependencyLinker: new OpenAIAdventureDependencyLinker({
+      config: stepConfigs.dependencyLinker,
+    }),
+    xpBalancer: new OpenAIAdventureXpBalancer({
+      config: stepConfigs.xpBalancer,
+    }),
+  });
 }
 
 function buildRunDiagnostic(

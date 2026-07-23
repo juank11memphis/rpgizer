@@ -10,6 +10,7 @@ import {
   buildPassedResult,
   buildRawEvalArtifacts,
   buildRunnerDiagnostic,
+  buildFocusedOpenAIConfig,
   formatEvalError,
   formatFocusedProviderError,
   loadJsonFixtures,
@@ -44,6 +45,7 @@ export type AdventureLinkingEvalLinker = {
 export type AdventureLinkingEvalRunOptions = {
   fixturesDirectory?: string;
   testCaseId?: string;
+  model?: string;
   environment?: NodeJS.ProcessEnv;
   createLinker?: () => Promise<AdventureLinkingEvalLinker> | AdventureLinkingEvalLinker;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -54,7 +56,7 @@ export async function runAdventureLinkingEvals(
   options: AdventureLinkingEvalRunOptions = {},
 ): Promise<FocusedAdventureStepRunResult> {
   const context = prepareFocusedAdventureStepRun(options);
-  const configurationError = validateFocusedOpenAIConfiguration("linking", context.environment);
+  const configurationError = validateFocusedOpenAIConfiguration("linking", context.environment, options.model);
   if (configurationError !== null) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", configurationError)]);
   }
@@ -73,7 +75,7 @@ export async function runAdventureLinkingEvals(
     [linker, prompt] = await Promise.all([
       options.createLinker
         ? Promise.resolve(options.createLinker())
-        : createOpenAIAdventureDependencyLinker(),
+        : createOpenAIAdventureDependencyLinker(context.environment, options.model),
       readFile(PROMPT_PATH, "utf8"),
     ]);
   } catch (error) {
@@ -135,9 +137,14 @@ export function parseAdventureLinkingEvalFixture(
   };
 }
 
-async function createOpenAIAdventureDependencyLinker(): Promise<AdventureLinkingEvalLinker> {
+async function createOpenAIAdventureDependencyLinker(
+  environment: NodeJS.ProcessEnv,
+  model?: string,
+): Promise<AdventureLinkingEvalLinker> {
   const { OpenAIAdventureDependencyLinker } = await import("../infra/openai-adventure-dependency-linker");
-  return new OpenAIAdventureDependencyLinker();
+  return new OpenAIAdventureDependencyLinker({
+    config: buildFocusedOpenAIConfig("linking", environment, model),
+  });
 }
 
 function buildLinkingRequest(fixture: AdventureLinkingEvalFixture): {

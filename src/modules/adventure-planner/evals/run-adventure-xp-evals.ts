@@ -14,6 +14,7 @@ import {
   buildPassedResult,
   buildRawEvalArtifacts,
   buildRunnerDiagnostic,
+  buildFocusedOpenAIConfig,
   formatEvalError,
   formatFocusedProviderError,
   loadJsonFixtures,
@@ -52,6 +53,7 @@ export type AdventureXpEvalBalancer = {
 export type AdventureXpEvalRunOptions = {
   fixturesDirectory?: string;
   testCaseId?: string;
+  model?: string;
   environment?: NodeJS.ProcessEnv;
   createBalancer?: () => Promise<AdventureXpEvalBalancer> | AdventureXpEvalBalancer;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -62,7 +64,7 @@ export async function runAdventureXpEvals(
   options: AdventureXpEvalRunOptions = {},
 ): Promise<FocusedAdventureStepRunResult> {
   const context = prepareFocusedAdventureStepRun(options);
-  const configurationError = validateFocusedOpenAIConfiguration("xp", context.environment);
+  const configurationError = validateFocusedOpenAIConfiguration("xp", context.environment, options.model);
   if (configurationError !== null) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", configurationError)]);
   }
@@ -81,7 +83,7 @@ export async function runAdventureXpEvals(
     [balancer, prompt] = await Promise.all([
       options.createBalancer
         ? Promise.resolve(options.createBalancer())
-        : createOpenAIAdventureXpBalancer(),
+        : createOpenAIAdventureXpBalancer(context.environment, options.model),
       readFile(PROMPT_PATH, "utf8"),
     ]);
   } catch (error) {
@@ -136,9 +138,14 @@ export function parseAdventureXpEvalFixture(input: unknown, fixtureName = "fixtu
   };
 }
 
-async function createOpenAIAdventureXpBalancer(): Promise<AdventureXpEvalBalancer> {
+async function createOpenAIAdventureXpBalancer(
+  environment: NodeJS.ProcessEnv,
+  model?: string,
+): Promise<AdventureXpEvalBalancer> {
   const { OpenAIAdventureXpBalancer } = await import("../infra/openai-adventure-xp-balancer");
-  return new OpenAIAdventureXpBalancer();
+  return new OpenAIAdventureXpBalancer({
+    config: buildFocusedOpenAIConfig("xp", environment, model),
+  });
 }
 
 function buildXpRequest(fixture: AdventureXpEvalFixture): {

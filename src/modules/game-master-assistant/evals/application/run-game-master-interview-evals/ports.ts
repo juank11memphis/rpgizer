@@ -23,6 +23,7 @@ export type GameMasterInterviewEvalInstructionsLoader = () => Promise<string> | 
 export type GameMasterInterviewEvalInterviewerFactory = (input: {
   instructions: string;
   environment: GameMasterInterviewEvalRunnerEnvironment;
+  model?: string;
 }) => Promise<GameMasterInterviewEvalInterviewer> | GameMasterInterviewEvalInterviewer;
 
 export type GameMasterInterviewEvalLogger = {

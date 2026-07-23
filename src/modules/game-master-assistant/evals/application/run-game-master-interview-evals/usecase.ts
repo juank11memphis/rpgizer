@@ -40,7 +40,7 @@ export async function runGameMasterInterviewEvalUseCase(
 ): Promise<GameMasterInterviewEvalRunResult> {
   const startedAt = Date.now();
   const logger = input.logger ?? NOOP_LOGGER;
-  const credentialStatus = getCredentialStatus(input.environment);
+  const credentialStatus = getCredentialStatus(input.environment, input.model);
 
   if (!credentialStatus.canRun) {
     const result: GameMasterInterviewEvalBlockedResult = {
@@ -83,6 +83,7 @@ export async function runGameMasterInterviewEvalUseCase(
     const interviewer = await input.createInterviewer({
       instructions,
       environment: input.environment,
+      model: input.model,
     });
     const results: FixtureResult[] = [];
 
@@ -141,9 +142,11 @@ function selectFixtures(
 
 function getCredentialStatus(
   environment: RunGameMasterInterviewEvalsInput["environment"],
+  modelOverride: string | undefined,
 ): CredentialStatus {
   const apiKey = environment.OPENAI_API_KEY?.trim() ?? "";
   const model = environment.OPENAI_GAME_MASTER_MODEL?.trim() ?? "";
+  const selectedModel = modelOverride?.trim() ?? "";
 
   if (apiKey.length === 0) {
     return {
@@ -161,7 +164,7 @@ function getCredentialStatus(
     };
   }
 
-  if (model.length > 0 && isPlaceholderValue(model)) {
+  if (selectedModel.length === 0 && model.length > 0 && isPlaceholderValue(model)) {
     return {
       canRun: false,
       blocker: "placeholder_openai_game_master_model",

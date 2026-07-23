@@ -122,6 +122,47 @@ describe("runGameMasterInterviewEvals", () => {
     expect(requests[0]?.userId).toBe("eval-user-high-stakes-finance");
   });
 
+  it("passes the selected model to the interviewer factory and result model label", async () => {
+    const result = await runGameMasterInterviewEvals({
+      environment: configuredEnvironment({ OPENAI_GAME_MASTER_MODEL: "replace-with-model" }),
+      model: "o4-mini",
+      loadFixtures: () => [buildFixture("become-a-chef")],
+      loadInstructions: () => "test instructions",
+      createInterviewer: ({ model }) => {
+        expect(model).toBe("o4-mini");
+        return fakeInterviewer(passingInterviewResult());
+      },
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("passed");
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+    expect(result.modelLabel).toBe("o4-mini");
+  });
+
+  it("keeps environment model labels when no model is selected", async () => {
+    const result = await runGameMasterInterviewEvals({
+      environment: configuredEnvironment({ OPENAI_GAME_MASTER_MODEL: "gpt-env-model" }),
+      loadFixtures: () => [buildFixture("become-a-chef")],
+      loadInstructions: () => "test instructions",
+      createInterviewer: ({ model }) => {
+        expect(model).toBeUndefined();
+        return fakeInterviewer(passingInterviewResult());
+      },
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("passed");
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+    expect(result.modelLabel).toBe("gpt-env-model");
+  });
+
   it("returns a safe error when a selected test case is unavailable", async () => {
     let interviewerCreateCount = 0;
 
@@ -317,11 +358,12 @@ describe("runGameMasterInterviewEvals", () => {
   });
 });
 
-function configuredEnvironment(): NodeJS.ProcessEnv {
+function configuredEnvironment(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.ProcessEnv {
   return {
     NODE_ENV: "test",
     OPENAI_API_KEY: "sk-test-local",
     OPENAI_GAME_MASTER_MODEL: "gpt-test",
+    ...overrides,
   };
 }
 

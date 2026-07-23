@@ -9,6 +9,7 @@ import { OpenAIInterviewOutputArtifactGenerator } from "../../infra/openai-inter
 import {
   DEFAULT_OPENAI_GAME_MASTER_MODEL,
   loadOpenAIInterviewSummaryConfig,
+  type OpenAIGameMasterInterviewerConfig,
 } from "../../infra/openai-game-master-interviewer-config";
 import type { RunInterviewOutputArtifactEvalsInput } from "../application/run-interview-output-artifact-evals/input";
 import type {
@@ -42,6 +43,7 @@ export type InterviewOutputArtifactEvalRunOptions = {
   environment?: InterviewOutputArtifactEvalRunnerEnvironment;
   fixturesDirectory?: string;
   testCaseId?: string;
+  model?: string;
   loadFixtures?: InterviewOutputArtifactEvalFixtureLoader;
   loadInstructions?: InterviewOutputArtifactEvalInstructionsLoader;
   createGenerator?: InterviewOutputArtifactEvalGeneratorFactory;
@@ -63,7 +65,8 @@ export async function runInterviewOutputArtifactEvals(
     loadFixtures: options.loadFixtures ?? createFileSystemFixtureLoader(options.fixturesDirectory),
     loadInstructions: options.loadInstructions ?? loadProductionInstructions,
     createGenerator: options.createGenerator ?? createProductionGenerator,
-    modelLabel: loadOpenAIInterviewSummaryModelLabel(environment),
+    model: options.model,
+    modelLabel: resolveRunModelLabel(options.model, environment),
     testCaseId: options.testCaseId,
     logger: createInterviewOutputArtifactEvalLogger(),
   } satisfies RunInterviewOutputArtifactEvalsInput);
@@ -95,11 +98,27 @@ function loadProductionInstructions(): Promise<string> {
 function createProductionGenerator({
   instructions,
   environment,
+  model,
 }: Parameters<InterviewOutputArtifactEvalGeneratorFactory>[0]): OpenAIInterviewOutputArtifactGenerator {
   return new OpenAIInterviewOutputArtifactGenerator({
     instructions,
-    config: loadOpenAIInterviewSummaryConfig(environment),
+    config: applyModelOverride(loadOpenAIInterviewSummaryConfig(environment), model),
   });
+}
+
+function resolveRunModelLabel(
+  model: string | undefined,
+  environment: InterviewOutputArtifactEvalRunnerEnvironment,
+): string {
+  return model?.trim() || loadOpenAIInterviewSummaryModelLabel(environment);
+}
+
+function applyModelOverride(
+  config: OpenAIGameMasterInterviewerConfig,
+  model: string | undefined,
+): OpenAIGameMasterInterviewerConfig {
+  const selectedModel = model?.trim() ?? "";
+  return selectedModel.length > 0 ? { ...config, model: selectedModel } : config;
 }
 
 function loadOpenAIInterviewSummaryModelLabel(

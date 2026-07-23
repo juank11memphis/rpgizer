@@ -71,6 +71,47 @@ describe("runInterviewOutputArtifactEvals", () => {
     expect(generatedFixtureIds).toEqual(["finance"]);
   });
 
+  it("passes the selected model to the generator factory and result model label", async () => {
+    const result = await runInterviewOutputArtifactEvals({
+      environment: configuredEnvironment({ OPENAI_INTERVIEW_SUMMARY_MODEL: "replace-with-model" }),
+      model: "o4-mini",
+      loadFixtures: () => [buildFixture("chef")],
+      loadInstructions: () => "artifact instructions",
+      createGenerator: ({ model }) => {
+        expect(model).toBe("o4-mini");
+        return fakeGenerator(validArtifact());
+      },
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("passed");
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+    expect(result.modelLabel).toBe("o4-mini");
+  });
+
+  it("keeps environment model labels when no model is selected", async () => {
+    const result = await runInterviewOutputArtifactEvals({
+      environment: configuredEnvironment({ OPENAI_INTERVIEW_SUMMARY_MODEL: "gpt-env-model" }),
+      loadFixtures: () => [buildFixture("chef")],
+      loadInstructions: () => "artifact instructions",
+      createGenerator: ({ model }) => {
+        expect(model).toBeUndefined();
+        return fakeGenerator(validArtifact());
+      },
+      output: new CapturedStream(),
+      errorOutput: new CapturedStream(),
+    });
+
+    expect(result.status).toBe("passed");
+    if (result.status !== "passed") {
+      throw new Error(`Expected passed result, received ${result.status}.`);
+    }
+    expect(result.modelLabel).toBe("gpt-env-model");
+  });
+
   it("returns a safe error when a selected test case is unavailable", async () => {
     let generatorCreateCount = 0;
 
@@ -164,11 +205,12 @@ describe("runInterviewOutputArtifactEvals", () => {
   });
 });
 
-function configuredEnvironment(): NodeJS.ProcessEnv {
+function configuredEnvironment(overrides: Partial<NodeJS.ProcessEnv> = {}): NodeJS.ProcessEnv {
   return {
     NODE_ENV: "test",
     OPENAI_API_KEY: "sk-test-local",
     OPENAI_INTERVIEW_SUMMARY_MODEL: "gpt-test",
+    ...overrides,
   };
 }
 

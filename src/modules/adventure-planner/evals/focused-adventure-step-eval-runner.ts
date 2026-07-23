@@ -122,13 +122,19 @@ function buildArtifactPreview(value: string): string {
 export function validateFocusedOpenAIConfiguration(
   step: FocusedAdventureStep,
   environment: NodeJS.ProcessEnv,
+  model?: string,
 ): string | null {
   try {
     const config = loadFocusedStepConfig(step, environment);
     const modelEnvironmentVariable = getModelEnvironmentVariable(step);
+    const selectedModel = normalizeRunScopedModelOverride(model);
 
     if (isPlaceholderValue(config.apiKey)) {
       return "OPENAI_API_KEY appears to be a placeholder value.";
+    }
+
+    if (selectedModel !== undefined) {
+      return null;
     }
 
     if (
@@ -274,6 +280,32 @@ export function loadFocusedStepConfig(
   }
 
   return loadOpenAIAdventureXpBalancerConfig(environment);
+}
+
+export function buildFocusedOpenAIConfig(
+  step: FocusedAdventureStep,
+  environment: NodeJS.ProcessEnv,
+  model?: string,
+): OpenAIGameMasterInterviewerConfig {
+  return applyRunScopedModelOverride(loadFocusedStepConfig(step, environment), model);
+}
+
+export function applyRunScopedModelOverride(
+  config: OpenAIGameMasterInterviewerConfig,
+  model?: string,
+): OpenAIGameMasterInterviewerConfig {
+  const selectedModel = normalizeRunScopedModelOverride(model);
+
+  if (selectedModel === undefined) {
+    return config;
+  }
+
+  return { ...config, model: selectedModel };
+}
+
+export function normalizeRunScopedModelOverride(model: string | undefined): string | undefined {
+  const selectedModel = model?.trim() ?? "";
+  return selectedModel.length > 0 ? selectedModel : undefined;
 }
 
 export function getModelEnvironmentVariable(step: FocusedAdventureStep): string {

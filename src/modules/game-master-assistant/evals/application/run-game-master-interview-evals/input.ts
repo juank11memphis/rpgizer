@@ -11,6 +11,7 @@ export type RunGameMasterInterviewEvalsInput = {
   loadFixtures: GameMasterInterviewEvalFixtureLoader;
   loadInstructions: GameMasterInterviewEvalInstructionsLoader;
   createInterviewer: GameMasterInterviewEvalInterviewerFactory;
+  model?: string;
   modelLabel?: string;
   testCaseId?: string;
   logger?: GameMasterInterviewEvalLogger;

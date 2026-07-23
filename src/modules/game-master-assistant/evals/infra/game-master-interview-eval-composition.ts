@@ -6,7 +6,11 @@ import { loadEnvConfig } from "@next/env";
 import { APPLICATION_LOG_EVENTS } from "../../../../server/logging/events";
 import { serverLogger } from "../../../../server/logging/logger";
 import { OpenAIGameMasterInterviewer } from "../../infra/openai-game-master-interviewer";
-import { loadOpenAIGameMasterModelLabel } from "../../infra/openai-game-master-interviewer-config";
+import {
+  loadOpenAIGameMasterInterviewerConfig,
+  loadOpenAIGameMasterModelLabel,
+  type OpenAIGameMasterInterviewerConfig,
+} from "../../infra/openai-game-master-interviewer-config";
 import { runGameMasterInterviewEvalUseCase } from "../application/run-game-master-interview-evals/usecase";
 import type { RunGameMasterInterviewEvalsInput } from "../application/run-game-master-interview-evals/input";
 import type {
@@ -39,6 +43,7 @@ export type GameMasterInterviewEvalRunOptions = {
   environment?: GameMasterInterviewEvalRunnerEnvironment;
   fixturesDirectory?: string;
   testCaseId?: string;
+  model?: string;
   loadFixtures?: GameMasterInterviewEvalFixtureLoader;
   loadInstructions?: GameMasterInterviewEvalInstructionsLoader;
   createInterviewer?: GameMasterInterviewEvalInterviewerFactory;
@@ -60,7 +65,8 @@ export async function runGameMasterInterviewEvals(
     loadFixtures: options.loadFixtures ?? createFileSystemFixtureLoader(options.fixturesDirectory),
     loadInstructions: options.loadInstructions ?? loadProductionInstructions,
     createInterviewer: options.createInterviewer ?? createProductionInterviewer,
-    modelLabel: loadOpenAIGameMasterModelLabel(options.environment ?? process.env),
+    model: options.model,
+    modelLabel: resolveRunModelLabel(options.model, options.environment ?? process.env),
     testCaseId: options.testCaseId,
     logger: createGameMasterInterviewEvalLogger(),
   } satisfies RunGameMasterInterviewEvalsInput);
@@ -91,8 +97,28 @@ function loadProductionInstructions(): Promise<string> {
 
 function createProductionInterviewer({
   instructions,
+  environment,
+  model,
 }: Parameters<GameMasterInterviewEvalInterviewerFactory>[0]): OpenAIGameMasterInterviewer {
-  return new OpenAIGameMasterInterviewer({ instructions });
+  return new OpenAIGameMasterInterviewer({
+    instructions,
+    config: applyModelOverride(loadOpenAIGameMasterInterviewerConfig(environment), model),
+  });
+}
+
+function resolveRunModelLabel(
+  model: string | undefined,
+  environment: GameMasterInterviewEvalRunnerEnvironment,
+): string {
+  return model?.trim() || loadOpenAIGameMasterModelLabel(environment);
+}
+
+function applyModelOverride(
+  config: OpenAIGameMasterInterviewerConfig,
+  model: string | undefined,
+): OpenAIGameMasterInterviewerConfig {
+  const selectedModel = model?.trim() ?? "";
+  return selectedModel.length > 0 ? { ...config, model: selectedModel } : config;
 }
 
 function loadNextEnvironmentWhenUsingProcessEnv(

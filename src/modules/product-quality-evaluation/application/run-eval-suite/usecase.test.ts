@@ -697,6 +697,47 @@ describe("runEvalSuite", () => {
     });
   });
 
+  it("passes selected allowed models through to all AI-backed suite runners", async () => {
+    const cases = [
+      [GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, "runGameMasterInterviewEvals"],
+      [INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID, "runInterviewOutputArtifactEvals"],
+      [GENERATE_ADVENTURE_EVAL_SUITE_ID, "runGenerateAdventureEvals"],
+      [ADVENTURE_CONTENT_EVAL_SUITE_ID, "runAdventureContentEvals"],
+      [ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID, "runAdventureLinkingEvals"],
+      [ADVENTURE_XP_BALANCING_EVAL_SUITE_ID, "runAdventureXpEvals"],
+    ] as const;
+
+    for (const [suiteId, selectedRunner] of cases) {
+      const dependencies = createDependencies();
+
+      const result = await runEvalSuite({ suiteId, model: "o4-mini" }, dependencies);
+
+      expect(dependencies[selectedRunner]).toHaveBeenCalledWith({ model: "o4-mini" });
+      expect(result.matrix?.variants).toEqual([
+        expect.objectContaining({ name: "o4-mini", modelLabel: "o4-mini" }),
+      ]);
+    }
+  });
+
+  it("passes selected allowed models through to scoped AI-backed suite runs", async () => {
+    const cases = [
+      [GAME_MASTER_INTERVIEW_EVAL_SUITE_ID, "runGameMasterInterviewEvals"],
+      [INTERVIEW_OUTPUT_ARTIFACT_EVAL_SUITE_ID, "runInterviewOutputArtifactEvals"],
+      [GENERATE_ADVENTURE_EVAL_SUITE_ID, "runGenerateAdventureEvals"],
+      [ADVENTURE_CONTENT_EVAL_SUITE_ID, "runAdventureContentEvals"],
+      [ADVENTURE_DEPENDENCY_LINKING_EVAL_SUITE_ID, "runAdventureLinkingEvals"],
+      [ADVENTURE_XP_BALANCING_EVAL_SUITE_ID, "runAdventureXpEvals"],
+    ] as const;
+
+    for (const [suiteId, selectedRunner] of cases) {
+      const dependencies = createDependencies();
+
+      await runEvalSuite({ suiteId, testCaseId: "learn-a-skill", model: "o4-mini" }, dependencies);
+
+      expect(dependencies[selectedRunner]).toHaveBeenCalledWith({ testCaseId: "learn-a-skill", model: "o4-mini" });
+    }
+  });
+
   it("blocks unlisted selected models before invoking suite runners", async () => {
     const runAdventureContentEvals = vi.fn<FocusedAdventureStepEvalRunner>().mockResolvedValue(
       buildPassedAdventureResult(),

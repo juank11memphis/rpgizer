@@ -15,6 +15,7 @@ import {
   buildPassedResult,
   buildRawEvalArtifacts,
   buildRunnerDiagnostic,
+  buildFocusedOpenAIConfig,
   formatEvalError,
   formatFocusedProviderError,
   prepareFocusedAdventureStepRun,
@@ -41,6 +42,7 @@ export type AdventureContentEvalGenerator = {
 export type AdventureContentEvalRunOptions = {
   fixturesDirectory?: string;
   testCaseId?: string;
+  model?: string;
   environment?: NodeJS.ProcessEnv;
   createGenerator?: () => Promise<AdventureContentEvalGenerator> | AdventureContentEvalGenerator;
   output?: Pick<NodeJS.WriteStream, "write">;
@@ -51,7 +53,7 @@ export async function runAdventureContentEvals(
   options: AdventureContentEvalRunOptions = {},
 ): Promise<FocusedAdventureStepRunResult> {
   const context = prepareFocusedAdventureStepRun(options);
-  const configurationError = validateFocusedOpenAIConfiguration("content", context.environment);
+  const configurationError = validateFocusedOpenAIConfiguration("content", context.environment, options.model);
   if (configurationError !== null) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", configurationError)]);
   }
@@ -70,7 +72,7 @@ export async function runAdventureContentEvals(
     [generator, prompt] = await Promise.all([
       options.createGenerator
         ? Promise.resolve(options.createGenerator())
-        : createOpenAIAdventureContentGenerator(),
+        : createOpenAIAdventureContentGenerator(context.environment, options.model),
       readFile(PROMPT_PATH, "utf8"),
     ]);
   } catch (error) {
@@ -111,9 +113,14 @@ export async function runAdventureContentEvals(
   return buildPassedResult(context.output, "Adventure content", fixtureIds, assertionResults, cellOutputs);
 }
 
-async function createOpenAIAdventureContentGenerator(): Promise<AdventureContentEvalGenerator> {
+async function createOpenAIAdventureContentGenerator(
+  environment: NodeJS.ProcessEnv,
+  model?: string,
+): Promise<AdventureContentEvalGenerator> {
   const { OpenAIAdventureContentGenerator } = await import("../infra/openai-adventure-content-generator");
-  return new OpenAIAdventureContentGenerator();
+  return new OpenAIAdventureContentGenerator({
+    config: buildFocusedOpenAIConfig("content", environment, model),
+  });
 }
 
 function buildContentCellOutput(

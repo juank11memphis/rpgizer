@@ -11,6 +11,7 @@ export type RunInterviewOutputArtifactEvalsInput = {
   loadFixtures: InterviewOutputArtifactEvalFixtureLoader;
   loadInstructions: InterviewOutputArtifactEvalInstructionsLoader;
   createGenerator: InterviewOutputArtifactEvalGeneratorFactory;
+  model?: string;
   modelLabel?: string;
   testCaseId?: string;
   logger?: InterviewOutputArtifactEvalLogger;

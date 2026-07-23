@@ -25,6 +25,7 @@ export type InterviewOutputArtifactEvalInstructionsLoader = () => Promise<string
 export type InterviewOutputArtifactEvalGeneratorFactory = (input: {
   instructions: string;
   environment: InterviewOutputArtifactEvalRunnerEnvironment;
+  model?: string;
 }) => Promise<InterviewOutputArtifactEvalGenerator> | InterviewOutputArtifactEvalGenerator;
 
 export type InterviewOutputArtifactEvalLogger = {

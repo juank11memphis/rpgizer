@@ -10,6 +10,7 @@ import { parseGeneratedAdventure } from "../domain/generated-adventure";
 import { parseGenerateAdventureEvalFixture } from "./generate-adventure-eval-fixture-parser";
 import {
   buildAdventureGeneratorRequest,
+  buildAdventureGenerationStepConfigs,
   formatDiagnostic,
   loadGenerateAdventureEvalFixtures,
   runGenerateAdventureEvals,
@@ -117,6 +118,52 @@ describe("Generate Adventure eval runner", () => {
       ),
     ).toBe("OPENAI_ADVENTURE_XP_BALANCER_MODEL appears to be a placeholder value.");
     expect(validateOpenAIConfiguration(buildEnvironment())).toBeNull();
+  });
+
+  it("builds aggregate Adventure Generation step configs with one selected model", () => {
+    const configs = buildAdventureGenerationStepConfigs(
+      buildEnvironment({
+        OPENAI_ADVENTURE_CONTENT_MODEL: "gpt-content",
+        OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL: "gpt-linking",
+        OPENAI_ADVENTURE_XP_BALANCER_MODEL: "gpt-xp",
+      }),
+      "o4-mini",
+    );
+
+    expect(configs).toEqual({
+      content: { apiKey: "sk-test", model: "o4-mini" },
+      dependencyLinker: { apiKey: "sk-test", model: "o4-mini" },
+      xpBalancer: { apiKey: "sk-test", model: "o4-mini" },
+    });
+  });
+
+  it("keeps aggregate Adventure Generation step config defaults when no model is selected", () => {
+    const configs = buildAdventureGenerationStepConfigs(
+      buildEnvironment({
+        OPENAI_ADVENTURE_CONTENT_MODEL: "gpt-content",
+        OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL: "gpt-linking",
+        OPENAI_ADVENTURE_XP_BALANCER_MODEL: "gpt-xp",
+      }),
+    );
+
+    expect(configs).toEqual({
+      content: { apiKey: "sk-test", model: "gpt-content" },
+      dependencyLinker: { apiKey: "sk-test", model: "gpt-linking" },
+      xpBalancer: { apiKey: "sk-test", model: "gpt-xp" },
+    });
+  });
+
+  it("allows selected models to override placeholder aggregate step model settings", () => {
+    expect(
+      validateOpenAIConfiguration(
+        buildEnvironment({
+          OPENAI_ADVENTURE_CONTENT_MODEL: "replace-with-content-model",
+          OPENAI_ADVENTURE_DEPENDENCY_LINKER_MODEL: "replace-with-linker-model",
+          OPENAI_ADVENTURE_XP_BALANCER_MODEL: "replace-with-xp-model",
+        }),
+        "o4-mini",
+      ),
+    ).toBeNull();
   });
 
   it("loads JSON fixtures in deterministic filename order", async () => {
