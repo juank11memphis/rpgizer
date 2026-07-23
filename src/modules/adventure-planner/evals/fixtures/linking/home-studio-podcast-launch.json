@@ -1,0 +1,188 @@
+{
+  "id": "home-studio-podcast-launch",
+  "name": "Home studio podcast launch",
+  "content": {
+    "title": "Home Studio Podcast Launch Quest",
+    "themeSummary": "A creator campaign for planning, recording, editing, and publishing a polished first podcast episode from a home studio.",
+    "goalSummary": "Launch a three-episode podcast pilot with a clear format, reliable recording workflow, and publish-ready audio.",
+    "safetyNotes": [
+      "Avoid copyrighted music or clips unless proper rights are secured.",
+      "Get guest consent before recording and publishing conversations."
+    ],
+    "acts": [
+      {
+        "key": "act-1",
+        "title": "Forge the Show Blueprint",
+        "summary": "Define the show promise, episode structure, guest plan, and recording setup before producing audio.",
+        "mainQuests": [
+          {
+            "key": "quest-positioning-brief",
+            "title": "Write the Show Positioning Brief",
+            "description": "Define the target listener, show promise, recurring segments, episode length, and what makes the pilot worth subscribing to.",
+            "doneCondition": "A one-page positioning brief lists the target listener, show promise, format, and three pilot episode topics.",
+            "rewardIntent": "Reward strategic clarity before production work begins."
+          },
+          {
+            "key": "quest-recording-rig-test",
+            "title": "Run the Recording Rig Test",
+            "description": "Configure microphone placement, recording software, backup capture, and room treatment, then record a test sample.",
+            "doneCondition": "A five-minute test recording is captured, reviewed, and adjusted until levels and background noise are acceptable.",
+            "rewardIntent": "Reward reliable technical setup and audio capture discipline."
+          }
+        ],
+        "sideQuests": [
+          {
+            "key": "quest-guest-outreach-kit",
+            "title": "Prepare the Guest Outreach Kit",
+            "description": "Draft a guest invitation, consent note, scheduling link, prep questions, and release expectations.",
+            "doneCondition": "The outreach kit is ready and at least two potential guests have been contacted.",
+            "rewardIntent": "Reward professional guest coordination."
+          }
+        ],
+        "bossFights": [
+          {
+            "key": "boss-first-raw-recording",
+            "title": "Capture the First Raw Episode",
+            "description": "Record the full first episode using the show format, rig checklist, and backup recording process.",
+            "doneCondition": "A complete raw episode recording and backup file are saved in the project folder.",
+            "rewardIntent": "Reward the first major production milestone."
+          }
+        ]
+      },
+      {
+        "key": "act-2",
+        "title": "Ship the Pilot Feed",
+        "summary": "Edit audio, package show assets, publish the feed, and run a launch review loop.",
+        "mainQuests": [
+          {
+            "key": "quest-editing-pipeline",
+            "title": "Build the Editing Pipeline",
+            "description": "Create a repeatable process for cleanup, intro/outro placement, loudness normalization, show notes, and export naming.",
+            "doneCondition": "The first episode is edited using a documented checklist and exported as a publish-ready file.",
+            "rewardIntent": "Reward repeatable post-production quality."
+          },
+          {
+            "key": "quest-publish-feed-assets",
+            "title": "Publish Feed Assets",
+            "description": "Create podcast artwork, title, description, categories, trailer copy, and hosting settings for the public feed.",
+            "doneCondition": "The hosting platform has complete show metadata, artwork, and at least one scheduled episode.",
+            "rewardIntent": "Reward packaging work that makes the podcast discoverable."
+          }
+        ],
+        "sideQuests": [
+          {
+            "key": "quest-launch-feedback-loop",
+            "title": "Run the Launch Feedback Loop",
+            "description": "Share the pilot privately, collect listener feedback, identify confusing moments, and prioritize improvements.",
+            "doneCondition": "At least five feedback notes are collected and converted into a prioritized improvement list.",
+            "rewardIntent": "Reward learning from real listeners."
+          }
+        ],
+        "bossFights": [
+          {
+            "key": "boss-three-episode-pilot",
+            "title": "Release the Three-Episode Pilot",
+            "description": "Publish or schedule all three pilot episodes with consistent artwork, show notes, and launch messaging.",
+            "doneCondition": "Three pilot episodes are live or scheduled on the podcast feed and the launch announcement is posted.",
+            "rewardIntent": "Reward completing a coherent public launch."
+          }
+        ]
+      }
+    ],
+    "skills": [
+      {
+        "key": "skill-show-strategy",
+        "name": "Show Strategy",
+        "description": "Define audience, promise, format, positioning, and episode planning decisions."
+      },
+      {
+        "key": "skill-audio-recording",
+        "name": "Audio Recording",
+        "description": "Capture clean speech audio with reliable microphone technique, room setup, and backups."
+      },
+      {
+        "key": "skill-guest-coordination",
+        "name": "Guest Coordination",
+        "description": "Invite, prepare, schedule, and brief guests with clear consent expectations."
+      },
+      {
+        "key": "skill-audio-editing",
+        "name": "Audio Editing",
+        "description": "Clean, assemble, normalize, export, and quality-check spoken audio."
+      },
+      {
+        "key": "skill-launch-marketing",
+        "name": "Launch Marketing",
+        "description": "Package, announce, distribute, and improve a podcast based on listener feedback."
+      }
+    ],
+    "inventoryItems": [
+      {
+        "key": "item-positioning-brief",
+        "name": "Show Positioning Brief",
+        "purpose": "A concise guide for audience, promise, format, and pilot topics."
+      },
+      {
+        "key": "item-recording-checklist",
+        "name": "Recording Checklist",
+        "purpose": "A pre-flight checklist for microphone placement, software settings, backups, and room checks."
+      },
+      {
+        "key": "item-guest-outreach-kit",
+        "name": "Guest Outreach Kit",
+        "purpose": "Reusable guest invitation, prep notes, scheduling link, and consent language."
+      },
+      {
+        "key": "item-editing-template",
+        "name": "Editing Template",
+        "purpose": "A reusable editing session with tracks, processing, intro/outro markers, and export settings."
+      },
+      {
+        "key": "item-feed-asset-pack",
+        "name": "Feed Asset Pack",
+        "purpose": "Artwork, title, description, categories, and launch copy for the podcast feed."
+      },
+      {
+        "key": "item-feedback-log",
+        "name": "Listener Feedback Log",
+        "purpose": "A structured place to collect listener comments and convert them into improvements."
+      }
+    ],
+    "achievements": [
+      {
+        "key": "achievement-first-recording",
+        "name": "First Episode Captured",
+        "description": "The first full raw episode exists with a backup.",
+        "unlockCondition": "Unlocked when the first raw recording and backup are saved."
+      },
+      {
+        "key": "achievement-pilot-launched",
+        "name": "Pilot Feed Launched",
+        "description": "The three-episode pilot is published or scheduled.",
+        "unlockCondition": "Unlocked when all pilot episodes and launch messaging are ready."
+      }
+    ],
+    "focusedNextActions": [
+      {
+        "title": "Draft the show promise",
+        "description": "Write the one-sentence listener promise and three pilot episode topics."
+      },
+      {
+        "title": "Record a five-minute test",
+        "description": "Capture a test file with the intended microphone and room setup."
+      }
+    ]
+  },
+  "expectations": {
+    "expectedInventoryCoverage": [
+      "quest-positioning-brief",
+      "quest-recording-rig-test",
+      "quest-guest-outreach-kit",
+      "boss-first-raw-recording",
+      "quest-editing-pipeline",
+      "quest-publish-feed-assets",
+      "quest-launch-feedback-loop",
+      "boss-three-episode-pilot"
+    ]
+  }
+}
