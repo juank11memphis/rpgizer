@@ -2,7 +2,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import type { EvalRunResult } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
-import { buildEvalRunAggregates, createUnreportedEvalCellMetrics } from "@/modules/product-quality-evaluation/domain/eval-matrix";
+import {
+  buildEvalRunAggregates,
+  createUnreportedEvalCellMetrics,
+  type EvalMatrix,
+} from "@/modules/product-quality-evaluation/domain/eval-matrix";
 import {
   GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
   GENERATE_ADVENTURE_EVAL_SUITE_ID,
@@ -78,7 +82,7 @@ function renderMarkup(viewModel: EvalMatrixViewModel, selectedCell: EvalMatrixSh
 }
 
 function createRunResult(): EvalRunResult {
-  const matrix = {
+  const matrix: EvalMatrix = {
     testCases: [
       { id: "become-a-chef", name: "become-a-chef", inputVariables: { topic: "baking" } },
       { id: "high-stakes-finance", name: "high-stakes-finance", inputVariables: { topic: "finance" } },
@@ -102,7 +106,7 @@ function createRunResult(): EvalRunResult {
         ],
         diagnostics: [],
         artifacts: [
-          { id: "raw-prompt", label: "Raw prompt", localOnly: true as const, redactionState: "redacted" as const, value: "Prompt text" },
+          { id: "prompt", label: "Raw prompt", localOnly: true as const, redactionState: "redacted" as const, value: "Prompt text" },
         ],
       },
       {
@@ -131,10 +135,10 @@ function createRunResult(): EvalRunResult {
           },
         ],
         artifacts: [
-          { id: "expected-golden", label: "Expected / Golden", localOnly: true as const, redactionState: "redacted" as const, value: "Expected safer framing." },
-          { id: "raw-prompt", label: "Raw prompt", localOnly: true as const, redactionState: "redacted" as const, value: "Prompt text" },
-          { id: "raw-request", label: "Raw request", localOnly: true as const, redactionState: "redacted" as const, value: "Request payload" },
-          { id: "raw-response", label: "Raw response", localOnly: true as const, redactionState: "redacted" as const, value: "Response payload" },
+          { id: "expected", label: "Expected / Golden", localOnly: true as const, redactionState: "redacted" as const, value: "Expected safer framing." },
+          { id: "prompt", label: "Raw prompt", localOnly: true as const, redactionState: "redacted" as const, value: "Prompt text" },
+          { id: "request", label: "Raw request", localOnly: true as const, redactionState: "redacted" as const, value: "Request payload" },
+          { id: "response", label: "Raw response", localOnly: true as const, redactionState: "redacted" as const, value: "Response payload" },
         ],
       },
     ],

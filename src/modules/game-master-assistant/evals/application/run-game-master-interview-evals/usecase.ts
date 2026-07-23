@@ -3,6 +3,7 @@ import { checkGameMasterInterviewEvalAssertions } from "../../domain/game-master
 import type { GameMasterInterviewEvalFixture } from "../../domain/game-master-interview-eval-types";
 import type { RunGameMasterInterviewEvalsInput } from "./input";
 import type { GameMasterInterviewEvalInterviewer } from "./ports";
+import type { RawEvalArtifactId } from "@/modules/product-quality-evaluation/domain/eval-matrix";
 import {
   GAME_MASTER_INTERVIEW_DEFAULT_VARIANT_ID,
   createUnavailableGameMasterInterviewEvalCellMetrics,
@@ -228,11 +229,11 @@ function buildRedactedArtifacts(input: {
     buildArtifact("prompt", "Raw prompt", input.instructions),
     buildArtifact("request", "Raw request", input.request),
     buildArtifact("response", "Raw response", input.response),
-    buildArtifact("expected", "Expected / golden", input.fixture.expectations),
+    buildArtifact("expected", "Expected / Golden", input.fixture.expectations),
   ];
 }
 
-function buildArtifact(id: string, label: string, value: unknown): GameMasterInterviewEvalArtifact {
+function buildArtifact(id: RawEvalArtifactId, label: string, value: unknown): GameMasterInterviewEvalArtifact {
   const serializedValue = serializeArtifactValue(value);
 
   if (serializedValue.length === 0) {

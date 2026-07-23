@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { parseGeneratedAdventureContent, type GeneratedAdventureContent } from "../domain/generated-adventure-content";
@@ -7,6 +8,7 @@ import {
   buildFailedResult,
   buildMissingTestCaseDiagnostic,
   buildPassedResult,
+  buildRawEvalArtifacts,
   buildRunnerDiagnostic,
   formatEvalError,
   formatFocusedProviderError,
@@ -16,11 +18,16 @@ import {
   validateFocusedOpenAIConfiguration,
   type FocusedAdventureStepDiagnostic,
   type FocusedAdventureStepRunResult,
+  type FocusedAdventureStepCellOutput,
 } from "./focused-adventure-step-eval-runner";
 
 const DEFAULT_FIXTURES_DIRECTORY = path.join(
   process.cwd(),
   "src/modules/adventure-planner/evals/fixtures/linking",
+);
+const PROMPT_PATH = path.join(
+  process.cwd(),
+  "src/modules/adventure-planner/infra/prompts/link-adventure-dependencies.md",
 );
 
 export type AdventureLinkingEvalFixture = {
@@ -54,6 +61,7 @@ export async function runAdventureLinkingEvals(
 
   let fixtures: AdventureLinkingEvalFixture[];
   let linker: AdventureLinkingEvalLinker;
+  let prompt: string;
   try {
     fixtures = selectEvalFixtures(
       await loadAdventureLinkingEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY),
@@ -62,21 +70,26 @@ export async function runAdventureLinkingEvals(
     if (fixtures.length === 0 && options.testCaseId) {
       return buildFailedResult(context.errorOutput, [], [buildMissingTestCaseDiagnostic(options.testCaseId)]);
     }
-    linker = await (options.createLinker ?? createOpenAIAdventureDependencyLinker)();
+    [linker, prompt] = await Promise.all([
+      options.createLinker
+        ? Promise.resolve(options.createLinker())
+        : createOpenAIAdventureDependencyLinker(),
+      readFile(PROMPT_PATH, "utf8"),
+    ]);
   } catch (error) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", formatEvalError(error))]);
   }
 
   const diagnostics: FocusedAdventureStepDiagnostic[] = [];
   const assertionResults: FocusedAdventureStepRunResult["assertionResults"] = [];
+  const cellOutputs: FocusedAdventureStepRunResult["cellOutputs"] = [];
   for (const fixture of fixtures) {
     try {
-      const links = await linker.linkAdventureDependencies(fixture.content, {
-        userId: `eval-user-${fixture.id}`,
-        adventureId: `eval-adventure-${fixture.id}`,
-      });
+      const request = buildLinkingRequest(fixture);
+      const links = await linker.linkAdventureDependencies(request.content, request.context);
       const qualityResult = checkAdventureLinkingQuality(fixture.content, links, fixture.expectations);
       assertionResults.push({ fixtureId: fixture.id, assertions: qualityResult.assertions });
+      cellOutputs.push(buildLinkingCellOutput(fixture, request, links, prompt));
       diagnostics.push(
         ...qualityResult.diagnostics.map(
           (diagnostic) => ({ fixtureId: fixture.id, ...diagnostic }),
@@ -93,10 +106,10 @@ export async function runAdventureLinkingEvals(
 
   const fixtureIds = fixtures.map((fixture) => fixture.id);
   if (diagnostics.length > 0) {
-    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults);
+    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults, cellOutputs);
   }
 
-  return buildPassedResult(context.output, "Adventure dependency linking", fixtureIds, assertionResults);
+  return buildPassedResult(context.output, "Adventure dependency linking", fixtureIds, assertionResults, cellOutputs);
 }
 
 export async function loadAdventureLinkingEvalFixtures(
@@ -125,6 +138,40 @@ export function parseAdventureLinkingEvalFixture(
 async function createOpenAIAdventureDependencyLinker(): Promise<AdventureLinkingEvalLinker> {
   const { OpenAIAdventureDependencyLinker } = await import("../infra/openai-adventure-dependency-linker");
   return new OpenAIAdventureDependencyLinker();
+}
+
+function buildLinkingRequest(fixture: AdventureLinkingEvalFixture): {
+  content: GeneratedAdventureContent;
+  context: { userId: string; adventureId: string };
+} {
+  return {
+    content: fixture.content,
+    context: {
+      userId: `eval-user-${fixture.id}`,
+      adventureId: `eval-adventure-${fixture.id}`,
+    },
+  };
+}
+
+function buildLinkingCellOutput(
+  fixture: AdventureLinkingEvalFixture,
+  request: ReturnType<typeof buildLinkingRequest>,
+  links: GeneratedAdventureDependencyLinks,
+  prompt: string,
+): FocusedAdventureStepCellOutput {
+  const outputMarkdown = JSON.stringify(links, null, 2);
+
+  return {
+    fixtureId: fixture.id,
+    outputMarkdown,
+    outputPreview: `${links.questLinks.length + links.bossFightLinks.length} dependency links`,
+    artifacts: buildRawEvalArtifacts({
+      prompt,
+      request,
+      response: links,
+      expected: fixture.expectations,
+    }),
+  };
 }
 
 function readRequiredString(input: Record<string, unknown>, field: string, fixtureName: string): string {
@@ -163,4 +210,3 @@ function readRecord(input: unknown, message: string): Record<string, unknown> {
   }
   return input as Record<string, unknown>;
 }
-

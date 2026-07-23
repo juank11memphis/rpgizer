@@ -10,6 +10,7 @@ import {
   loadOpenAIAdventureXpBalancerConfig,
   type OpenAIGameMasterInterviewerConfig,
 } from "../../game-master-assistant/infra/openai-game-master-interviewer-config";
+import { RAW_EVAL_ARTIFACT_LABELS, type RawEvalArtifactId } from "../../product-quality-evaluation/domain/eval-matrix";
 import type { AdventureQualityAssertionOutcome, AdventureQualityDiagnostic } from "./generate-adventure-eval-types";
 
 export type FocusedAdventureStep = "content" | "linking" | "xp";
@@ -24,7 +25,7 @@ export type FocusedAdventureStepAssertionResult = {
 };
 
 export type FocusedAdventureStepCellArtifact = {
-  id: string;
+  id: RawEvalArtifactId;
   label: string;
   redactionState: "not_available" | "redacted";
   value?: string;
@@ -66,6 +67,56 @@ export function prepareFocusedAdventureStepRun(options: {
     output: options.output ?? process.stdout,
     errorOutput: options.errorOutput ?? process.stderr,
   };
+}
+
+export function buildRawEvalArtifacts(input: {
+  prompt: unknown;
+  request: unknown;
+  response: unknown;
+  expected: unknown;
+}): FocusedAdventureStepCellArtifact[] {
+  return [
+    buildRawEvalArtifact("prompt", input.prompt),
+    buildRawEvalArtifact("request", input.request),
+    buildRawEvalArtifact("response", input.response),
+    buildRawEvalArtifact("expected", input.expected),
+  ];
+}
+
+function buildRawEvalArtifact(
+  id: RawEvalArtifactId,
+  value: unknown,
+): FocusedAdventureStepCellArtifact {
+  const serializedValue = serializeArtifactValue(value);
+
+  if (serializedValue.length === 0) {
+    return { id, label: RAW_EVAL_ARTIFACT_LABELS[id], redactionState: "not_available" };
+  }
+
+  return {
+    id,
+    label: RAW_EVAL_ARTIFACT_LABELS[id],
+    redactionState: "redacted",
+    value: serializedValue,
+    preview: buildArtifactPreview(serializedValue),
+  };
+}
+
+function serializeArtifactValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  try {
+    return JSON.stringify(value, null, 2) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function buildArtifactPreview(value: string): string {
+  const preview = value.replace(/\s+/g, " ").trim();
+  return preview.length > 160 ? `${preview.slice(0, 157)}…` : preview;
 }
 
 export function validateFocusedOpenAIConfiguration(

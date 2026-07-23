@@ -5,6 +5,7 @@ import { checkInterviewOutputArtifactEvalAssertions } from "../../domain/intervi
 import type { InterviewOutputArtifactEvalFixture } from "../../domain/interview-output-artifact-eval-types";
 import type { RunInterviewOutputArtifactEvalsInput } from "./input";
 import type { InterviewOutputArtifactEvalGenerator } from "./ports";
+import type { RawEvalArtifactId } from "@/modules/product-quality-evaluation/domain/eval-matrix";
 import {
   INTERVIEW_OUTPUT_ARTIFACT_DEFAULT_VARIANT_ID,
   createUnavailableInterviewOutputArtifactEvalCellMetrics,
@@ -239,11 +240,11 @@ function buildRedactedArtifacts(input: {
     buildArtifact("prompt", "Raw prompt", input.instructions),
     buildArtifact("request", "Raw request", input.request),
     buildArtifact("response", "Raw response", input.artifact),
-    buildArtifact("expected", "Expected / golden", input.fixture.expectations),
+    buildArtifact("expected", "Expected / Golden", input.fixture.expectations),
   ];
 }
 
-function buildArtifact(id: string, label: string, value: unknown): InterviewOutputArtifactEvalArtifact {
+function buildArtifact(id: RawEvalArtifactId, label: string, value: unknown): InterviewOutputArtifactEvalArtifact {
   const serializedValue = serializeArtifactValue(value);
 
   if (serializedValue.length === 0) {

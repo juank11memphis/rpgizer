@@ -61,9 +61,10 @@ describe("Adventure content eval runner", () => {
           outputPreview: "Spanish Coffee Chat Quest",
           outputMarkdown: expect.stringContaining("Spanish Coffee Chat Quest"),
           artifacts: expect.arrayContaining([
-            expect.objectContaining({ id: "generated-content", label: "Generated content" }),
-            expect.objectContaining({ id: "generator-request", label: "Generator request" }),
-            expect.objectContaining({ id: "eval-fixture", label: "Eval fixture" }),
+            expect.objectContaining({ id: "prompt", label: "Raw prompt" }),
+            expect.objectContaining({ id: "request", label: "Raw request" }),
+            expect.objectContaining({ id: "response", label: "Raw response" }),
+            expect.objectContaining({ id: "expected", label: "Expected / Golden" }),
           ]),
         },
       ],

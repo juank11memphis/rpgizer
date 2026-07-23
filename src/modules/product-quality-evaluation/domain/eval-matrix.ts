@@ -46,8 +46,17 @@ export type EvalAssertion = {
   message?: string;
 };
 
+export type RawEvalArtifactId = "prompt" | "request" | "response" | "expected";
+
+export const RAW_EVAL_ARTIFACT_LABELS: Record<RawEvalArtifactId, string> = {
+  prompt: "Raw prompt",
+  request: "Raw request",
+  response: "Raw response",
+  expected: "Expected / Golden",
+};
+
 export type EvalCellArtifact = {
-  id: string;
+  id: RawEvalArtifactId;
   label: string;
   localOnly: true;
   redactionState: "not_available" | "redacted";

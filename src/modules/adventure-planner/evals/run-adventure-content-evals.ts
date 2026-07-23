@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { AdventureGeneratorRequest } from "../application/generate-adventure/ports";
@@ -12,6 +13,7 @@ import {
   buildFailedResult,
   buildMissingTestCaseDiagnostic,
   buildPassedResult,
+  buildRawEvalArtifacts,
   buildRunnerDiagnostic,
   formatEvalError,
   formatFocusedProviderError,
@@ -26,6 +28,10 @@ import {
 const DEFAULT_FIXTURES_DIRECTORY = path.join(
   process.cwd(),
   "src/modules/adventure-planner/evals/fixtures",
+);
+const PROMPT_PATH = path.join(
+  process.cwd(),
+  "src/modules/adventure-planner/infra/prompts/generate-adventure-content.md",
 );
 
 export type AdventureContentEvalGenerator = {
@@ -52,6 +58,7 @@ export async function runAdventureContentEvals(
 
   let fixtures: GenerateAdventureEvalFixture[];
   let generator: AdventureContentEvalGenerator;
+  let prompt: string;
   try {
     fixtures = selectEvalFixtures(
       await loadGenerateAdventureEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY),
@@ -60,7 +67,12 @@ export async function runAdventureContentEvals(
     if (fixtures.length === 0 && options.testCaseId) {
       return buildFailedResult(context.errorOutput, [], [buildMissingTestCaseDiagnostic(options.testCaseId)]);
     }
-    generator = await (options.createGenerator ?? createOpenAIAdventureContentGenerator)();
+    [generator, prompt] = await Promise.all([
+      options.createGenerator
+        ? Promise.resolve(options.createGenerator())
+        : createOpenAIAdventureContentGenerator(),
+      readFile(PROMPT_PATH, "utf8"),
+    ]);
   } catch (error) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", formatEvalError(error))]);
   }
@@ -75,7 +87,7 @@ export async function runAdventureContentEvals(
       const content = await generator.generateAdventureContent(request);
       const qualityResult = checkGeneratedAdventureContentQuality(content, fixture);
       assertionResults.push({ fixtureId: fixture.id, assertions: qualityResult.assertions });
-      cellOutputs.push(buildContentCellOutput(fixture, request, content));
+      cellOutputs.push(buildContentCellOutput(fixture, request, content, prompt));
       diagnostics.push(
         ...qualityResult.diagnostics.map((diagnostic) => ({
           fixtureId: fixture.id,
@@ -108,6 +120,7 @@ function buildContentCellOutput(
   fixture: GenerateAdventureEvalFixture,
   request: AdventureGeneratorRequest,
   content: GeneratedAdventureContent,
+  prompt: string,
 ): FocusedAdventureStepCellOutput {
   const outputMarkdown = JSON.stringify(content, null, 2);
 
@@ -115,28 +128,11 @@ function buildContentCellOutput(
     fixtureId: fixture.id,
     outputMarkdown,
     outputPreview: content.title,
-    artifacts: [
-      {
-        id: "generated-content",
-        label: "Generated content",
-        redactionState: "redacted",
-        value: outputMarkdown,
-        preview: content.title,
-      },
-      {
-        id: "generator-request",
-        label: "Generator request",
-        redactionState: "redacted",
-        value: JSON.stringify(request, null, 2),
-        preview: request.goalText,
-      },
-      {
-        id: "eval-fixture",
-        label: "Eval fixture",
-        redactionState: "redacted",
-        value: JSON.stringify(fixture, null, 2),
-        preview: fixture.name,
-      },
-    ],
+    artifacts: buildRawEvalArtifacts({
+      prompt,
+      request,
+      response: content,
+      expected: fixture.expectations,
+    }),
   };
 }

@@ -145,7 +145,7 @@ function createMatrix(): EvalMatrix {
         diagnostics: [],
         artifacts: [
           {
-            id: "raw-request",
+            id: "request",
             label: "Raw request",
             localOnly: true,
             redactionState: "redacted",

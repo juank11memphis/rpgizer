@@ -1,4 +1,5 @@
 import type { GameMasterInterviewEvalAssertion } from "../../domain/game-master-interview-eval-types";
+import type { RawEvalArtifactId } from "@/modules/product-quality-evaluation/domain/eval-matrix";
 
 export type { GameMasterInterviewEvalAssertion };
 
@@ -26,7 +27,7 @@ export type GameMasterInterviewEvalCellMetrics = {
 };
 
 export type GameMasterInterviewEvalArtifact = {
-  id: string;
+  id: RawEvalArtifactId;
   label: string;
   localOnly: true;
   redactionState: "redacted" | "not_available";

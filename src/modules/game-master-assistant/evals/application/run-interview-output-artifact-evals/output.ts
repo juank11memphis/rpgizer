@@ -2,6 +2,7 @@ import type {
   InterviewOutputArtifactEvalAssertion,
   InterviewOutputArtifactEvalDiagnostic,
 } from "../../domain/interview-output-artifact-eval-types";
+import type { RawEvalArtifactId } from "@/modules/product-quality-evaluation/domain/eval-matrix";
 
 export type { InterviewOutputArtifactEvalAssertion, InterviewOutputArtifactEvalDiagnostic };
 
@@ -24,7 +25,7 @@ export type InterviewOutputArtifactEvalCellMetrics = {
 };
 
 export type InterviewOutputArtifactEvalArtifact = {
-  id: string;
+  id: RawEvalArtifactId;
   label: string;
   localOnly: true;
   redactionState: "redacted" | "not_available";

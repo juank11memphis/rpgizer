@@ -146,9 +146,9 @@ function createCell(): EvalMatrixShellCell {
       outputMarkdown: "Generated output\nline two",
       expectedGolden: "Expected safer framing.",
       metrics: {
-        latency: { reported: false, unit: "ms" },
-        tokens: { reported: false, unit: "tokens" },
-        cost: { reported: false, unit: "usd" },
+        latency: { value: null, reported: false, unit: "ms" },
+        tokens: { value: null, reported: false, unit: "tokens" },
+        cost: { value: null, reported: false, unit: "usd" },
       },
       assertions: [
         { id: "required-shape", label: "Required shape", status: "passed" },
@@ -157,14 +157,14 @@ function createCell(): EvalMatrixShellCell {
       diagnostics: [],
       artifacts: [
         {
-          id: "expected-golden",
+          id: "expected",
           label: "Expected / Golden",
           localOnly: true,
           redactionState: "redacted",
           value: "Expected safer framing.",
         },
         {
-          id: "raw-response",
+          id: "response",
           label: "Raw response",
           localOnly: true,
           redactionState: "redacted",

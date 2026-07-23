@@ -55,6 +55,19 @@ describe("Adventure XP eval runner", () => {
       passed: true,
       fixtureIds: ["spanish-eval"],
       diagnostics: [],
+      cellOutputs: [
+        {
+          fixtureId: "spanish-eval",
+          outputPreview: "3 XP rewards",
+          outputMarkdown: expect.stringContaining("quest-prompt-list"),
+          artifacts: expect.arrayContaining([
+            expect.objectContaining({ id: "prompt", label: "Raw prompt" }),
+            expect.objectContaining({ id: "request", label: "Raw request" }),
+            expect.objectContaining({ id: "response", label: "Raw response" }),
+            expect.objectContaining({ id: "expected", label: "Expected / Golden" }),
+          ]),
+        },
+      ],
       assertionResults: [
         { fixtureId: "spanish-eval", assertions: [{ id: "adventure-references", label: "References", status: "passed" }] },
       ],

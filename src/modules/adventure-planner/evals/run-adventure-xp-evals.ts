@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { parseGeneratedAdventureContent, type GeneratedAdventureContent } from "../domain/generated-adventure-content";
@@ -11,6 +12,7 @@ import {
   buildFailedResult,
   buildMissingTestCaseDiagnostic,
   buildPassedResult,
+  buildRawEvalArtifacts,
   buildRunnerDiagnostic,
   formatEvalError,
   formatFocusedProviderError,
@@ -20,11 +22,16 @@ import {
   validateFocusedOpenAIConfiguration,
   type FocusedAdventureStepDiagnostic,
   type FocusedAdventureStepRunResult,
+  type FocusedAdventureStepCellOutput,
 } from "./focused-adventure-step-eval-runner";
 
 const DEFAULT_FIXTURES_DIRECTORY = path.join(
   process.cwd(),
   "src/modules/adventure-planner/evals/fixtures/xp",
+);
+const PROMPT_PATH = path.join(
+  process.cwd(),
+  "src/modules/adventure-planner/infra/prompts/balance-adventure-xp.md",
 );
 
 export type AdventureXpEvalFixture = {
@@ -62,6 +69,7 @@ export async function runAdventureXpEvals(
 
   let fixtures: AdventureXpEvalFixture[];
   let balancer: AdventureXpEvalBalancer;
+  let prompt: string;
   try {
     fixtures = selectEvalFixtures(
       await loadAdventureXpEvalFixtures(options.fixturesDirectory ?? DEFAULT_FIXTURES_DIRECTORY),
@@ -70,21 +78,26 @@ export async function runAdventureXpEvals(
     if (fixtures.length === 0 && options.testCaseId) {
       return buildFailedResult(context.errorOutput, [], [buildMissingTestCaseDiagnostic(options.testCaseId)]);
     }
-    balancer = await (options.createBalancer ?? createOpenAIAdventureXpBalancer)();
+    [balancer, prompt] = await Promise.all([
+      options.createBalancer
+        ? Promise.resolve(options.createBalancer())
+        : createOpenAIAdventureXpBalancer(),
+      readFile(PROMPT_PATH, "utf8"),
+    ]);
   } catch (error) {
     return buildFailedResult(context.errorOutput, [], [buildRunnerDiagnostic("configuration", formatEvalError(error))]);
   }
 
   const diagnostics: FocusedAdventureStepDiagnostic[] = [];
   const assertionResults: FocusedAdventureStepRunResult["assertionResults"] = [];
+  const cellOutputs: FocusedAdventureStepRunResult["cellOutputs"] = [];
   for (const fixture of fixtures) {
     try {
-      const xpBalance = await balancer.balanceAdventureXp(fixture.content, fixture.dependencies, {
-        userId: `eval-user-${fixture.id}`,
-        adventureId: `eval-adventure-${fixture.id}`,
-      });
+      const request = buildXpRequest(fixture);
+      const xpBalance = await balancer.balanceAdventureXp(request.content, request.dependencies, request.context);
       const qualityResult = checkAdventureXpQuality(fixture.content, fixture.dependencies, xpBalance);
       assertionResults.push({ fixtureId: fixture.id, assertions: qualityResult.assertions });
+      cellOutputs.push(buildXpCellOutput(fixture, request, xpBalance, prompt));
       diagnostics.push(
         ...qualityResult.diagnostics.map(
           (diagnostic) => ({ fixtureId: fixture.id, ...diagnostic }),
@@ -101,10 +114,10 @@ export async function runAdventureXpEvals(
 
   const fixtureIds = fixtures.map((fixture) => fixture.id);
   if (diagnostics.length > 0) {
-    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults);
+    return buildFailedResult(context.errorOutput, fixtureIds, diagnostics, assertionResults, cellOutputs);
   }
 
-  return buildPassedResult(context.output, "Adventure XP balancing", fixtureIds, assertionResults);
+  return buildPassedResult(context.output, "Adventure XP balancing", fixtureIds, assertionResults, cellOutputs);
 }
 
 export async function loadAdventureXpEvalFixtures(fixturesDirectory: string): Promise<AdventureXpEvalFixture[]> {
@@ -128,6 +141,42 @@ async function createOpenAIAdventureXpBalancer(): Promise<AdventureXpEvalBalance
   return new OpenAIAdventureXpBalancer();
 }
 
+function buildXpRequest(fixture: AdventureXpEvalFixture): {
+  content: GeneratedAdventureContent;
+  dependencies: GeneratedAdventureDependencyLinks;
+  context: { userId: string; adventureId: string };
+} {
+  return {
+    content: fixture.content,
+    dependencies: fixture.dependencies,
+    context: {
+      userId: `eval-user-${fixture.id}`,
+      adventureId: `eval-adventure-${fixture.id}`,
+    },
+  };
+}
+
+function buildXpCellOutput(
+  fixture: AdventureXpEvalFixture,
+  request: ReturnType<typeof buildXpRequest>,
+  xpBalance: GeneratedAdventureXpBalance,
+  prompt: string,
+): FocusedAdventureStepCellOutput {
+  const outputMarkdown = JSON.stringify(xpBalance, null, 2);
+
+  return {
+    fixtureId: fixture.id,
+    outputMarkdown,
+    outputPreview: `${xpBalance.questXp.length + xpBalance.bossFightXp.length} XP rewards`,
+    artifacts: buildRawEvalArtifacts({
+      prompt,
+      request,
+      response: xpBalance,
+      expected: "No fixture-specific golden payload; this suite's assertions define expected XP quality.",
+    }),
+  };
+}
+
 function readRequiredString(input: Record<string, unknown>, field: string, fixtureName: string): string {
   const value = input[field];
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -142,4 +191,3 @@ function readRecord(input: unknown, message: string): Record<string, unknown> {
   }
   return input as Record<string, unknown>;
 }
-

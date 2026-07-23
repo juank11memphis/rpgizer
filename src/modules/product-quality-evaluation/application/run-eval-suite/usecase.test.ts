@@ -475,8 +475,8 @@ describe("runEvalSuite", () => {
       ],
       artifacts: [
         {
-          id: "raw-artifact",
-          label: "Raw artifact",
+          id: "response",
+          label: "Raw response",
           localOnly: true,
           redactionState: "redacted",
           value: "{\"goalSummary\":\"Spanish coffee chat\"}",
@@ -532,8 +532,8 @@ describe("runEvalSuite", () => {
       ],
       artifacts: [
         {
-          id: "raw-artifact",
-          label: "Raw artifact",
+          id: "response",
+          label: "Raw response",
           localOnly: true,
           redactionState: "redacted",
           value: "{\"goalSummary\":\"Spanish coffee chat\"}",
@@ -566,14 +566,10 @@ describe("runEvalSuite", () => {
       aggregates: { passRate: 1, averageLatencyMs: null },
     });
     expect(passed.matrix?.cells[0]?.artifacts).toEqual([
-      {
-        id: "raw-output",
-        label: "Raw output",
-        localOnly: true,
-        redactionState: "redacted",
-        value: "Generated markdown for learn-spanish",
-        preview: "Generated learn-spanish",
-      },
+      expect.objectContaining({ id: "prompt", label: "Raw prompt", localOnly: true }),
+      expect.objectContaining({ id: "request", label: "Raw request", localOnly: true }),
+      expect.objectContaining({ id: "response", label: "Raw response", localOnly: true }),
+      expect.objectContaining({ id: "expected", label: "Expected / Golden", localOnly: true }),
     ]);
     expect(passed.matrix?.cells[0]?.metrics).toEqual({
       latency: { value: null, unit: "ms", reported: false },
@@ -613,12 +609,10 @@ describe("runEvalSuite", () => {
               outputMarkdown: "{\"title\":\"Broken content\"}",
               outputPreview: "Broken content",
               artifacts: [
-                {
-                  id: "generated-content",
-                  label: "Generated content",
-                  redactionState: "redacted",
-                  value: "{\"title\":\"Broken content\"}",
-                },
+                { id: "prompt", label: "Raw prompt", redactionState: "redacted", value: "Prompt text" },
+                { id: "request", label: "Raw request", redactionState: "redacted", value: "Request payload" },
+                { id: "response", label: "Raw response", redactionState: "redacted", value: "{\"title\":\"Broken content\"}" },
+                { id: "expected", label: "Expected / Golden", redactionState: "redacted", value: "Expected criteria" },
               ],
             },
           ],
@@ -636,13 +630,10 @@ describe("runEvalSuite", () => {
       outputPreview: "Broken content",
       outputMarkdown: "{\"title\":\"Broken content\"}",
       artifacts: [
-        {
-          id: "generated-content",
-          label: "Generated content",
-          localOnly: true,
-          redactionState: "redacted",
-          value: "{\"title\":\"Broken content\"}",
-        },
+        expect.objectContaining({ id: "prompt", label: "Raw prompt", localOnly: true }),
+        expect.objectContaining({ id: "request", label: "Raw request", localOnly: true }),
+        expect.objectContaining({ id: "response", label: "Raw response", localOnly: true }),
+        expect.objectContaining({ id: "expected", label: "Expected / Golden", localOnly: true }),
       ],
     });
 
@@ -781,13 +772,16 @@ function buildPassedAdventureResult(fixtureIds = ["learn-a-skill"]): GenerateAdv
       outputMarkdown: `Generated markdown for ${fixtureId}`,
       outputPreview: `Generated ${fixtureId}`,
       artifacts: [
+        { id: "prompt", label: "Raw prompt", redactionState: "redacted", value: "Prompt text" },
+        { id: "request", label: "Raw request", redactionState: "redacted", value: `Request for ${fixtureId}` },
         {
-          id: "raw-output",
-          label: "Raw output",
+          id: "response",
+          label: "Raw response",
           redactionState: "redacted",
           value: `Generated markdown for ${fixtureId}`,
           preview: `Generated ${fixtureId}`,
         },
+        { id: "expected", label: "Expected / Golden", redactionState: "redacted", value: "Expected criteria" },
       ],
     })),
   };
