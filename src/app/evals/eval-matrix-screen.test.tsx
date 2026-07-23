@@ -180,7 +180,12 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain("Progress");
     expect(markup).toContain("Failures only");
     expect(markup).toContain("Search test cases or variables");
-    expect(markup).toContain("Default variant");
+    expect(markup).toContain("LLM Configuration");
+    expect(markup).toContain("Uses this model for every test case in this suite run.");
+    expect(markup).toContain("GPT-5 family");
+    expect(markup).toContain("Reasoning models");
+    expect(markup).toContain("GPT-4 family");
+    expect(markup).toContain("gpt-5.4-mini");
     expect(markup).toContain("Default model");
     expect(markup).toContain("Test Case");
     expect(markup).toContain("Not run");
@@ -197,6 +202,47 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain('data-layout="matrix"');
     expect(markup).toContain("become-a-chef-initial");
     expect(markup).toContain("topic=baking");
+  });
+
+  it("places LLM Configuration below the selected-suite top section and above Summary", () => {
+    const markup = renderMarkup(createReadyViewModel());
+
+    const runScopeIndex = markup.indexOf("Run scope");
+    const llmConfigurationIndex = markup.indexOf("LLM Configuration");
+    const summaryIndex = markup.indexOf('aria-label="Eval run summary"');
+    const filterIndex = markup.indexOf('aria-label="Eval filters"');
+
+    expect(runScopeIndex).toBeGreaterThan(-1);
+    expect(llmConfigurationIndex).toBeGreaterThan(runScopeIndex);
+    expect(summaryIndex).toBeGreaterThan(llmConfigurationIndex);
+    expect(filterIndex).toBeGreaterThan(summaryIndex);
+    expect(markup).toContain('aria-hidden="true" class="mt-3 border-t border-slate-700"');
+  });
+
+  it("renders grouped LLM model options in the approved order", () => {
+    const markup = renderMarkup(createReadyViewModel());
+
+    const orderedLabels = [
+      "GPT-5 family",
+      "gpt-5.4-nano",
+      "gpt-5.4-mini",
+      "gpt-5.4",
+      "Reasoning models",
+      "o4-mini",
+      "o3",
+      "GPT-4 family",
+      "gpt-4o-mini",
+      "gpt-4o",
+      "gpt-4.1-mini",
+      "gpt-4.1",
+    ];
+
+    let previousIndex = -1;
+    for (const label of orderedLabels) {
+      const nextIndex = markup.indexOf(label, previousIndex + 1);
+      expect(nextIndex, `${label} should appear after the previous model label`).toBeGreaterThan(previousIndex);
+      previousIndex = nextIndex;
+    }
   });
 
   it("renders selected-test-case run scope controls", () => {
@@ -250,6 +296,7 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain("Local Eval Matrix");
     expect(markup).toContain("Game Master Interview");
     expect(markup).toContain("Running...");
+    expect(markup).toContain("LLM Configuration");
     expect(markup).toContain("disabled");
     expect(markup).toContain("Progress 0/4");
     expect(markup).toContain('role="progressbar"');
@@ -304,7 +351,7 @@ describe("EvalMatrixScreen", () => {
     expect(markup).toContain("high-stakes-finance");
     expect(markup).toContain("Failed · Default variant");
     expect(markup).toContain("Failed · Default variant · Default model");
-    expect(markup).toContain("I can help you plan a profitable investment path. What stock do you want?");
+    expect(markup).toContain("I can help you plan a profitable investment path.");
     expect(markup).toContain("Passed: asks one focused question");
     expect(markup).toContain("Failed: avoids financial advice");
     expect(markup).toContain("Expected safer framing.");

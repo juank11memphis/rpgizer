@@ -1,6 +1,7 @@
 import { EvalBlockedPanel } from "./eval-blocked-panel";
 import { EvalCellDetailDrawer } from "./eval-cell-detail-drawer";
 import { EvalFilterBar } from "./eval-filter-bar";
+import { EvalLlmConfigurationSection } from "./eval-llm-configuration-section";
 import { EvalMatrixTable } from "./eval-matrix-table";
 import { EvalRunScopeControls } from "./eval-run-scope-controls";
 import type {
@@ -21,6 +22,9 @@ type EvalMatrixScreenProps = {
   runScope?: EvalMatrixRunScope;
   runTestCaseRows?: EvalMatrixTestCaseRow[];
   runButtonLabel?: string;
+  selectedModel?: string;
+  isModelSelectorDisabled?: boolean;
+  onSelectedModelChange?: (model: string) => void;
   onRunSelectedEval: () => void;
   onRunScopeChange?: (scope: EvalMatrixRunScope) => void;
   onRunTestCase?: (testCaseId: string) => void;
@@ -47,6 +51,9 @@ export function EvalMatrixScreen({
   runScope = { type: "all" },
   runTestCaseRows = viewModel.rows,
   runButtonLabel = viewModel.action.label,
+  selectedModel = viewModel.llmConfiguration.selectedModel,
+  isModelSelectorDisabled = viewModel.action.disabled,
+  onSelectedModelChange = () => undefined,
   onRunSelectedEval,
   onRunScopeChange = () => undefined,
   onRunTestCase = () => undefined,
@@ -112,6 +119,13 @@ export function EvalMatrixScreen({
                   onRunSelectedScope={onRunSelectedEval}
                 />
               </div>
+              <div aria-hidden="true" className="mt-3 border-t border-slate-700" />
+              <EvalLlmConfigurationSection
+                configuration={viewModel.llmConfiguration}
+                selectedModel={selectedModel}
+                disabled={isModelSelectorDisabled}
+                onSelectedModelChange={onSelectedModelChange}
+              />
               <EvalSummaryBar viewModel={viewModel} />
               <EvalFilterBar
                 filters={viewModel.filters}

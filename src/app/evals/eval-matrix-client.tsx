@@ -8,6 +8,7 @@ import { EvalMatrixScreen } from "./eval-matrix-screen";
 import type { EvalCellSelection, EvalMatrixRunScope, EvalMatrixViewModel } from "./eval-matrix-types";
 import {
   createEvalMatrixViewModelFromRunResult,
+  createEvalMatrixViewModelWithSelectedModel,
   createRunningEvalMatrixViewModel,
   filterEvalMatrixRows,
   findEvalMatrixCell,
@@ -19,7 +20,7 @@ import {
 type EvalMatrixClientProps = {
   initialViewModel: EvalMatrixViewModel;
   readyViewModels: EvalMatrixViewModel[];
-  runSelectedEvalSuite: (suiteId: string, scope?: { testCaseId?: string }) => Promise<EvalRunResult>;
+  runSelectedEvalSuite: (suiteId: string, scope?: { testCaseId?: string; model?: string }) => Promise<EvalRunResult>;
 };
 
 export function EvalMatrixClient({
@@ -31,6 +32,7 @@ export function EvalMatrixClient({
   const [failuresOnly, setFailuresOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleVariantIds, setVisibleVariantIds] = useState(() => initialViewModel.variants.map((variant) => variant.id));
+  const [selectedModel, setSelectedModel] = useState(initialViewModel.llmConfiguration.selectedModel);
   const [runScope, setRunScope] = useState<EvalMatrixRunScope>({ type: "all" });
   const [selectedCellKey, setSelectedCellKey] = useState<EvalCellSelection | null>(null);
   const cellButtonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -49,6 +51,7 @@ export function EvalMatrixClient({
     }
 
     setViewModel(readyViewModel);
+    setSelectedModel(readyViewModel.llmConfiguration.selectedModel);
     setRunScope({ type: "all" });
     setSelectedCellKey(null);
     setFailuresOnly(false);
@@ -75,7 +78,11 @@ export function EvalMatrixClient({
     setRunScope(scope);
     pendingFocusRestoreKeyRef.current = null;
     setViewModel((currentViewModel) => createRunningEvalMatrixViewModel(
-      createRunBaseViewModel(currentViewModel, findReadyViewModel(readyViewModels, currentViewModel.selectedSuite.id)),
+      createRunBaseViewModel(
+        currentViewModel,
+        findReadyViewModel(readyViewModels, currentViewModel.selectedSuite.id),
+        selectedModel,
+      ),
       scope.type === "test_case" ? { testCaseId: scope.testCaseId } : {},
     ));
 
@@ -83,7 +90,7 @@ export function EvalMatrixClient({
       try {
         const result = await runSelectedEvalSuite(
           suiteId,
-          scope.type === "test_case" ? { testCaseId: scope.testCaseId } : {},
+          scope.type === "test_case" ? { testCaseId: scope.testCaseId, model: selectedModel } : { model: selectedModel },
         );
         setViewModel((currentViewModel) =>
           createEvalMatrixViewModelFromRunResult(
@@ -204,6 +211,9 @@ export function EvalMatrixClient({
       runScope={runScope}
       runTestCaseRows={screenViewModel.rows}
       runButtonLabel={formatRunButtonLabel(runScope, screenViewModel.rows.length, screenViewModel.action.label, isPending)}
+      selectedModel={selectedModel}
+      isModelSelectorDisabled={screenViewModel.action.disabled || isPending}
+      onSelectedModelChange={setSelectedModel}
       onRunSelectedEval={handleRunSelectedEval}
       onRunScopeChange={setRunScope}
       onRunTestCase={handleRunTestCase}
@@ -230,13 +240,17 @@ function findReadyViewModel(readyViewModels: EvalMatrixViewModel[], suiteId: str
 function createRunBaseViewModel(
   currentViewModel: EvalMatrixViewModel,
   initialViewModel: EvalMatrixViewModel,
+  selectedModel: string,
 ): EvalMatrixViewModel {
-  return {
-    ...currentViewModel,
-    variants: initialViewModel.variants,
-    rows: initialViewModel.rows,
-    progress: initialViewModel.progress,
-  };
+  return createEvalMatrixViewModelWithSelectedModel(
+    {
+      ...currentViewModel,
+      variants: initialViewModel.variants,
+      rows: initialViewModel.rows,
+      progress: initialViewModel.progress,
+    },
+    selectedModel,
+  );
 }
 
 function formatRunButtonLabel(

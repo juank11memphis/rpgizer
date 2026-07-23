@@ -7,6 +7,7 @@ import type {
   EvalPromptModelVariant,
   EvalTestCase,
 } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
+import type { EvalLlmConfiguration } from "@/modules/product-quality-evaluation/domain/eval-llm-model-configuration";
 import type { EvalSuiteSummary } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
 export type EvalMatrixSuite = EvalSuiteSummary & {
@@ -86,6 +87,8 @@ export type EvalCellSelection = {
   variantId: string;
 };
 
+export type EvalMatrixLlmConfiguration = EvalLlmConfiguration;
+
 export type EvalMatrixViewModel = {
   title: "Local Eval Matrix";
   eyebrow: "Local Product Quality Evaluation";
@@ -96,6 +99,7 @@ export type EvalMatrixViewModel = {
   statusLabel: string;
   statusMessage: string;
   action: EvalMatrixAction;
+  llmConfiguration: EvalMatrixLlmConfiguration;
   summaryStats: EvalMatrixSummaryStat[];
   filters: EvalMatrixFilters;
   variants: EvalPromptModelVariant[];

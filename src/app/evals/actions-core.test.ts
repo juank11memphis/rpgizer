@@ -279,6 +279,59 @@ describe("runEvalSuiteActionCore", () => {
     expectSafeLogPayload(payload);
   });
 
+
+  it("forwards the selected model for all-test-case runs", async () => {
+    const delegatedResult = createMatrixResult("passed");
+    const runEvalSuite = vi.fn().mockResolvedValue(delegatedResult);
+    const logger = createLogger();
+
+    const result = await runEvalSuiteActionCore(
+      GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      { model: "o4-mini" },
+      {
+        isLocalEvalDashboardEnabled: () => true,
+        runEvalSuite,
+        logger,
+      },
+    );
+
+    expect(runEvalSuite).toHaveBeenCalledWith({
+      suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      model: "o4-mini",
+    });
+    expect(result).toBe(delegatedResult);
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_STARTED,
+        runScope: "all",
+        selectedModel: "o4-mini",
+      }),
+      "Local eval suite server action started.",
+    );
+  });
+
+  it("forwards the selected model for selected-test-case runs", async () => {
+    const delegatedResult = createMatrixResult("passed");
+    const runEvalSuite = vi.fn().mockResolvedValue(delegatedResult);
+
+    const result = await runEvalSuiteActionCore(
+      GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      { testCaseId: "high-stakes-finance", model: "gpt-4.1" },
+      {
+        isLocalEvalDashboardEnabled: () => true,
+        runEvalSuite,
+        logger: createLogger(),
+      },
+    );
+
+    expect(runEvalSuite).toHaveBeenCalledWith({
+      suiteId: GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
+      testCaseId: "high-stakes-finance",
+      model: "gpt-4.1",
+    });
+    expect(result).toBe(delegatedResult);
+  });
+
   it("delegates a selected test case scope and logs only safe scope metadata", async () => {
     const logger = createLogger();
     const delegatedResult = createMatrixResult("passed");

@@ -15,12 +15,7 @@ export default function EvalsPage() {
 
   const productQualityEvaluation = createProductQualityEvaluationComposition();
   const suites = productQualityEvaluation.listEvalSuites();
-  const gameMasterModelLabel = productQualityEvaluation.getGameMasterInterviewModelLabel();
-  const readyViewModels = suites.map((suite) => createReadyEvalMatrixViewModel(
-    suites,
-    suite.id,
-    suite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID ? { modelLabel: gameMasterModelLabel } : {},
-  ));
+  const readyViewModels = suites.map((suite) => createReadyEvalMatrixViewModel(suites, suite.id));
   const initialViewModel = readyViewModels.find(
     (viewModel) => viewModel.selectedSuite.id === GAME_MASTER_INTERVIEW_EVAL_SUITE_ID,
   ) ?? readyViewModels[0];

@@ -7,6 +7,7 @@ import type {
   EvalRunResult,
   EvalTestCase,
 } from "@/modules/product-quality-evaluation/application/run-eval-suite/output";
+import type { EvalLlmConfiguration } from "@/modules/product-quality-evaluation/domain/eval-llm-model-configuration";
 import type { EvalSuiteSummary } from "@/modules/product-quality-evaluation/domain/eval-suite";
 
 import type {
@@ -28,7 +29,6 @@ const DEFAULT_VARIANT: EvalPromptModelVariant = {
 export function createReadyEvalMatrixViewModel(
   suites: EvalSuiteSummary[],
   selectedSuiteId: string,
-  options: { modelLabel?: string } = {},
 ): EvalMatrixViewModel {
   const selectedSuite = selectSuite(suites, selectedSuiteId);
   const matrixSuites = suites.map((suite) => ({ ...suite, selected: suite.id === selectedSuite.id }));
@@ -36,11 +36,12 @@ export function createReadyEvalMatrixViewModel(
     ...testCase,
     inputVariables: { ...testCase.inputVariables },
   }));
-  const defaultVariant = {
-    ...DEFAULT_VARIANT,
-    name: selectedSuite.defaultVariantLabel,
-    modelLabel: options.modelLabel ?? selectedSuite.defaultModelLabel,
-  };
+  const selectedModel = selectedSuite.llmConfiguration.selectedModel;
+  const defaultVariant = createSelectedModelVariant(
+    selectedModel,
+    selectedSuite.defaultVariantLabel,
+    selectedSuite.defaultModelLabel,
+  );
 
   return createBaseViewModel({
     suites: matrixSuites,
@@ -50,6 +51,7 @@ export function createReadyEvalMatrixViewModel(
     statusMessage: `${readyTestCases.length} Test Cases ready.`,
     actionLabel: "Run eval",
     actionDisabled: false,
+    llmConfiguration: cloneLlmConfiguration(selectedSuite.llmConfiguration),
     summaryStats: createPlaceholderSummaryStats(readyTestCases.length),
     variants: [defaultVariant],
     rows: createRowsFromTestCases(readyTestCases, "not_run", defaultVariant),
@@ -104,6 +106,37 @@ export function createRunningEvalMatrixViewModel(
     blockerMessage: undefined,
     matrixUnavailableMessage: undefined,
     progress: { completed, total, label: `Progress ${completed}/${total}` },
+  };
+}
+
+export function createEvalMatrixViewModelWithSelectedModel(
+  viewModel: EvalMatrixViewModel,
+  selectedModel: string,
+): EvalMatrixViewModel {
+  const selectedVariant = createSelectedModelVariant(
+    selectedModel,
+    viewModel.variants[0]?.promptLabel ?? DEFAULT_VARIANT.promptLabel,
+    selectedModel,
+  );
+
+  return {
+    ...viewModel,
+    llmConfiguration: {
+      ...viewModel.llmConfiguration,
+      selectedModel,
+      modelGroups: cloneModelGroups(viewModel.llmConfiguration.modelGroups),
+    },
+    variants: [selectedVariant],
+    rows: viewModel.rows.map((row) => ({
+      ...row,
+      cells: row.cells.map((cell) => ({
+        ...cell,
+        id: `${cell.testCaseId}::${selectedVariant.id}`,
+        variantId: selectedVariant.id,
+        variantName: selectedVariant.name,
+        variantModelLabel: selectedVariant.modelLabel,
+      })),
+    })),
   };
 }
 
@@ -337,6 +370,7 @@ function createBaseViewModel(input: {
   variants?: EvalPromptModelVariant[];
   rows: EvalMatrixTestCaseRow[];
   progress: EvalMatrixViewModel["progress"];
+  llmConfiguration: EvalMatrixViewModel["llmConfiguration"];
   diagnostics: EvalMatrixViewModel["diagnostics"];
 }): EvalMatrixViewModel {
   return {
@@ -349,6 +383,7 @@ function createBaseViewModel(input: {
     statusLabel: input.statusLabel,
     statusMessage: input.statusMessage,
     action: { label: input.actionLabel, disabled: input.actionDisabled },
+    llmConfiguration: cloneLlmConfiguration(input.llmConfiguration),
     summaryStats: input.summaryStats,
     filters: {
       failuresOnlyLabel: "Failures only",
@@ -361,6 +396,35 @@ function createBaseViewModel(input: {
     diagnostics: input.diagnostics,
     progress: input.progress,
   };
+}
+
+function createSelectedModelVariant(
+  selectedModel: string,
+  promptLabel: string,
+  modelLabel: string,
+): EvalPromptModelVariant {
+  return {
+    id: selectedModel,
+    name: selectedModel,
+    promptLabel,
+    modelLabel,
+  };
+}
+
+function cloneLlmConfiguration(configuration: EvalLlmConfiguration): EvalLlmConfiguration {
+  return {
+    ...configuration,
+    modelGroups: cloneModelGroups(configuration.modelGroups),
+  };
+}
+
+function cloneModelGroups(
+  modelGroups: EvalLlmConfiguration["modelGroups"],
+): EvalLlmConfiguration["modelGroups"] {
+  return modelGroups.map((group) => ({
+    ...group,
+    models: group.models.map((model) => ({ ...model })),
+  }));
 }
 
 function createRowsFromTestCases(

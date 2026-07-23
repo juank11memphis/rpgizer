@@ -16,6 +16,7 @@ import { buildEvalLlmConfiguration } from "@/modules/product-quality-evaluation/
 import type { EvalMatrixShellCell, EvalMatrixTestCaseRow } from "./eval-matrix-types";
 import {
   createEvalMatrixViewModelFromRunResult,
+  createEvalMatrixViewModelWithSelectedModel,
   createReadyEvalMatrixViewModel,
   createRunningEvalMatrixViewModel,
   filterEvalMatrixRows,
@@ -142,6 +143,45 @@ function createRunResult(): EvalRunResult {
 }
 
 describe("eval matrix view model", () => {
+
+  it("exposes the selected suite LLM configuration and grouped model order", () => {
+    const viewModel = createReadyEvalMatrixViewModel(suites, GAME_MASTER_INTERVIEW_EVAL_SUITE_ID);
+
+    expect(viewModel.llmConfiguration.selectedModel).toBe("gpt-5.4-mini");
+    expect(viewModel.llmConfiguration.modelGroups.map((group) => group.label)).toEqual([
+      "GPT-5 family",
+      "Reasoning models",
+      "GPT-4 family",
+    ]);
+    expect(viewModel.llmConfiguration.modelGroups.flatMap((group) => group.models.map((model) => model.id))).toEqual([
+      "gpt-5.4-nano",
+      "gpt-5.4-mini",
+      "gpt-5.4",
+      "o4-mini",
+      "o3",
+      "gpt-4o-mini",
+      "gpt-4o",
+      "gpt-4.1-mini",
+      "gpt-4.1",
+    ]);
+    expect(viewModel.variants[0]).toMatchObject({ id: "gpt-5.4-mini", name: "gpt-5.4-mini" });
+  });
+
+  it("can align placeholder result rows with a changed selected model for a pending run", () => {
+    const selectedModelViewModel = createEvalMatrixViewModelWithSelectedModel(createReadyViewModel(), "o3");
+    const runningViewModel = createRunningEvalMatrixViewModel(selectedModelViewModel);
+
+    expect(runningViewModel.llmConfiguration.selectedModel).toBe("o3");
+    expect(runningViewModel.variants).toEqual([
+      expect.objectContaining({ id: "o3", name: "o3", modelLabel: "o3" }),
+    ]);
+    expect(runningViewModel.rows[0].cells[0]).toMatchObject({
+      variantId: "o3",
+      variantName: "o3",
+      variantModelLabel: "o3",
+      status: "running",
+    });
+  });
 
   it("creates suite-ready rows from the selected suite metadata", () => {
     const gameMasterViewModel = createReadyEvalMatrixViewModel(suites, GAME_MASTER_INTERVIEW_EVAL_SUITE_ID);

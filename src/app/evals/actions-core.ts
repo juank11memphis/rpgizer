@@ -7,9 +7,10 @@ export type RunEvalSuiteActionResult = EvalRunResult;
 
 export type RunEvalSuiteActionScope = {
   testCaseId?: string;
+  model?: string;
 };
 
-type RunEvalSuite = (input: { suiteId: string; testCaseId?: string }) => Promise<EvalRunResult>;
+type RunEvalSuite = (input: { suiteId: string; testCaseId?: string; model?: string }) => Promise<EvalRunResult>;
 type LocalEvalGuard = () => boolean;
 type ActionLogger = Pick<typeof serverLogger, "info" | "warn" | "error">;
 
@@ -60,7 +61,7 @@ export async function runEvalSuiteActionCore(
   );
 
   try {
-    const runInput = scope.testCaseId ? { suiteId, testCaseId: scope.testCaseId } : { suiteId };
+    const runInput = buildRunInput(suiteId, scope);
     const result = await dependencies.runEvalSuite(runInput);
     logActionOutcome(logger, result, eventForResult(result), scope);
     return result;
@@ -83,6 +84,17 @@ export async function runEvalSuiteActionCore(
     logActionOutcome(logger, result, APPLICATION_LOG_EVENTS.SERVER_ACTION_RUN_EVAL_SUITE_UNEXPECTED_ERROR, scope);
     return result;
   }
+}
+
+function buildRunInput(
+  suiteId: string,
+  scope: RunEvalSuiteActionScope,
+): { suiteId: string; testCaseId?: string; model?: string } {
+  return {
+    suiteId,
+    ...(scope.testCaseId ? { testCaseId: scope.testCaseId } : {}),
+    ...(scope.model ? { model: scope.model } : {}),
+  };
 }
 
 function eventForResult(result: RunEvalSuiteActionResult): string {
@@ -133,12 +145,15 @@ function logActionOutcome(
 function summarizeScopeForLog(scope: RunEvalSuiteActionScope): {
   runScope: "all" | "test_case";
   testCaseId?: string;
+  selectedModel?: string;
 } {
+  const selectedModel = scope.model ? { selectedModel: scope.model } : {};
+
   if (scope.testCaseId) {
-    return { runScope: "test_case", testCaseId: scope.testCaseId };
+    return { runScope: "test_case", testCaseId: scope.testCaseId, ...selectedModel };
   }
 
-  return { runScope: "all" };
+  return { runScope: "all", ...selectedModel };
 }
 
 function summarizeMatrixForLog(result: RunEvalSuiteActionResult): {
