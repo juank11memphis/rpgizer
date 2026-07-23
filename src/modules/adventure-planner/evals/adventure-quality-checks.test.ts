@@ -132,6 +132,32 @@ describe("checkGeneratedAdventureQuality", () => {
     expect(messages).toEqual(expect.arrayContaining([expect.stringContaining("quest quality")]));
   });
 
+  it("accepts Boss Fights with live proof language", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const result = checkPayload({
+      ...payload,
+      acts: [
+        {
+          ...payload.acts[0],
+          bossFights: [
+            {
+              ...payload.acts[0].bossFights[0],
+              title: "Ten-minute Spanish coffee chat under real conditions",
+              description:
+                "Face the final live test in a normal coffee-chat setting where the main challenge is staying calm, keeping questions flowing, and recovering without defaulting to English.",
+              doneCondition:
+                "A live chat note, witness confirmation, or recording shows a full ten-minute Spanish coffee chat with prepared topics, follow-up questions, and a brief reflection afterward.",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({ area: "boss fight quality" }),
+    );
+  });
+
   it("fails random fantasy Inventory", () => {
     const payload = buildGeneratedAdventureBoundaryPayload();
     const messages = messagesFor({
@@ -229,6 +255,31 @@ describe("checkGeneratedAdventureQuality", () => {
         expect.stringContaining("XP must be an integer from"),
         expect.stringContaining("duplicate Inventory Item link"),
       ]),
+    );
+  });
+
+  it("allows a Quest to award Skill XP without an Inventory Item link", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+    const result = checkPayload({
+      ...payload,
+      acts: [
+        {
+          ...payload.acts[0],
+          mainQuests: [
+            {
+              ...payload.acts[0].mainQuests[0],
+              inventoryItemKeys: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(result.diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        area: "references",
+        message: expect.stringContaining("expected at least one relevant Inventory Item link"),
+      }),
     );
   });
 

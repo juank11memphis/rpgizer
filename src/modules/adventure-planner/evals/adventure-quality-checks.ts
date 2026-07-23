@@ -57,6 +57,17 @@ const OBSERVABLE_DONE_TERMS = [
   "weeks",
   "session",
   "sessions",
+  "shows",
+  "confirmation",
+  "confirmed",
+  "recording",
+  "note",
+  "notes",
+  "reflection",
+  "transcript",
+  "witness",
+  "logged",
+  "log",
 ];
 
 const FILLER_QUEST_PATTERNS = [
@@ -352,10 +363,6 @@ function checkRewardsAndReferences(
 ): void {
   if (skillRewards.length === 0) {
     addDiagnostic(diagnostics, "references", `'${title}' expected at least one Skill XP reward.`);
-  }
-
-  if (inventoryItemKeys.length === 0) {
-    addDiagnostic(diagnostics, "references", `'${title}' expected at least one relevant Inventory Item link.`);
   }
 
   const seenRewardSkillKeys = new Set<string>();
