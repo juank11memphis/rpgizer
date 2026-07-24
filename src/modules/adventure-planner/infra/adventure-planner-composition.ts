@@ -2,21 +2,25 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import * as schema from "../../../db/schema";
-import { generateAdventure } from "../application/generate-adventure/usecase";
-import type { GenerateAdventureInput } from "../application/generate-adventure/input";
 import type {
-  AdventureGenerator,
+  AdventureContentGenerator,
+  AdventureDependencyLinker,
+  AdventureXpBalancer,
   GeneratedAdventureRepository,
 } from "../application/generate-adventure/ports";
 import { DrizzleGeneratedAdventureRepository } from "./drizzle-generated-adventure-repository";
-import { OpenAIMultiStepAdventureGenerator } from "./openai-multi-step-adventure-generator";
+import { OpenAIAdventureContentGenerator } from "./openai-adventure-content-generator";
+import { OpenAIAdventureDependencyLinker } from "./openai-adventure-dependency-linker";
+import { OpenAIAdventureXpBalancer } from "./openai-adventure-xp-balancer";
 
 export type AdventurePlannerDb = ReturnType<typeof drizzle<typeof schema>>;
 
 export type AdventurePlannerCompositionDependencies = {
   db?: AdventurePlannerDb;
   generatedAdventureRepository?: GeneratedAdventureRepository;
-  adventureGenerator?: AdventureGenerator;
+  contentGenerator?: AdventureContentGenerator;
+  dependencyLinker?: AdventureDependencyLinker;
+  xpBalancer?: AdventureXpBalancer;
 };
 
 let db: AdventurePlannerDb | null = null;
@@ -24,22 +28,23 @@ let db: AdventurePlannerDb | null = null;
 export function createAdventurePlannerComposition(
   dependencies: AdventurePlannerCompositionDependencies = {},
 ) {
-  const resolveGeneratedAdventureRepository = () =>
+  const generatedAdventureRepository =
     dependencies.generatedAdventureRepository ??
     new DrizzleGeneratedAdventureRepository(dependencies.db ?? getAdventurePlannerDb());
-  const resolveAdventureGenerator = () =>
-    dependencies.adventureGenerator ?? new OpenAIMultiStepAdventureGenerator();
+  const contentGenerator = dependencies.contentGenerator ?? new OpenAIAdventureContentGenerator();
+  const dependencyLinker = dependencies.dependencyLinker ?? new OpenAIAdventureDependencyLinker();
+  const xpBalancer = dependencies.xpBalancer ?? new OpenAIAdventureXpBalancer();
 
   return {
-    createAdventureGenerator(): AdventureGenerator {
-      return resolveAdventureGenerator();
-    },
-    generateAdventure(input: GenerateAdventureInput) {
-      return generateAdventure(input, {
-        generatedAdventureRepository: resolveGeneratedAdventureRepository(),
-        adventureGenerator: resolveAdventureGenerator(),
-      });
-    },
+    findExistingGeneratedAdventure: generatedAdventureRepository.findExistingGeneratedAdventure.bind(
+      generatedAdventureRepository,
+    ),
+    saveGeneratedAdventure: generatedAdventureRepository.saveGeneratedAdventure.bind(
+      generatedAdventureRepository,
+    ),
+    generateAdventureContent: contentGenerator.generateAdventureContent.bind(contentGenerator),
+    linkAdventureDependencies: dependencyLinker.linkAdventureDependencies.bind(dependencyLinker),
+    balanceAdventureXp: xpBalancer.balanceAdventureXp.bind(xpBalancer),
   };
 }
 

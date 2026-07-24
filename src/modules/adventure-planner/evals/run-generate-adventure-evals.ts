@@ -3,9 +3,15 @@ import path from "node:path";
 
 import { loadEnvConfig } from "@next/env";
 
-import type { AdventureGeneratorRequest } from "../application/generate-adventure/ports";
+import type {
+  AdventureContentGenerator,
+  AdventureDependencyLinker,
+  AdventureGeneratorRequest,
+  AdventureXpBalancer,
+} from "../application/generate-adventure/ports";
 import { AdventureGeneratorError } from "../application/generate-adventure/ports";
-import type { GeneratedAdventure } from "../domain/generated-adventure";
+import { assembleGeneratedAdventure } from "../domain/assemble-generated-adventure";
+import { parseGeneratedAdventure, type GeneratedAdventure } from "../domain/generated-adventure";
 import { APPLICATION_LOG_EVENTS } from "../../../server/logging/events";
 import { serverLogger } from "../../../server/logging/logger";
 import { serializeErrorForLog } from "../../../server/logging/redaction";
@@ -38,7 +44,7 @@ const DEFAULT_FIXTURES_DIRECTORY = path.join(
 const EVAL_CREATED_AT = new Date("2026-01-01T00:00:00.000Z");
 
 export type GenerateAdventureEvalGenerator = {
-  generateAdventure(input: AdventureGeneratorRequest): Promise<GeneratedAdventure>;
+  generate(input: AdventureGeneratorRequest): Promise<GeneratedAdventure>;
 };
 
 export type GenerateAdventureEvalStepConfigs = {
@@ -117,7 +123,7 @@ export async function runGenerateAdventureEvals(
   for (const fixture of fixtures) {
     const request = buildAdventureGeneratorRequest(fixture);
     try {
-      const adventure = await generator.generateAdventure(request);
+      const adventure = await generator.generate(request);
       const result = checkGeneratedAdventureQuality(adventure, fixture);
 
       assertionResults.push({ fixtureId: fixture.id, assertions: result.assertions });
@@ -301,11 +307,10 @@ async function createProductionAdventureGenerator(
 ): Promise<GenerateAdventureEvalGenerator> {
   const { OpenAIAdventureContentGenerator } = await import("../infra/openai-adventure-content-generator");
   const { OpenAIAdventureDependencyLinker } = await import("../infra/openai-adventure-dependency-linker");
-  const { OpenAIMultiStepAdventureGenerator } = await import("../infra/openai-multi-step-adventure-generator");
   const { OpenAIAdventureXpBalancer } = await import("../infra/openai-adventure-xp-balancer");
   const stepConfigs = buildAdventureGenerationStepConfigs(environment, model);
 
-  return new OpenAIMultiStepAdventureGenerator({
+  const stepAdapters = {
     contentGenerator: new OpenAIAdventureContentGenerator({
       config: stepConfigs.content,
     }),
@@ -315,7 +320,29 @@ async function createProductionAdventureGenerator(
     xpBalancer: new OpenAIAdventureXpBalancer({
       config: stepConfigs.xpBalancer,
     }),
-  });
+  };
+
+  return {
+    generate(input: AdventureGeneratorRequest) {
+      return generateAdventureForEval(input, stepAdapters);
+    },
+  };
+}
+
+async function generateAdventureForEval(
+  input: AdventureGeneratorRequest,
+  stepAdapters: {
+    contentGenerator: AdventureContentGenerator;
+    dependencyLinker: AdventureDependencyLinker;
+    xpBalancer: AdventureXpBalancer;
+  },
+): Promise<GeneratedAdventure> {
+  const content = await stepAdapters.contentGenerator.generateAdventureContent(input);
+  const stepContext = { userId: input.userId, adventureId: input.adventureId };
+  const dependencies = await stepAdapters.dependencyLinker.linkAdventureDependencies(content, stepContext);
+  const xpBalance = await stepAdapters.xpBalancer.balanceAdventureXp(content, dependencies, stepContext);
+
+  return parseGeneratedAdventure(assembleGeneratedAdventure({ content, dependencies, xpBalance }));
 }
 
 function buildRunDiagnostic(

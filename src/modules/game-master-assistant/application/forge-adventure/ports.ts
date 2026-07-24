@@ -1,5 +1,9 @@
-import type { GenerateAdventureInput } from "../../../adventure-planner/application/generate-adventure/input";
-import type { GenerateAdventureOutput } from "../../../adventure-planner/application/generate-adventure/output";
+import type {
+  AdventureContentGenerator,
+  AdventureDependencyLinker,
+  AdventureXpBalancer,
+  GeneratedAdventureRepository,
+} from "../../../adventure-planner/application/generate-adventure/ports";
 import type {
   GenerateInterviewOutputArtifactRepository,
   InterviewOutputArtifactGenerator,
@@ -7,8 +11,16 @@ import type {
 
 export type ForgeAdventureRepository = GenerateInterviewOutputArtifactRepository;
 
-export type ForgeAdventurePlanner = {
-  generateAdventure(input: GenerateAdventureInput): Promise<GenerateAdventureOutput>;
-};
+export type {
+  ForgeProgressEvent,
+  ForgeProgressReporter,
+  ForgeProgressStage,
+  ForgeProgressStatus,
+} from "./progress";
+
+export type ForgeAdventurePlanner = GeneratedAdventureRepository &
+  AdventureContentGenerator &
+  AdventureDependencyLinker &
+  AdventureXpBalancer;
 
 export type ForgeInterviewOutputArtifactGenerator = InterviewOutputArtifactGenerator;

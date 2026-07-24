@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { FakeAdventureDraftRepository } from "../application/test/fake-adventure-draft-repository";
 import { FakeGameMasterInterviewer } from "../application/test/fake-game-master-interviewer";
@@ -6,6 +6,14 @@ import {
   FakeInterviewOutputArtifactGenerator,
   validInterviewOutputArtifact,
 } from "../application/test/fake-interview-output-artifact-generator";
+import {
+  buildGeneratedAdventureBoundaryPayload,
+  buildGeneratedAdventureDependencyLinksBoundaryPayload,
+  buildGeneratedAdventureXpBalanceBoundaryPayload,
+} from "../../adventure-planner/application/test/generated-adventure-fixtures";
+import { parseGeneratedAdventure } from "../../adventure-planner/domain/generated-adventure";
+import { parseGeneratedAdventureDependencyLinks } from "../../adventure-planner/domain/generated-adventure-dependencies";
+import { parseGeneratedAdventureXpBalance } from "../../adventure-planner/domain/generated-adventure-xp";
 import { createGameMasterAssistantComposition } from "./game-master-assistant-composition";
 
 describe("createGameMasterAssistantComposition", () => {
@@ -151,18 +159,36 @@ describe("createGameMasterAssistantComposition", () => {
     });
     const generator = new FakeInterviewOutputArtifactGenerator();
     generator.queueArtifact(validInterviewOutputArtifact());
+    const generatedAdventure = validGeneratedAdventure();
+    const dependencyLinks = parseGeneratedAdventureDependencyLinks(
+      buildGeneratedAdventureDependencyLinksBoundaryPayload(),
+      generatedAdventure,
+    );
+    const xpBalance = parseGeneratedAdventureXpBalance(
+      buildGeneratedAdventureXpBalanceBoundaryPayload(),
+      dependencyLinks,
+    );
     const adventurePlanner = {
-      requests: [] as unknown[],
-      async generateAdventure(input: unknown) {
-        this.requests.push(input);
-        return {
-          status: "ready" as const,
-          adventureId: "adventure-1",
-          generatedAdventureId: "generated-adventure-1",
-          reusedExistingAdventure: false,
-          adventure: null as never,
-        };
+      contentRequests: [] as unknown[],
+      async findExistingGeneratedAdventure() {
+        return null;
       },
+      async generateAdventureContent(input: unknown) {
+        this.contentRequests.push(input);
+        return generatedAdventure;
+      },
+      async linkAdventureDependencies() {
+        return dependencyLinks;
+      },
+      async balanceAdventureXp() {
+        return xpBalance;
+      },
+      saveGeneratedAdventure: vi.fn().mockResolvedValue({
+        adventureId: "adventure-1",
+        generatedAdventureId: "generated-adventure-1",
+        reusedExistingAdventure: false,
+        adventure: validGeneratedAdventure(),
+      }),
     };
     const composition = createGameMasterAssistantComposition({
       adventureDraftRepository: repository,
@@ -182,7 +208,7 @@ describe("createGameMasterAssistantComposition", () => {
       reusedExistingArtifact: false,
       reusedExistingAdventure: false,
     });
-    expect(adventurePlanner.requests).toEqual([
+    expect(adventurePlanner.contentRequests).toEqual([
       expect.objectContaining({
         userId: "user-1",
         adventureId: "adventure-1",
@@ -192,3 +218,7 @@ describe("createGameMasterAssistantComposition", () => {
   });
 
 });
+
+function validGeneratedAdventure() {
+  return parseGeneratedAdventure(buildGeneratedAdventureBoundaryPayload());
+}

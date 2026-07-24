@@ -204,7 +204,7 @@ describe("Generate Adventure eval runner", () => {
     const errorOutput = createOutputCollector();
     const seenRequests: string[] = [];
     const generator: GenerateAdventureEvalGenerator = {
-      async generateAdventure(input) {
+      async generate(input) {
         seenRequests.push(input.adventureId);
         return parseGeneratedAdventure(buildGeneratedAdventureBoundaryPayload());
       },
@@ -261,7 +261,7 @@ describe("Generate Adventure eval runner", () => {
       testCaseId: "selected-eval",
       environment: buildEnvironment(),
       createGenerator: () => ({
-        async generateAdventure(input) {
+        async generate(input) {
           seenRequests.push(input.adventureId);
           return parseGeneratedAdventure(buildGeneratedAdventureBoundaryPayload());
         },
@@ -282,7 +282,7 @@ describe("Generate Adventure eval runner", () => {
       fixturesDirectory: directory,
       environment: buildEnvironment(),
       createGenerator: () => ({
-        async generateAdventure() {
+        async generate() {
           throw new AdventureGeneratorError(
             "provider_output_invalid",
             "OpenAI structured output was not valid JSON.",
@@ -312,7 +312,7 @@ describe("Generate Adventure eval runner", () => {
       fixturesDirectory: directory,
       environment: buildEnvironment(),
       createGenerator: () => ({
-        async generateAdventure() {
+        async generate() {
           throw new AdventureGeneratorError(
             "provider_output_invalid",
             "Multi-step Adventure final assembly failed.",
@@ -343,7 +343,7 @@ describe("Generate Adventure eval runner", () => {
       fixturesDirectory: directory,
       environment: buildEnvironment(),
       createGenerator: () => ({
-        async generateAdventure() {
+        async generate() {
           throw new AdventureGeneratorError(
             "provider_output_invalid",
             "OpenAI Adventure dependency linking request failed.",

@@ -1,6 +1,9 @@
-import type { ValidatedGeneratedAdventureContent } from "./output";
+import type { GeneratedAdventure } from "../../domain/generated-adventure";
 import type { InterviewOutputArtifact } from "../../../game-master-assistant/domain/interview-output-artifact";
 import type { InterviewMessage } from "../../../game-master-assistant/domain/interview-message";
+import type { GeneratedAdventureContent } from "../../domain/generated-adventure-content";
+import type { GeneratedAdventureDependencyLinks } from "../../domain/generated-adventure-dependencies";
+import type { GeneratedAdventureXpBalance } from "../../domain/generated-adventure-xp";
 
 export type ExistingGeneratedAdventureLookup = {
   userId: string;
@@ -9,13 +12,13 @@ export type ExistingGeneratedAdventureLookup = {
 
 export type SaveGeneratedAdventureInput = ExistingGeneratedAdventureLookup & {
   interviewOutputArtifactId: string;
-  adventure: ValidatedGeneratedAdventureContent;
+  adventure: GeneratedAdventure;
 };
 
 export type PersistedGeneratedAdventure = {
   adventureId: string;
   generatedAdventureId: string;
-  adventure: ValidatedGeneratedAdventureContent;
+  adventure: GeneratedAdventure;
 };
 
 export type SaveGeneratedAdventureResult = PersistedGeneratedAdventure & {
@@ -36,9 +39,25 @@ export type AdventureGeneratorRequest = ExistingGeneratedAdventureLookup & {
   transcript: InterviewMessage[];
 };
 
-export type AdventureGenerator = {
-  generateAdventure(input: AdventureGeneratorRequest): Promise<ValidatedGeneratedAdventureContent>;
+export type AdventureContentGenerator = {
+  generateAdventureContent(input: AdventureGeneratorRequest): Promise<GeneratedAdventureContent>;
 };
+
+export type AdventureDependencyLinker = {
+  linkAdventureDependencies(
+    content: GeneratedAdventureContent,
+    context?: { userId?: string; adventureId?: string },
+  ): Promise<GeneratedAdventureDependencyLinks>;
+};
+
+export type AdventureXpBalancer = {
+  balanceAdventureXp(
+    content: GeneratedAdventureContent,
+    dependencies: GeneratedAdventureDependencyLinks,
+    context?: { userId?: string; adventureId?: string },
+  ): Promise<GeneratedAdventureXpBalance>;
+};
+
 
 export const ADVENTURE_GENERATOR_ERROR_CODES = [
   "configuration_missing",
