@@ -20,13 +20,28 @@ import type { ForgeConnectionViewState, ForgeProgressSnapshot } from "./forge-pr
 type ForgeProgressClientProps = {
   adventureId: string;
   eventsUrl: string;
+  travelerTestMode?: boolean;
 };
 
 type ForgeClientStatus = ForgeConnectionViewState | "complete";
 
 const STALL_THRESHOLD_MS = 75_000;
 
-export function ForgeProgressClient({ adventureId, eventsUrl }: ForgeProgressClientProps) {
+const FORGE_TEST_INTERVAL_MS = 2_000;
+
+const FORGE_TEST_PROGRESS_EVENTS = [
+  { stage: "quest_lore", status: "started" },
+  { stage: "adventure_roadmap", status: "started" },
+  { stage: "connections", status: "started" },
+  { stage: "xp_rewards", status: "started" },
+  { stage: "opening_adventure", status: "started" },
+] as const;
+
+export function ForgeProgressClient({
+  adventureId,
+  eventsUrl,
+  travelerTestMode = false,
+}: ForgeProgressClientProps) {
   const { push } = useRouter();
   const [retryKey, restartConnection] = useReducer((value: number) => value + 1, 0);
   const [snapshot, setSnapshot] = useState<ForgeProgressSnapshot>(() =>
@@ -36,6 +51,20 @@ export function ForgeProgressClient({ adventureId, eventsUrl }: ForgeProgressCli
   const stages = useMemo(() => buildForgeRoadStageViews(snapshot), [snapshot]);
 
   useEffect(() => {
+    if (travelerTestMode) {
+      let stageIndex = 0;
+      const interval = window.setInterval(() => {
+        stageIndex = (stageIndex + 1) % FORGE_TEST_PROGRESS_EVENTS.length;
+        setSnapshot((currentSnapshot) =>
+          applyForgeProgressEvent(currentSnapshot, FORGE_TEST_PROGRESS_EVENTS[stageIndex]),
+        );
+      }, FORGE_TEST_INTERVAL_MS);
+
+      return () => {
+        window.clearInterval(interval);
+      };
+    }
+
     let terminal = false;
     let stallTimer: number | undefined;
     const source = new EventSource(buildEventSourceUrl(eventsUrl, retryKey));
@@ -114,7 +143,7 @@ export function ForgeProgressClient({ adventureId, eventsUrl }: ForgeProgressCli
     return () => {
       closeTerminalStream();
     };
-  }, [adventureId, eventsUrl, retryKey, push]);
+  }, [adventureId, eventsUrl, retryKey, push, travelerTestMode]);
 
   function tryAgain() {
     setSnapshot(createInitialForgeProgressSnapshot());

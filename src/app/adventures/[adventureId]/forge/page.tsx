@@ -13,17 +13,34 @@ type ForgeAdventurePageProps = {
   params: Promise<{
     adventureId: string;
   }>;
+  searchParams?: Promise<{
+    travelerTest?: string;
+  }>;
 };
 
 export default async function ForgeAdventurePage({
   params,
+  searchParams,
 }: ForgeAdventurePageProps) {
   const { adventureId } = await params;
+  const resolvedSearchParams = await searchParams;
   const currentUser = await requireCurrentSessionUser();
 
   if (currentUser.status === "unauthenticated") {
     const nextPath = encodeURIComponent(`/adventures/${adventureId}/forge`);
     redirect(`/login?next=${nextPath}`);
+  }
+
+  const travelerTestMode = resolvedSearchParams?.travelerTest === "1";
+
+  if (travelerTestMode) {
+    return (
+      <ForgeProgressClient
+        adventureId={adventureId}
+        eventsUrl={`/adventures/${adventureId}/forge/events`}
+        travelerTestMode
+      />
+    );
   }
 
   const gameMasterAssistant = createGameMasterAssistantComposition();

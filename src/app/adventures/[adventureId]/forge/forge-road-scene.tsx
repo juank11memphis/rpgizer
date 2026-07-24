@@ -1,10 +1,12 @@
-import type { ForgeRoadStageView } from "./forge-progress-types";
+import type { ForgeProgressStage, ForgeRoadStageView } from "./forge-progress-types";
 import { ForgeRoadStation } from "./forge-road-station";
 
-const stateMarkers: Record<ForgeRoadStageView["state"], string> = {
-  completed: "✓",
-  current: "●",
-  future: "○",
+const travelerStops: Readonly<Record<ForgeProgressStage, string>> = {
+  quest_lore: "8%",
+  adventure_roadmap: "29%",
+  connections: "50%",
+  xp_rewards: "71%",
+  opening_adventure: "92%",
 };
 
 type ForgeRoadSceneProps = {
@@ -13,6 +15,8 @@ type ForgeRoadSceneProps = {
 };
 
 export function ForgeRoadScene({ stages, isPaused = false }: ForgeRoadSceneProps) {
+  const currentStage = stages.find((stage) => stage.state === "current") ?? stages[stages.length - 1];
+
   return (
     <section
       className={[
@@ -23,14 +27,20 @@ export function ForgeRoadScene({ stages, isPaused = false }: ForgeRoadSceneProps
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_20%_40%,rgba(251,191,36,0.2),transparent_16%),radial-gradient(circle_at_78%_28%,rgba(167,139,250,0.18),transparent_14%)] motion-safe:animate-pulse motion-reduce:animate-none" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-amber-950/40 to-transparent" />
-      <div className="relative min-h-56 md:min-h-64">
+      <div className="relative min-h-64 md:min-h-72">
         <div className="absolute inset-x-8 top-28 h-1 rounded-full bg-gradient-to-r from-amber-700/40 via-amber-200/50 to-violet-200/35" aria-hidden="true" />
-        <ol className="relative z-10 flex snap-x gap-4 overflow-x-auto pb-8 pt-16 md:overflow-visible">
+        <ol className="relative z-20 flex snap-x gap-4 overflow-x-auto pb-8 pt-16 md:overflow-visible">
           {stages.map((stage) => (
             <ForgeRoadStation key={stage.key} stage={stage} />
           ))}
         </ol>
-        <div className="absolute left-1/2 top-16 z-20 -translate-x-1/2 text-center motion-safe:transition-transform motion-reduce:transition-none" aria-hidden="true">
+        <div
+          className="absolute top-36 z-10 -translate-x-1/2 text-center motion-safe:transition-all motion-safe:duration-1000 motion-safe:ease-in-out motion-reduce:transition-none md:top-40"
+          style={{ left: travelerStops[currentStage.key] }}
+          aria-hidden="true"
+          data-testid="cloaked-traveler"
+          data-stage={currentStage.key}
+        >
           <div className="mx-auto flex size-14 items-center justify-center rounded-full border border-amber-100/25 bg-stone-950/80 text-2xl shadow-[0_0_30px_rgba(251,191,36,0.22)]">
             🧙
           </div>
@@ -38,16 +48,7 @@ export function ForgeRoadScene({ stages, isPaused = false }: ForgeRoadSceneProps
             cloaked traveler
           </p>
         </div>
-        <p className="absolute bottom-2 left-1/2 z-10 w-full -translate-x-1/2 text-center text-xs font-medium text-stone-300/80">
-          {formatRoadSummary(stages)}
-        </p>
       </div>
     </section>
   );
-}
-
-function formatRoadSummary(stages: readonly ForgeRoadStageView[]): string {
-  return stages
-    .map((stage) => `${stage.shortLabel} ${stateMarkers[stage.state]}`)
-    .join(" → ");
 }

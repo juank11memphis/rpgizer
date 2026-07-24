@@ -62,8 +62,8 @@ describe("Forge Road progress screen", () => {
     expect(markup).toContain("Next");
     expect(markup).not.toContain("Try again");
     expect(markup).not.toContain("Back to interview");
-    expect(markup).not.toMatch(/\b\d+%/);
-    expect(markup).not.toMatch(forbiddenUserTerms);
+    expect(visibleText(markup)).not.toMatch(/\b\d+%/);
+    expect(visibleText(markup)).not.toMatch(forbiddenUserTerms);
   });
 
   it("renders completed, current, and future text states independent of animation", () => {
@@ -78,6 +78,8 @@ describe("Forge Road progress screen", () => {
     expect(markup).toContain("Now");
     expect(markup).toContain("Next");
     expect(markup).toContain("motion-reduce:animate-none");
+    expect(markup).toContain("data-stage=\"connections\"");
+    expect(markup).toContain("motion-safe:transition-all");
   });
 
   it("renders the paused state with recovery actions only when needed", () => {
@@ -88,7 +90,7 @@ describe("Forge Road progress screen", () => {
     expect(markup).toContain("Your interview is safe. Try again, or return to adjust your answers.");
     expect(markup).toContain("Try again");
     expect(markup).toContain("Back to interview");
-    expect(markup).not.toMatch(forbiddenUserTerms);
+    expect(visibleText(markup)).not.toMatch(forbiddenUserTerms);
   });
 });
 
@@ -114,6 +116,7 @@ describe("ForgeProgressClient", () => {
     });
 
     expect(container.textContent).toContain("Building your adventure roadmap");
+    expect(getTravelerStage()).toBe("adventure_roadmap");
     expect(container.textContent).toContain("Complete");
     expect(container.textContent).not.toMatch(forbiddenUserTerms);
   });
@@ -195,6 +198,36 @@ describe("ForgeProgressClient", () => {
     expect(container.textContent).not.toContain("Back to interview");
   });
 
+
+  it("can run a hard-coded traveler test without opening EventSource", async () => {
+    await act(async () => {
+      root.render(
+        <ForgeProgressClient
+          adventureId="adventure-1"
+          eventsUrl="/adventures/adventure-1/forge/events"
+          travelerTestMode
+        />,
+      );
+    });
+
+    expect(eventSources).toHaveLength(0);
+    expect(getTravelerStage()).toBe("quest_lore");
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+      await Promise.resolve();
+    });
+
+    expect(getTravelerStage()).toBe("adventure_roadmap");
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+      await Promise.resolve();
+    });
+
+    expect(getTravelerStage()).toBe("connections");
+  });
+
   it("resets the stall timer after valid progress", async () => {
     await renderClient();
 
@@ -231,6 +264,11 @@ describe("ForgeProgressClient", () => {
   });
 });
 
+
+function visibleText(markup: string): string {
+  return markup.replace(/<[^>]*>/g, " ");
+}
+
 function renderStaticProgress(
   snapshot: ForgeProgressSnapshot = createInitialForgeProgressSnapshot(),
   connectionState: ForgeConnectionViewState = "progress",
@@ -265,6 +303,11 @@ function envelope(data: unknown): string {
       data,
     }),
   );
+}
+
+
+function getTravelerStage(): string | null {
+  return container.querySelector('[data-testid="cloaked-traveler"]')?.getAttribute("data-stage") ?? null;
 }
 
 function getLinkHref(label: string): string | null {

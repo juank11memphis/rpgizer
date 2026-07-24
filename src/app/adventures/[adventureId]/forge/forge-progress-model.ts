@@ -32,11 +32,11 @@ const FORGE_STAGE_SHORT_LABELS: Readonly<Record<ForgeProgressStage, string>> = {
 };
 
 const FORGE_STAGE_STATION_LABELS: Readonly<Record<ForgeProgressStage, string>> = {
-  quest_lore: "campfire",
-  adventure_roadmap: "map",
-  connections: "threads",
-  xp_rewards: "forge",
-  opening_adventure: "gate",
+  quest_lore: "Journal",
+  adventure_roadmap: "Map",
+  connections: "Pack",
+  xp_rewards: "Rewards",
+  opening_adventure: "Gate",
 };
 
 export function createInitialForgeProgressSnapshot(): ForgeProgressSnapshot {
