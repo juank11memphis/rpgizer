@@ -3,8 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createGameMasterAssistantComposition } from "@/modules/game-master-assistant/infra/game-master-assistant-composition";
 import { requireCurrentSessionUser } from "@/modules/user-identity/infra/auth/session";
 
-import { ForgeFailure } from "./forge-failure";
-import { ForgeReady } from "./forge-ready";
+import { ForgeProgressClient } from "./forge-progress-client";
 
 export const metadata = {
   title: "Forge Adventure | RPGizer",
@@ -28,22 +27,23 @@ export default async function ForgeAdventurePage({
   }
 
   const gameMasterAssistant = createGameMasterAssistantComposition();
-  const result = await gameMasterAssistant.generateInterviewOutputArtifact({
+  const { interview } = await gameMasterAssistant.getAdventureInterview({
     userId: currentUser.user.id,
     adventureId,
   });
 
-  if (result.status === "not_found") {
+  if (!interview) {
     notFound();
   }
 
-  if (result.status === "not_confirmed") {
+  if (interview.draft.interviewStatus !== "confirmed") {
     redirect(`/adventures/${adventureId}/interview`);
   }
 
-  if (result.status === "recoverable_failure") {
-    return <ForgeFailure adventureId={adventureId} message={result.message} />;
-  }
-
-  return <ForgeReady />;
+  return (
+    <ForgeProgressClient
+      adventureId={adventureId}
+      eventsUrl={`/adventures/${adventureId}/forge/events`}
+    />
+  );
 }
