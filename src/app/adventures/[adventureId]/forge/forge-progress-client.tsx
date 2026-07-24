@@ -37,17 +37,38 @@ export function ForgeProgressClient({ adventureId, eventsUrl }: ForgeProgressCli
 
   useEffect(() => {
     let terminal = false;
+    let stallTimer: number | undefined;
     const source = new EventSource(buildEventSourceUrl(eventsUrl, retryKey));
-    const stallTimer = window.setTimeout(() => {
-      if (!terminal) {
-        terminal = true;
-        source.close();
-        setStatus("paused");
+
+    const clearStallTimer = () => {
+      if (stallTimer !== undefined) {
+        window.clearTimeout(stallTimer);
+        stallTimer = undefined;
       }
-    }, STALL_THRESHOLD_MS);
+    };
+
+    const startStallTimer = () => {
+      clearStallTimer();
+      stallTimer = window.setTimeout(() => {
+        if (!terminal) {
+          terminal = true;
+          source.close();
+          setStatus("paused");
+        }
+      }, STALL_THRESHOLD_MS);
+    };
+
+    const closeTerminalStream = () => {
+      terminal = true;
+      clearStallTimer();
+      source.close();
+    };
+
+    startStallTimer();
 
     source.addEventListener(FORGE_SSE_EVENT_NAMES.connected, () => {
       if (!terminal) {
+        startStallTimer();
         setStatus("progress");
       }
     });
@@ -55,21 +76,20 @@ export function ForgeProgressClient({ adventureId, eventsUrl }: ForgeProgressCli
     source.addEventListener(FORGE_SSE_EVENT_NAMES.progress, (event) => {
       if (terminal) return;
       const envelope = parseSseEnvelope(event.data);
-      setSnapshot((currentSnapshot) =>
-        envelope ? applyForgeProgressEvent(currentSnapshot, envelope.data) : currentSnapshot,
-      );
+      if (!envelope) return;
+
+      startStallTimer();
+      setSnapshot((currentSnapshot) => applyForgeProgressEvent(currentSnapshot, envelope.data));
       setStatus("progress");
     });
 
     source.addEventListener(FORGE_SSE_EVENT_NAMES.complete, (event) => {
       if (terminal) return;
-      terminal = true;
-      window.clearTimeout(stallTimer);
-      source.close();
+      closeTerminalStream();
       setStatus("complete");
 
       const envelope = parseSseEnvelope<ForgeCompletePayload>(event.data);
-      push(envelope?.data.destination ?? `/adventures/${adventureId}`);
+      push(buildForgedDestination(envelope?.data.destination ?? `/adventures/${adventureId}`));
     });
 
     source.addEventListener(FORGE_SSE_EVENT_NAMES.error, (event) => {
@@ -80,16 +100,8 @@ export function ForgeProgressClient({ adventureId, eventsUrl }: ForgeProgressCli
         return;
       }
 
-      terminal = true;
-      window.clearTimeout(stallTimer);
-      source.close();
-
-      const envelope = parseSseEnvelope<ForgeErrorPayload>(eventData);
-      if (envelope?.data.canRetry) {
-        setStatus("paused");
-        return;
-      }
-
+      closeTerminalStream();
+      parseSseEnvelope<ForgeErrorPayload>(eventData);
       setStatus("paused");
     });
 
@@ -100,9 +112,7 @@ export function ForgeProgressClient({ adventureId, eventsUrl }: ForgeProgressCli
     };
 
     return () => {
-      terminal = true;
-      window.clearTimeout(stallTimer);
-      source.close();
+      closeTerminalStream();
     };
   }, [adventureId, eventsUrl, retryKey, push]);
 
@@ -129,6 +139,11 @@ function buildEventSourceUrl(eventsUrl: string, retryKey: number): string {
 
   const separator = eventsUrl.includes("?") ? "&" : "?";
   return `${eventsUrl}${separator}retry=${retryKey}`;
+}
+
+function buildForgedDestination(destination: string): string {
+  const separator = destination.includes("?") ? "&" : "?";
+  return `${destination}${separator}forged=1`;
 }
 
 function readMessageEventData(event: Event): string {

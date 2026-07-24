@@ -146,7 +146,7 @@ describe("ForgeProgressClient", () => {
     });
 
     expect(eventSources[0].closed).toBe(true);
-    expect(routerPush).toHaveBeenCalledWith("/adventures/adventure-1");
+    expect(routerPush).toHaveBeenCalledWith("/adventures/adventure-1?forged=1");
   });
 
   it("closes and shows paused recovery on terminal error", async () => {
@@ -160,6 +160,22 @@ describe("ForgeProgressClient", () => {
     expect(eventSources[0].closed).toBe(true);
     expect(container.textContent).toContain("The forge needs another spark.");
     expect(container.textContent).toContain("Try again");
+    expect(getLinkHref("Back to interview")).toBe("/adventures/adventure-1/interview");
+    expect(container.textContent).not.toMatch(forbiddenUserTerms);
+  });
+
+  it("uses the same safe recovery state for malformed terminal error payloads", async () => {
+    await renderClient();
+
+    await act(async () => {
+      eventSources[0].emit("error", "not-json provider stack trace");
+      await Promise.resolve();
+    });
+
+    expect(eventSources[0].closed).toBe(true);
+    expect(container.textContent).toContain("The forge needs another spark.");
+    expect(container.textContent).toContain("Your interview is safe. Try again, or return to adjust your answers.");
+    expect(container.textContent).not.toMatch(/not-json|provider|stack trace/i);
   });
 
   it("restarts the EventSource connection when Try again is selected", async () => {
@@ -172,8 +188,34 @@ describe("ForgeProgressClient", () => {
     clickButton("Try again");
 
     expect(eventSources).toHaveLength(2);
+    expect(eventSources[0].closed).toBe(true);
+    expect(eventSources[1].closed).toBe(false);
     expect(eventSources[1].url).toBe("/adventures/adventure-1/forge/events?retry=1");
+    expect(container.textContent).toContain("Gathering your quest lore");
     expect(container.textContent).not.toContain("Back to interview");
+  });
+
+  it("resets the stall timer after valid progress", async () => {
+    await renderClient();
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+      eventSources[0].emit("progress", envelope({ stage: "adventure_roadmap", status: "started" }));
+      vi.advanceTimersByTime(60_000);
+      await Promise.resolve();
+    });
+
+    expect(eventSources[0].closed).toBe(false);
+    expect(container.textContent).toContain("Building your adventure roadmap");
+    expect(container.textContent).not.toContain("Try again");
+
+    await act(async () => {
+      vi.advanceTimersByTime(15_000);
+      await Promise.resolve();
+    });
+
+    expect(eventSources[0].closed).toBe(true);
+    expect(container.textContent).toContain("The forge needs another spark.");
   });
 
   it("shows paused recovery after a client stall threshold", async () => {
@@ -223,6 +265,14 @@ function envelope(data: unknown): string {
       data,
     }),
   );
+}
+
+function getLinkHref(label: string): string | null {
+  const link = Array.from(container.querySelectorAll("a")).find(
+    (candidate) => candidate.textContent === label,
+  );
+
+  return link?.getAttribute("href") ?? null;
 }
 
 function clickButton(label: string) {
