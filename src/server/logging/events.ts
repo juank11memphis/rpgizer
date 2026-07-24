@@ -78,6 +78,11 @@ export const APPLICATION_LOG_EVENTS = {
     "forge.generate_adventure.xp_balancing.failed",
   FORGE_GENERATE_ADVENTURE_XP_BALANCING_INVALID:
     "forge.generate_adventure.xp_balancing.invalid",
+  FORGE_SSE_STREAM_OPENED: "forge.sse_stream.opened",
+  FORGE_SSE_STREAM_COMPLETED: "forge.sse_stream.completed",
+  FORGE_SSE_STREAM_EXPECTED_ERROR: "forge.sse_stream.expected_error",
+  FORGE_SSE_STREAM_UNEXPECTED_ERROR: "forge.sse_stream.unexpected_error",
+  FORGE_SSE_STREAM_CLIENT_DISCONNECTED: "forge.sse_stream.client_disconnected",
   GENERATE_ADVENTURE_EVAL_STARTED: "eval.generate_adventure.started",
   GENERATE_ADVENTURE_EVAL_COMPLETED: "eval.generate_adventure.completed",
   GENERATE_ADVENTURE_EVAL_FAILED: "eval.generate_adventure.failed",

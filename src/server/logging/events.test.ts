@@ -20,4 +20,17 @@ describe("APPLICATION_LOG_EVENTS", () => {
       "eval.interview_output_artifact.unexpected_error",
     );
   });
+  it("includes Forge SSE stream lifecycle events", () => {
+    expect(APPLICATION_LOG_EVENTS.FORGE_SSE_STREAM_OPENED).toBe("forge.sse_stream.opened");
+    expect(APPLICATION_LOG_EVENTS.FORGE_SSE_STREAM_COMPLETED).toBe("forge.sse_stream.completed");
+    expect(APPLICATION_LOG_EVENTS.FORGE_SSE_STREAM_EXPECTED_ERROR).toBe(
+      "forge.sse_stream.expected_error",
+    );
+    expect(APPLICATION_LOG_EVENTS.FORGE_SSE_STREAM_UNEXPECTED_ERROR).toBe(
+      "forge.sse_stream.unexpected_error",
+    );
+    expect(APPLICATION_LOG_EVENTS.FORGE_SSE_STREAM_CLIENT_DISCONNECTED).toBe(
+      "forge.sse_stream.client_disconnected",
+    );
+  });
 });
