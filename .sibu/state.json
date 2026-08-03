@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.17.1",
-  "templateVersion": "139",
+  "templateVersion": "143",
   "generatedAt": "2026-06-29T18:44:44.969Z",
-  "updatedAt": "2026-07-23T22:10:48.972Z",
+  "updatedAt": "2026-08-03T22:59:44.091Z",
   "selectedAgents": [
     "codex"
   ],
@@ -25,8 +25,8 @@
   "managedFiles": {
     "AGENTS.md": {
       "template": "AGENTS.md",
-      "templateVersion": "36",
-      "sha256": "565101a7e8e5071e29094db44214f37239a28c06269efd80d0c5b7228502639d",
+      "templateVersion": "37",
+      "sha256": "b3d47b4d43adaafcda2f2ec92d82d8e7e418e15acfe66d693636e05057a2e839",
       "status": "managed"
     },
     ".codex/config.toml": {
@@ -37,134 +37,134 @@
     },
     ".agents/skills/clean-code/SKILL.md": {
       "template": "skills/clean-code/SKILL.md",
-      "templateVersion": "6",
-      "sha256": "2100a24fd5e828fe1e4dc5a2b20edbe852e5d4a41a75591ca4f7beda3e8498e8",
+      "templateVersion": "7",
+      "sha256": "a71cad2d7ccba81e5df2492f9aec36445dde7452a086e66737e3b899cabe7f65",
       "status": "managed"
     },
     ".agents/skills/product-vision-writer/SKILL.md": {
       "template": "skills/product-vision-writer/SKILL.md",
-      "templateVersion": "9",
-      "sha256": "486636c46ab1aa2d1820bff193ecb61cbf164a02af7d05d1a2d8565978a06a39",
+      "templateVersion": "10",
+      "sha256": "fa6aab7f40a5e16843d99351b1f1968ffc58f357a55a19c09f0e5cbd801b76f9",
       "status": "managed"
     },
     ".agents/skills/business-domain-model-writer/SKILL.md": {
       "template": "skills/business-domain-model-writer/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "db094c55ebf72bed6d54080840a04bc6d70e45250c964b9d411fd4cb332b6c52",
+      "templateVersion": "8",
+      "sha256": "1c02c38e40f2f39fbe3cd5f9bbc1e72270004a794f540e3fca92c24f52a5e0c8",
       "status": "managed"
     },
     ".agents/skills/capabilities-map-writer/SKILL.md": {
       "template": "skills/capabilities-map-writer/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "00ec7f5245f773b7f2da4d6be9f8e684722f07173b3aa66b45b0c0eb72ddff31",
+      "templateVersion": "3",
+      "sha256": "494d565f0ec3d0ae71582ece895bc29e93185fc411a3ec49e0981338df1b1bfb",
       "status": "managed"
     },
     ".agents/skills/deep-module-map-writer/SKILL.md": {
       "template": "skills/deep-module-map-writer/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "852c658dbd95752f15622d68134f97251069048bfdbb3a83224e751020cd3152",
+      "templateVersion": "8",
+      "sha256": "fa9cb7c057c32acb1005a114efacdde5c2f4db58b02e9f98252a748775287d92",
       "status": "managed"
     },
     ".agents/skills/feature-brief-writer/SKILL.md": {
       "template": "skills/feature-brief-writer/SKILL.md",
-      "templateVersion": "16",
-      "sha256": "cddb6acea2bd280352ee4e33612bf8323d7ba7980e901e1aee55debef4339d02",
+      "templateVersion": "17",
+      "sha256": "d64be7a24cc788e1928ccaeb2f96384eb29e45dd68e83f52daae3c00608593ec",
       "status": "managed"
     },
     ".agents/skills/technical-design-writer/SKILL.md": {
       "template": "skills/technical-design-writer/SKILL.md",
-      "templateVersion": "23",
-      "sha256": "340d79bacd8bd8e055220e0c145d62957b7f0dec6c0c875c92c5e010d622a3fe",
+      "templateVersion": "25",
+      "sha256": "d5fce0532584fa96793f74f18a2e048115a9c43de0cf76336f201788848f01a1",
       "status": "managed"
     },
     ".agents/skills/scrum-master-planner/SKILL.md": {
       "template": "skills/scrum-master-planner/SKILL.md",
-      "templateVersion": "12",
-      "sha256": "0b8f07c47a70f7a46d38938f606056de8251de72b3e7ad55d614d2a5f061c748",
+      "templateVersion": "14",
+      "sha256": "df46a6ff0eb6db1519fbb52ca8b46d198b8e3474a55e2afe494e1c849324f8e4",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-planner/SKILL.md": {
       "template": "skills/ai-implementation-planner/SKILL.md",
-      "templateVersion": "18",
-      "sha256": "607b201ce645039df686559e867e346dd7c8c4abfccf19185664676bd3cd3f8e",
+      "templateVersion": "20",
+      "sha256": "063adff5cf84fe69850edca9531d951e406bf573cf8657bd31ecbe0a413c5091",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "81b6a83a785c682a8b01424bcb3e15b2e93f55e447b475c5c859749b689bc62f",
+      "templateVersion": "4",
+      "sha256": "0f2375bbf1b2694bfdc254d661cf5b8f05b82ff1e5646d2f9f5d29dfaf0e8328",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
       "template": ".codex/agents/sibu-implementation-planner.toml",
-      "templateVersion": "2",
-      "sha256": "04abd21a0b21ed84442e66ab7b587e7cd4ee8861858c1242b226f040b406de85",
+      "templateVersion": "3",
+      "sha256": "d2cf0c0dfbde625e6cb1ab5350af6a492f1cb3a46df66c025f9707de6f6a0b3a",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-plan-executor/SKILL.md": {
       "template": "skills/ai-implementation-plan-executor/SKILL.md",
-      "templateVersion": "26",
-      "sha256": "50c7233b92f81c7669640be3fd10b898430b6ec0b8d8b4a9ae8e57ca13e369da",
+      "templateVersion": "28",
+      "sha256": "1bca2d263254f6aff61c7c230e5f535ccfd232ed5f54f2c10a39b093712991aa",
       "status": "managed"
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
-      "templateVersion": "3",
-      "sha256": "0d9daaa429245b72cb4897aa4ffefcfb18dbc8293200b267cf6164dad9cb8775",
+      "templateVersion": "5",
+      "sha256": "fd77b11289038b5f2d309fd08d270d716c504735afcd836a959037c2077e8bfd",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
       "template": ".codex/agents/sibu-implementation-executor.toml",
-      "templateVersion": "2",
-      "sha256": "92005a09200c3306bf48702faf9d73d0236a4c7ad11b61ffe08cbd00ca85aff0",
+      "templateVersion": "3",
+      "sha256": "48a23837da233bd53bef0ff49db060f2eb6131596e692d3eeb403c66ee25faa9",
       "status": "managed"
     },
     ".agents/skills/feature-idea-capture/SKILL.md": {
       "template": "skills/feature-idea-capture/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "829f56e517cf2322ea29e7cee3752a1ac04a310c2bcfa7824fd7859d1521dcae",
+      "templateVersion": "2",
+      "sha256": "0c56978b7b362f209ba21977b64d55f411d7e5424bb42097a6b64d266d250e73",
       "status": "managed"
     },
     ".agents/skills/typescript/SKILL.md": {
       "template": "skills/typescript/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "532043bb2665efc0da3600cf40ba5b746309ef9fdccdf9b1502e3f6e01f4df2c",
+      "templateVersion": "3",
+      "sha256": "3c6eaa7ff9d053a3b68b07d79a958761c1a310059011199a8c5de8e5202a8324",
       "status": "managed"
     },
     ".agents/skills/react/SKILL.md": {
       "template": "skills/react/SKILL.md",
-      "templateVersion": "4",
-      "sha256": "c53674d29d3d121b008c10e6e829d51a7d0b345f9b25321f3e252219f07c0e18",
+      "templateVersion": "5",
+      "sha256": "07b4cf0a36aa6f6e5c0406b8c033e64eb9fa34595fb44acc786dbbdb515bcc7e",
       "status": "managed"
     },
     ".agents/skills/nextjs/SKILL.md": {
       "template": "skills/nextjs/SKILL.md",
-      "templateVersion": "4",
-      "sha256": "04f6926faf9a759d7977fb2cfd3ff43e30acd3d632503b64fbe5c9109ce57bc0",
+      "templateVersion": "5",
+      "sha256": "52acda69322cd1f47af5958cb0fae78cd219937829363eed13b59d210f5ed5ff",
       "status": "managed"
     },
     ".agents/skills/postgresql-expert/SKILL.md": {
       "template": "skills/postgresql-expert/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "ba28de24fbb70eeaa8c366d3c25c3382d21423999111c97623d0479c36376517",
+      "templateVersion": "2",
+      "sha256": "4c455f3fa676515a57df8d5020ba4260bc0a25a385f2aa2966f1d3ca58ee41ce",
       "status": "managed"
     },
     ".agents/skills/ddd-hexagonal/SKILL.md": {
       "template": "skills/architecture/ddd-hexagonal/SKILL.md",
-      "templateVersion": "9",
-      "sha256": "e59ad950cd971468cb7e42ea8e1a5110f6ef6184a5a4dd2df5531711eadebeb7",
+      "templateVersion": "10",
+      "sha256": "6e22fa9f03fac7747817df409a503f6fede87ed9052db20c83305e7349988c50",
       "status": "managed"
     },
     ".agents/skills/ai-prompt-engineer-master/SKILL.md": {
       "template": "skills/ai-prompt-engineer-master/SKILL.md",
-      "templateVersion": "2",
-      "sha256": "3a8b3a7ad9677511d8e777065c0ab43d846449cebb188f1fdbb765f0ca2dbc21",
+      "templateVersion": "3",
+      "sha256": "85546d5fc5eb3ce36047f791a1f2a04c4b88b5303d00094fd711a1f223b45f79",
       "status": "managed"
     },
     ".agents/skills/ux-expert/SKILL.md": {
       "template": "skills/ux-expert/SKILL.md",
-      "templateVersion": "13",
-      "sha256": "d280f5b2741f8c141d26d6edf390bd8eff22d331b6303cfc4c387328d39f04be",
+      "templateVersion": "14",
+      "sha256": "11a03cd4709473bdcbc3364b7cbbcca0297bb11da54f6f300a4eddc317e98315",
       "status": "managed"
     },
     ".codex/hooks.json": {
@@ -175,8 +175,8 @@
     },
     ".agents/skills/structured-logging/SKILL.md": {
       "template": "skills/structured-logging/SKILL.md",
-      "templateVersion": "1",
-      "sha256": "b3654c2c5b16e73c479fa3d542a17afeed7ca414c81431a2763255917f282ef6",
+      "templateVersion": "2",
+      "sha256": "1f5e04ae119c8d5dc7c13b687d31a3faed9a7045a4aad686f55c095f0199d564",
       "status": "managed"
     }
   }
