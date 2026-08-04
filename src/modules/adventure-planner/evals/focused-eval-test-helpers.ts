@@ -52,6 +52,11 @@ export function buildContentPayload(overrides: Record<string, unknown> = {}): Re
             description: "Write practical Spanish openers and fallback phrases for a coffee chat.",
             doneCondition: "At least twelve prompts are written in the conversation prompt list.",
             rewardIntent: "Reward planning and speaking preparation.",
+            steps: [
+              { key: "step-gather-prompts", description: "Gather coffee chat topics from the notebook and language app." },
+              { key: "step-write-openers", description: "Write four Spanish openers and four follow-up questions." },
+              { key: "step-add-fallbacks", description: "Add fallback phrases for moments when a word is missing." },
+            ],
           },
         ],
         sideQuests: [
@@ -61,6 +66,11 @@ export function buildContentPayload(overrides: Record<string, unknown> = {}): Re
             description: "Practice Spanish aloud with a timer using the prompt list and reflection tracker.",
             doneCondition: "Three five-minute speaking sprints are recorded and reviewed.",
             rewardIntent: "Reward repeated speaking practice.",
+            steps: [
+              { key: "step-set-timer", description: "Set a five-minute timer and choose prompts from the list." },
+              { key: "step-record-sprint", description: "Record the Spanish speaking sprint from start to finish." },
+              { key: "step-review-notes", description: "Review the recording and write one reflection note." },
+            ],
           },
         ],
         bossFights: [

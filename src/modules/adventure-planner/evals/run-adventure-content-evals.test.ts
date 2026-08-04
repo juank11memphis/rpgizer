@@ -107,6 +107,55 @@ describe("Adventure content eval runner", () => {
     expect(seenRequests).toEqual(["eval-adventure-selected-eval"]);
   });
 
+  it("returns actionable Quest Step diagnostics from injected bad content", async () => {
+    const fixturesDirectory = await createFixtureDirectory([buildFixture({ id: "fitness-eval", name: "Fitness eval" })]);
+    const errorOutput = createOutputCollector();
+    const badContent = parseGeneratedAdventureContent(buildContentPayload());
+    badContent.acts[0]!.mainQuests[0]!.steps = [
+      { key: "step-generic-a", description: "Make progress on the quest.", sequenceNumber: 1 },
+      { key: "step-generic-b", description: "Make progress on the quest.", sequenceNumber: 2 },
+    ];
+
+    const result = await runAdventureContentEvals({
+      fixturesDirectory,
+      environment: buildEnvironment(),
+      createGenerator: () => ({
+        async generateAdventureContent() {
+          return badContent;
+        },
+      }),
+      output: createOutputCollector().stream,
+      errorOutput: errorOutput.stream,
+    });
+
+    expect(result.passed).toBe(false);
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          fixtureId: "fitness-eval",
+          area: "quest step quality",
+          message: expect.stringContaining("quest-prompt-list.steps[0]"),
+        }),
+      ]),
+    );
+    expect(result.assertionResults).toEqual([
+      {
+        fixtureId: "fitness-eval",
+        assertions: expect.arrayContaining([
+          expect.objectContaining({
+            id: expect.stringContaining("adventure-quest-step-quality"),
+            status: "failed",
+            message: expect.stringContaining("quest-prompt-list.steps"),
+          }),
+        ]),
+      },
+    ]);
+    expect(errorOutput.output()).toContain("[fitness-eval] quest step quality:");
+    expect(errorOutput.output()).not.toContain("Raw prompt");
+    expect(errorOutput.output()).not.toContain("sk-test");
+    expect(errorOutput.output()).not.toContain(JSON.stringify(badContent));
+  });
+
   it("returns clear configuration diagnostics before creating a live provider", async () => {
     const errorOutput = createOutputCollector();
     const result = await runAdventureContentEvals({

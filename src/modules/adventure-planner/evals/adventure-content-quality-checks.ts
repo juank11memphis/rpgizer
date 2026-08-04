@@ -182,12 +182,62 @@ const CAPABILITY_TERMS = [
   "track",
 ];
 const GENERIC_NEXT_ACTION_PATTERNS = ["start working", "make progress", "do your best", "begin the journey", "keep going"];
+const QUEST_STEP_ACTION_TERMS = [
+  "add",
+  "ask",
+  "build",
+  "capture",
+  "check",
+  "choose",
+  "collect",
+  "compare",
+  "confirm",
+  "create",
+  "decide",
+  "define",
+  "draft",
+  "gather",
+  "identify",
+  "install",
+  "list",
+  "log",
+  "map",
+  "measure",
+  "organize",
+  "plan",
+  "practice",
+  "prepare",
+  "record",
+  "recruit",
+  "review",
+  "schedule",
+  "select",
+  "set",
+  "share",
+  "test",
+  "update",
+  "walk",
+  "write",
+];
+const GENERIC_QUEST_STEP_PATTERNS = [
+  "complete the step",
+  "continue working",
+  "do the task",
+  "do this step",
+  "keep going",
+  "make progress",
+  "start working",
+  "take action",
+  "work on it",
+  "work on the quest",
+];
 const ADVENTURE_CONTENT_QUALITY_AREAS: readonly AdventureQualityDiagnosticArea[] = [
   "required structure",
   "done condition",
   "quest quality",
   "side quest quality",
   "boss fight quality",
+  "quest step quality",
   "skill quality",
   "inventory quality",
   "achievement quality",
@@ -251,16 +301,19 @@ function checkActs(
     for (const quest of act.mainQuests) {
       checkDoneCondition(quest, diagnostics);
       checkMainQuestQuality(quest, contextTerms, diagnostics);
+      checkQuestStepQuality(quest, contextTerms, diagnostics);
     }
 
     for (const sideQuest of act.sideQuests) {
       checkDoneCondition(sideQuest, diagnostics);
       checkSideQuestQuality(sideQuest, contextTerms, diagnostics);
+      checkQuestStepQuality(sideQuest, contextTerms, diagnostics);
     }
 
     for (const bossFight of act.bossFights) {
       checkDoneCondition(bossFight, diagnostics);
       checkBossFightQuality(bossFight, diagnostics);
+      checkBossFightExcludesQuestSteps(bossFight, diagnostics);
     }
   }
 }
@@ -321,6 +374,89 @@ function checkSideQuestQuality(
     diagnostics.push({
       area: "side quest quality",
       message: `${sideQuest.key} should mention the user's goal, constraints, resources, or context.`,
+    });
+  }
+}
+
+function checkQuestStepQuality(
+  quest: GeneratedAdventureContentQuest,
+  contextTerms: readonly string[],
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  const steps = quest.steps;
+  const questContext = normalize(`${quest.title} ${quest.description} ${quest.doneCondition} ${quest.rewardIntent}`);
+  const questTerms = extractSignificantWords(questContext);
+
+  if (!Array.isArray(steps) || steps.length === 0) {
+    diagnostics.push({
+      area: "quest step quality",
+      message: `${quest.key} must include 2–7 concrete Quest Steps.`,
+    });
+    return;
+  }
+
+  if (steps.length < 2 || steps.length > 7) {
+    diagnostics.push({
+      area: "quest step quality",
+      message: `${quest.key} has ${steps.length} Quest Steps; expected 2–7, with 3–5 preferred.`,
+    });
+  }
+
+  const normalizedDescriptions = steps.map((step) => normalize(step.description));
+  const seenDescriptions = new Set<string>();
+
+  steps.forEach((step, index) => {
+    const description = normalizedDescriptions[index] ?? "";
+    const stepLabel = `${quest.key}.steps[${index}]`;
+
+    if (description.length === 0) {
+      diagnostics.push({
+        area: "quest step quality",
+        message: `${stepLabel} must have a non-empty action description.`,
+      });
+      return;
+    }
+
+    if (includesAny(description, GENERIC_QUEST_STEP_PATTERNS)) {
+      diagnostics.push({
+        area: "quest step quality",
+        message: `${stepLabel} is generic filler instead of quest-specific guidance.`,
+      });
+    }
+
+    if (!includesAny(description, QUEST_STEP_ACTION_TERMS)) {
+      diagnostics.push({
+        area: "quest step quality",
+        message: `${stepLabel} should start from a concrete user action, decision, check, or artifact.`,
+      });
+    }
+
+    if (!hasAnyWord(description, [...questTerms, ...contextTerms])) {
+      diagnostics.push({
+        area: "quest step quality",
+        message: `${stepLabel} should connect to the Quest or fixture context.`,
+      });
+    }
+
+    const comparableDescription = stripGenericStepWords(description);
+    if (seenDescriptions.has(comparableDescription)) {
+      diagnostics.push({
+        area: "quest step quality",
+        message: `${stepLabel} repeats another Quest Step instead of adding distinct guidance.`,
+      });
+    }
+    seenDescriptions.add(comparableDescription);
+  });
+}
+
+function checkBossFightExcludesQuestSteps(
+  bossFight: GeneratedAdventureContentBossFight,
+  diagnostics: AdventureQualityDiagnostic[],
+): void {
+  if ("steps" in (bossFight as Record<string, unknown>)) {
+    diagnostics.push({
+      area: "quest step quality",
+      message: `${bossFight.key} is a Boss Fight and must not include Quest Steps.`,
     });
   }
 }
@@ -484,6 +620,13 @@ function checkNoDependencyOrXpFields(
       }
     }
   }
+}
+
+function stripGenericStepWords(text: string): string {
+  return text
+    .replace(/\b(step|task|quest|work|thing|action|first|next|then|finally)\b/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
 function buildContextTerms(fixture: GenerateAdventureEvalFixture): string[] {

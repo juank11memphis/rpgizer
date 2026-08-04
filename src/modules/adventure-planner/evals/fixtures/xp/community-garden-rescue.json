@@ -20,14 +20,42 @@
             "title": "Complete the Garden Site Audit",
             "description": "Map beds, water access, hazards, sunlight, soil concerns, tool needs, and accessibility barriers.",
             "doneCondition": "The audit includes photos, a bed map, hazard list, water notes, and the top five restoration constraints.",
-            "rewardIntent": "Reward careful discovery before mobilizing volunteers."
+            "rewardIntent": "Reward careful discovery before mobilizing volunteers.",
+            "steps": [
+              {
+                "key": "quest-site-audit-step-1",
+                "description": "Map the garden details and constraints for complete the garden site audit."
+              },
+              {
+                "key": "quest-site-audit-step-2",
+                "description": "Gather the people, tools, or notes needed for complete the garden site audit."
+              },
+              {
+                "key": "quest-site-audit-step-3",
+                "description": "Confirm the documented outcome for complete the garden site audit before moving on."
+              }
+            ]
           },
           {
             "key": "quest-volunteer-roster",
             "title": "Assemble the Volunteer Roster",
             "description": "Recruit neighbors, clarify roles, gather availability, and assign cleanup leads, supply leads, and communications support.",
             "doneCondition": "At least eight volunteers are listed with roles, contact details, and availability for the first workday.",
-            "rewardIntent": "Reward building the team needed for a larger restoration effort."
+            "rewardIntent": "Reward building the team needed for a larger restoration effort.",
+            "steps": [
+              {
+                "key": "quest-volunteer-roster-step-1",
+                "description": "Map the garden details and constraints for assemble the volunteer roster."
+              },
+              {
+                "key": "quest-volunteer-roster-step-2",
+                "description": "Gather the people, tools, or notes needed for assemble the volunteer roster."
+              },
+              {
+                "key": "quest-volunteer-roster-step-3",
+                "description": "Confirm the documented outcome for assemble the volunteer roster before moving on."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -36,7 +64,21 @@
             "title": "Secure Permission and Donations",
             "description": "Confirm garden permissions, request donated compost or mulch, and identify any spending approvals needed.",
             "doneCondition": "Permission status, donation leads, and budget constraints are documented before purchases happen.",
-            "rewardIntent": "Reward reducing logistical and financial risk."
+            "rewardIntent": "Reward reducing logistical and financial risk.",
+            "steps": [
+              {
+                "key": "quest-permit-and-donation-check-step-1",
+                "description": "Map the garden details and constraints for secure permission and donations."
+              },
+              {
+                "key": "quest-permit-and-donation-check-step-2",
+                "description": "Gather the people, tools, or notes needed for secure permission and donations."
+              },
+              {
+                "key": "quest-permit-and-donation-check-step-3",
+                "description": "Confirm the documented outcome for secure permission and donations before moving on."
+              }
+            ]
           }
         ],
         "bossFights": [
@@ -59,14 +101,42 @@
             "title": "Design the Planting Plan",
             "description": "Choose seasonal crops or native plants, assign beds, plan companion planting, and match plants to sunlight and watering constraints.",
             "doneCondition": "A bed-by-bed planting plan lists plants, quantities, timing, water needs, and responsible caretakers.",
-            "rewardIntent": "Reward translating the restored space into a realistic growing plan."
+            "rewardIntent": "Reward translating the restored space into a realistic growing plan.",
+            "steps": [
+              {
+                "key": "quest-planting-design-step-1",
+                "description": "Map the garden details and constraints for design the planting plan."
+              },
+              {
+                "key": "quest-planting-design-step-2",
+                "description": "Gather the people, tools, or notes needed for design the planting plan."
+              },
+              {
+                "key": "quest-planting-design-step-3",
+                "description": "Confirm the documented outcome for design the planting plan before moving on."
+              }
+            ]
           },
           {
             "key": "quest-maintenance-rotation",
             "title": "Create the Maintenance Rotation",
             "description": "Set watering, weeding, harvesting, compost, and communication responsibilities for the first eight weeks.",
             "doneCondition": "The shared rotation covers eight weeks and each week has named caretakers and escalation contacts.",
-            "rewardIntent": "Reward sustainability after the initial excitement fades."
+            "rewardIntent": "Reward sustainability after the initial excitement fades.",
+            "steps": [
+              {
+                "key": "quest-maintenance-rotation-step-1",
+                "description": "Map the garden details and constraints for create the maintenance rotation."
+              },
+              {
+                "key": "quest-maintenance-rotation-step-2",
+                "description": "Gather the people, tools, or notes needed for create the maintenance rotation."
+              },
+              {
+                "key": "quest-maintenance-rotation-step-3",
+                "description": "Confirm the documented outcome for create the maintenance rotation before moving on."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -75,7 +145,21 @@
             "title": "Install Community Signage",
             "description": "Create welcoming signs with garden rules, contact info, harvest expectations, and upcoming volunteer dates.",
             "doneCondition": "Weather-safe signs are installed at the garden entrance and near shared beds.",
-            "rewardIntent": "Reward clear communication for neighbors and visitors."
+            "rewardIntent": "Reward clear communication for neighbors and visitors.",
+            "steps": [
+              {
+                "key": "quest-community-signage-step-1",
+                "description": "Map the garden details and constraints for install community signage."
+              },
+              {
+                "key": "quest-community-signage-step-2",
+                "description": "Gather the people, tools, or notes needed for install community signage."
+              },
+              {
+                "key": "quest-community-signage-step-3",
+                "description": "Confirm the documented outcome for install community signage before moving on."
+              }
+            ]
           }
         ],
         "bossFights": [

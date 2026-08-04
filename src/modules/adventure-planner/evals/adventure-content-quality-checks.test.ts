@@ -38,6 +38,10 @@ describe("Adventure content quality checks", () => {
                 description: "Work on the goal in a general way.",
                 doneCondition: "Make progress.",
                 rewardIntent: "Reward generic progress.",
+                steps: [
+                  { key: "step-generic-1", description: "Start working on the quest." },
+                  { key: "step-generic-2", description: "Make progress on the goal." },
+                ],
               },
             ],
             sideQuests: [
@@ -47,6 +51,10 @@ describe("Adventure content quality checks", () => {
                 description: "Explore the area and collect coins for bonus task flavor.",
                 doneCondition: "Three coins are collected.",
                 rewardIntent: "Reward optional fun.",
+                steps: [
+                  { key: "step-filler-1", description: "Do the task." },
+                  { key: "step-filler-2", description: "Keep going." },
+                ],
               },
             ],
             bossFights: [
@@ -97,6 +105,11 @@ describe("Adventure content quality checks", () => {
                 description: "Practice simple Spanish recovery phrases for moments when a word is missing.",
                 doneCondition: "A practice note contains three recovery phrases written in Spanish.",
                 rewardIntent: "Reward preparing phrases for the coffee chat.",
+                steps: [
+                  { key: "step-choose-phrases", description: "Choose three recovery phrases for missing words." },
+                  { key: "step-write-note", description: "Write each Spanish phrase with an English cue." },
+                  { key: "step-practice-aloud", description: "Practice saying the phrases aloud twice." },
+                ],
               },
             ],
             sideQuests: [
@@ -106,6 +119,11 @@ describe("Adventure content quality checks", () => {
                 description: "Repeat a short Spanish dialogue out loud to copy rhythm.",
                 doneCondition: "A recording exists of the user shadowing one short dialogue from start to finish.",
                 rewardIntent: "Reward low-pressure Spanish speaking practice.",
+                steps: [
+                  { key: "step-select-clip", description: "Select one short Spanish dialogue clip." },
+                  { key: "step-record-shadow", description: "Record yourself shadowing the full dialogue." },
+                  { key: "step-review-rhythm", description: "Review the recording and note one rhythm improvement." },
+                ],
               },
             ],
             bossFights: [
@@ -129,6 +147,127 @@ describe("Adventure content quality checks", () => {
 
     expect(result.diagnostics).not.toContainEqual(
       expect.objectContaining({ area: "boss fight quality" }),
+    );
+  });
+
+  it("reports missing or miscounted Main and Side Quest Steps", () => {
+    const content = parseGeneratedAdventureContent(buildContentPayload());
+    delete (content.acts[0]!.mainQuests[0]! as { steps?: unknown }).steps;
+    content.acts[0]!.sideQuests[0]!.steps = Array.from({ length: 8 }, (_, index) => ({
+      key: `step-too-many-${index + 1}`,
+      description: `Write Spanish practice note ${index + 1}.`,
+      sequenceNumber: index + 1,
+    }));
+
+    const result = checkGeneratedAdventureContentQuality(content, buildFixture());
+
+    expect(result.assertions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: expect.stringContaining("adventure-quest-step-quality"), status: "failed" }),
+      ]),
+    );
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ message: expect.stringContaining("quest-prompt-list must include 2–7") }),
+        expect.objectContaining({ message: expect.stringContaining("quest-speaking-sprint has 8 Quest Steps") }),
+      ]),
+    );
+  });
+
+  it("reports vague, repeated, non-actionable, or unrelated Quest Steps without overfitting to cooking", () => {
+    const fixture = buildFixture({
+      id: "fitness-eval",
+      name: "Fitness eval",
+      goalText: "Build a sustainable strength habit with a knee-safe modification log.",
+      interviewOutputArtifact: {
+        ...buildFixture().interviewOutputArtifact,
+        goalSummary: "Build a sustainable strength habit.",
+        currentStage: "The user has dumbbells and knee concerns.",
+        compactSourceSummary: "The user needs strength sessions, tracking, and knee-safe modifications.",
+      },
+      expectations: {
+        ...buildFixture().expectations,
+        expectedGoalTerms: ["strength", "knee"],
+        expectedSkillThemes: ["tracking"],
+        expectedInventoryThemes: ["log"],
+      },
+    });
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        goalSummary: "Build a sustainable strength habit with knee-safe modifications.",
+        acts: [
+          {
+            key: "act-1",
+            title: "Prepare the Training Hall",
+            summary: "Set the first week up before lifting.",
+            mainQuests: [
+              {
+                key: "quest-first-week-plan",
+                title: "Plan the First Strength Week",
+                description: "Choose three short strength sessions and a knee modification log.",
+                doneCondition: "Three strength sessions and knee modifications are written in the log.",
+                rewardIntent: "Reward a sustainable training plan.",
+                steps: [
+                  { key: "step-generic", description: "Make progress on the quest." },
+                  { key: "step-repeated-a", description: "Write three strength sessions in the log." },
+                  { key: "step-repeated-b", description: "Write three strength sessions in the log." },
+                  { key: "step-unrelated", description: "Admire the sunset." },
+                ],
+              },
+            ],
+            sideQuests: [
+              {
+                key: "quest-warm-up-checklist",
+                title: "Create the Warm-Up Checklist",
+                description: "Prepare a short warm-up checklist for each strength session.",
+                doneCondition: "A warm-up checklist is ready beside the workout tracker.",
+                rewardIntent: "Reward safer session setup.",
+                steps: [
+                  { key: "step-list-moves", description: "List three warm-up movements for strength sessions." },
+                  { key: "step-note-knee", description: "Add a knee comfort check before each session." },
+                ],
+              },
+            ],
+            bossFights: [
+              {
+                key: "boss-week-one",
+                title: "Complete Week One",
+                description: "Finish the first three planned strength sessions with modifications recorded.",
+                doneCondition: "Three sessions are completed and the knee modification log is reviewed.",
+                rewardIntent: "Reward proof that the habit can start safely.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const result = checkGeneratedAdventureContentQuality(content, fixture);
+
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ message: expect.stringContaining("generic filler") }),
+        expect.objectContaining({ message: expect.stringContaining("repeats another Quest Step") }),
+        expect.objectContaining({ message: expect.stringContaining("concrete user action") }),
+        expect.objectContaining({ message: expect.stringContaining("connect to the Quest or fixture context") }),
+      ]),
+    );
+  });
+
+  it("reports Boss Fight Quest Step leakage when malformed content reaches quality checks", () => {
+    const content = parseGeneratedAdventureContent(buildContentPayload());
+    const bossFight = content.acts[0]!.bossFights[0]! as typeof content.acts[0]["bossFights"][0] & {
+      steps: unknown[];
+    };
+    bossFight.steps = [{ key: "step-boss", description: "Write a checklist for the boss fight." }];
+
+    const result = checkGeneratedAdventureContentQuality(content, buildFixture());
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        area: "quest step quality",
+        message: "boss-coffee-chat is a Boss Fight and must not include Quest Steps.",
+      }),
     );
   });
 

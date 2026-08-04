@@ -34,6 +34,7 @@ export type AdventureQualityDiagnosticArea =
   | "quest quality"
   | "side quest quality"
   | "boss fight quality"
+  | "quest step quality"
   | "inventory quality"
   | "skill quality"
   | "achievement quality"

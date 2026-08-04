@@ -12,7 +12,7 @@ pnpm run dev
 
 Available suites:
 
-- Adventure Content validates unlinked Adventure structure, fixture grounding, safety, and absence of dependency/XP fields.
+- Adventure Content validates unlinked Adventure structure, fixture grounding, safety, Quest Step presence/quality for Main and Side Quests, Boss Fight step exclusion, and absence of dependency/XP fields.
 - Dependency Links validates Quest/Boss coverage plus existing Skill and Inventory references for representative unlinked fixtures.
 - XP Balance validates bounded positive XP, linked Skill coverage, proportionality, and no content/link rewrites for representative linked fixtures.
 - Adventure Generation is the aggregate eval. It loads request fixtures from `src/modules/adventure-planner/evals/fixtures/`, runs the full production multi-step generator path, and validates the final complete `GeneratedAdventure` output.
@@ -41,6 +41,7 @@ Failures report concise diagnostics such as:
 
 ```txt
 [spanish-coffee-chat] references: questLinks is missing coverage for quest-speaking-sprint.
+[fitness-habit] quest step quality: quest-warm-up-checklist.steps[0] should start from a concrete user action, decision, check, or artifact.
 [runner] configuration: OPENAI_API_KEY is required to run Generate Adventure evals.
 [cooking-eval] dependency linking: OpenAI Adventure output was invalid: OpenAI Adventure dependency linking request failed.
 ```
@@ -56,6 +57,7 @@ The previous broad one-shot Adventure repair retry is not used by the aggregate 
 - Aggregate/content evals use request fixtures in `src/modules/adventure-planner/evals/fixtures/*.json`.
 - Dependency-linking evals use representative unlinked content fixtures in `src/modules/adventure-planner/evals/fixtures/linking/*.json`.
 - XP evals use linked content fixtures in `src/modules/adventure-planner/evals/fixtures/xp/*.json`.
+- Unlinked content fixtures should include 2–7 concrete Quest Steps on Main and Side Quests, preferably 3–5, and no Quest Steps on Boss Fights.
 
 Do not paste or commit secret values in docs, fixtures, logs, or review notes.
 

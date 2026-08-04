@@ -20,14 +20,42 @@
             "title": "Write the Show Positioning Brief",
             "description": "Define the target listener, show promise, recurring segments, episode length, and what makes the pilot worth subscribing to.",
             "doneCondition": "A one-page positioning brief lists the target listener, show promise, format, and three pilot episode topics.",
-            "rewardIntent": "Reward strategic clarity before production work begins."
+            "rewardIntent": "Reward strategic clarity before production work begins.",
+            "steps": [
+              {
+                "key": "quest-positioning-brief-step-1",
+                "description": "Draft the podcast details needed for write the show positioning brief."
+              },
+              {
+                "key": "quest-positioning-brief-step-2",
+                "description": "Test the recording, guest, or publishing workflow for write the show positioning brief."
+              },
+              {
+                "key": "quest-positioning-brief-step-3",
+                "description": "Review the episode artifact and update the launch notes for write the show positioning brief."
+              }
+            ]
           },
           {
             "key": "quest-recording-rig-test",
             "title": "Run the Recording Rig Test",
             "description": "Configure microphone placement, recording software, backup capture, and room treatment, then record a test sample.",
             "doneCondition": "A five-minute test recording is captured, reviewed, and adjusted until levels and background noise are acceptable.",
-            "rewardIntent": "Reward reliable technical setup and audio capture discipline."
+            "rewardIntent": "Reward reliable technical setup and audio capture discipline.",
+            "steps": [
+              {
+                "key": "quest-recording-rig-test-step-1",
+                "description": "Draft the podcast details needed for run the recording rig test."
+              },
+              {
+                "key": "quest-recording-rig-test-step-2",
+                "description": "Test the recording, guest, or publishing workflow for run the recording rig test."
+              },
+              {
+                "key": "quest-recording-rig-test-step-3",
+                "description": "Review the episode artifact and update the launch notes for run the recording rig test."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -36,7 +64,21 @@
             "title": "Prepare the Guest Outreach Kit",
             "description": "Draft a guest invitation, consent note, scheduling link, prep questions, and release expectations.",
             "doneCondition": "The outreach kit is ready and at least two potential guests have been contacted.",
-            "rewardIntent": "Reward professional guest coordination."
+            "rewardIntent": "Reward professional guest coordination.",
+            "steps": [
+              {
+                "key": "quest-guest-outreach-kit-step-1",
+                "description": "Draft the podcast details needed for prepare the guest outreach kit."
+              },
+              {
+                "key": "quest-guest-outreach-kit-step-2",
+                "description": "Test the recording, guest, or publishing workflow for prepare the guest outreach kit."
+              },
+              {
+                "key": "quest-guest-outreach-kit-step-3",
+                "description": "Review the episode artifact and update the launch notes for prepare the guest outreach kit."
+              }
+            ]
           }
         ],
         "bossFights": [
@@ -59,14 +101,42 @@
             "title": "Build the Editing Pipeline",
             "description": "Create a repeatable process for cleanup, intro/outro placement, loudness normalization, show notes, and export naming.",
             "doneCondition": "The first episode is edited using a documented checklist and exported as a publish-ready file.",
-            "rewardIntent": "Reward repeatable post-production quality."
+            "rewardIntent": "Reward repeatable post-production quality.",
+            "steps": [
+              {
+                "key": "quest-editing-pipeline-step-1",
+                "description": "Map the garden details and constraints for build the editing pipeline."
+              },
+              {
+                "key": "quest-editing-pipeline-step-2",
+                "description": "Gather the people, tools, or notes needed for build the editing pipeline."
+              },
+              {
+                "key": "quest-editing-pipeline-step-3",
+                "description": "Confirm the documented outcome for build the editing pipeline before moving on."
+              }
+            ]
           },
           {
             "key": "quest-publish-feed-assets",
             "title": "Publish Feed Assets",
             "description": "Create podcast artwork, title, description, categories, trailer copy, and hosting settings for the public feed.",
             "doneCondition": "The hosting platform has complete show metadata, artwork, and at least one scheduled episode.",
-            "rewardIntent": "Reward packaging work that makes the podcast discoverable."
+            "rewardIntent": "Reward packaging work that makes the podcast discoverable.",
+            "steps": [
+              {
+                "key": "quest-publish-feed-assets-step-1",
+                "description": "Draft the podcast details needed for publish feed assets."
+              },
+              {
+                "key": "quest-publish-feed-assets-step-2",
+                "description": "Test the recording, guest, or publishing workflow for publish feed assets."
+              },
+              {
+                "key": "quest-publish-feed-assets-step-3",
+                "description": "Review the episode artifact and update the launch notes for publish feed assets."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -75,7 +145,21 @@
             "title": "Run the Launch Feedback Loop",
             "description": "Share the pilot privately, collect listener feedback, identify confusing moments, and prioritize improvements.",
             "doneCondition": "At least five feedback notes are collected and converted into a prioritized improvement list.",
-            "rewardIntent": "Reward learning from real listeners."
+            "rewardIntent": "Reward learning from real listeners.",
+            "steps": [
+              {
+                "key": "quest-launch-feedback-loop-step-1",
+                "description": "Draft the podcast details needed for run the launch feedback loop."
+              },
+              {
+                "key": "quest-launch-feedback-loop-step-2",
+                "description": "Test the recording, guest, or publishing workflow for run the launch feedback loop."
+              },
+              {
+                "key": "quest-launch-feedback-loop-step-3",
+                "description": "Review the episode artifact and update the launch notes for run the launch feedback loop."
+              }
+            ]
           }
         ],
         "bossFights": [

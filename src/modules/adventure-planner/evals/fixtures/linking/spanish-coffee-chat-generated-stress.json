@@ -20,14 +20,42 @@
             "title": "Build the coffee-chat prompt kit",
             "description": "Create Spanish conversation topics, follow-up questions, and rescue phrases for practice and the real chat.",
             "doneCondition": "A saved note contains at least five coffee-chat topics, three follow-up questions for each topic, and five recovery phrases in Spanish.",
-            "rewardIntent": "Turn scattered vocabulary into usable conversation support."
+            "rewardIntent": "Turn scattered vocabulary into usable conversation support.",
+            "steps": [
+              {
+                "key": "main-quest-1-step-1",
+                "description": "Gather the Spanish prompts and notes needed for build the coffee-chat prompt kit."
+              },
+              {
+                "key": "main-quest-1-step-2",
+                "description": "Practice the key conversation actions for build the coffee-chat prompt kit aloud."
+              },
+              {
+                "key": "main-quest-1-step-3",
+                "description": "Record one review note that proves build the coffee-chat prompt kit is ready."
+              }
+            ]
           },
           {
             "key": "main-quest-2",
             "title": "Set the speaking practice calendar",
             "description": "Block weekday and weekend practice time around real constraints so Spanish speaking becomes routine.",
             "doneCondition": "A calendar or checklist shows weekday practice blocks and one longer weekend practice block for the next two weeks.",
-            "rewardIntent": "Build consistency and protect practice time from daily distractions."
+            "rewardIntent": "Build consistency and protect practice time from daily distractions.",
+            "steps": [
+              {
+                "key": "main-quest-2-step-1",
+                "description": "Gather the Spanish prompts and notes needed for set the speaking practice calendar."
+              },
+              {
+                "key": "main-quest-2-step-2",
+                "description": "Practice the key conversation actions for set the speaking practice calendar aloud."
+              },
+              {
+                "key": "main-quest-2-step-3",
+                "description": "Record one review note that proves set the speaking practice calendar is ready."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -36,14 +64,42 @@
             "title": "Sort the useful words",
             "description": "Review scattered vocabulary and mark words most likely to come up in a coffee chat.",
             "doneCondition": "A notebook page contains a labeled set of high-use coffee-chat words selected from existing vocabulary.",
-            "rewardIntent": "Connect study material to the exact speaking situation."
+            "rewardIntent": "Connect study material to the exact speaking situation.",
+            "steps": [
+              {
+                "key": "side-quest-1-step-1",
+                "description": "Gather the Spanish prompts and notes needed for sort the useful words."
+              },
+              {
+                "key": "side-quest-1-step-2",
+                "description": "Practice the key conversation actions for sort the useful words aloud."
+              },
+              {
+                "key": "side-quest-1-step-3",
+                "description": "Record one review note that proves sort the useful words is ready."
+              }
+            ]
           },
           {
             "key": "side-quest-2",
             "title": "Audit the app lessons",
             "description": "Identify which language app exercises help speaking and which ones do not move conversation forward.",
             "doneCondition": "A short written audit identifies which app exercises felt useful for speaking and which ones did not.",
-            "rewardIntent": "Use the app as a tool instead of letting it dominate the learning plan."
+            "rewardIntent": "Use the app as a tool instead of letting it dominate the learning plan.",
+            "steps": [
+              {
+                "key": "side-quest-2-step-1",
+                "description": "Gather the Spanish prompts and notes needed for audit the app lessons."
+              },
+              {
+                "key": "side-quest-2-step-2",
+                "description": "Practice the key conversation actions for audit the app lessons aloud."
+              },
+              {
+                "key": "side-quest-2-step-3",
+                "description": "Record one review note that proves audit the app lessons is ready."
+              }
+            ]
           }
         ],
         "bossFights": [
@@ -66,21 +122,63 @@
             "title": "Complete weekly speaking reps",
             "description": "Use weekday practice slots to speak Spanish out loud, answer prompts, and rehearse mini-conversations.",
             "doneCondition": "At least six weekday practice sessions are logged with a short note showing what was spoken and what felt difficult.",
-            "rewardIntent": "Build repetition so speech feels less foreign and more automatic."
+            "rewardIntent": "Build repetition so speech feels less foreign and more automatic.",
+            "steps": [
+              {
+                "key": "main-quest-3-step-1",
+                "description": "Gather the Spanish prompts and notes needed for complete weekly speaking reps."
+              },
+              {
+                "key": "main-quest-3-step-2",
+                "description": "Practice the key conversation actions for complete weekly speaking reps aloud."
+              },
+              {
+                "key": "main-quest-3-step-3",
+                "description": "Record one review note that proves complete weekly speaking reps is ready."
+              }
+            ]
           },
           {
             "key": "main-quest-4",
             "title": "Drill follow-up questions",
             "description": "Practice turning one answer into two or three conversational turns by asking follow-up questions.",
             "doneCondition": "A practice log or recording shows three separate drills where one prompt led to at least two follow-up questions in Spanish.",
-            "rewardIntent": "Strengthen the behavior that keeps a coffee chat alive."
+            "rewardIntent": "Strengthen the behavior that keeps a coffee chat alive.",
+            "steps": [
+              {
+                "key": "main-quest-4-step-1",
+                "description": "Gather the Spanish prompts and notes needed for drill follow-up questions."
+              },
+              {
+                "key": "main-quest-4-step-2",
+                "description": "Practice the key conversation actions for drill follow-up questions aloud."
+              },
+              {
+                "key": "main-quest-4-step-3",
+                "description": "Record one review note that proves drill follow-up questions is ready."
+              }
+            ]
           },
           {
             "key": "main-quest-5",
             "title": "Train the listen-and-respond loop",
             "description": "Listen to short Spanish audio and answer with simple responses tied to key words heard.",
             "doneCondition": "A recording or notes file shows at least three listening sessions with written responses or spoken replies tied to specific key words heard.",
-            "rewardIntent": "Bridge the gap between understanding fragments and participating in conversation."
+            "rewardIntent": "Bridge the gap between understanding fragments and participating in conversation.",
+            "steps": [
+              {
+                "key": "main-quest-5-step-1",
+                "description": "Gather the Spanish prompts and notes needed for train the listen-and-respond loop."
+              },
+              {
+                "key": "main-quest-5-step-2",
+                "description": "Practice the key conversation actions for train the listen-and-respond loop aloud."
+              },
+              {
+                "key": "main-quest-5-step-3",
+                "description": "Record one review note that proves train the listen-and-respond loop is ready."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -89,14 +187,42 @@
             "title": "Create shorthand speaking notes",
             "description": "Condense the prompt kit into cue words that can be glanced at quickly during practice.",
             "doneCondition": "A one-page cheat sheet contains abbreviated Spanish cues for topics, questions, and recovery phrases.",
-            "rewardIntent": "Support memory during live conversation without forcing full memorization."
+            "rewardIntent": "Support memory during live conversation without forcing full memorization.",
+            "steps": [
+              {
+                "key": "side-quest-3-step-1",
+                "description": "List the concrete requirements for create shorthand speaking notes."
+              },
+              {
+                "key": "side-quest-3-step-2",
+                "description": "Prepare the tools or notes needed for create shorthand speaking notes."
+              },
+              {
+                "key": "side-quest-3-step-3",
+                "description": "Review the finished artifact for create shorthand speaking notes."
+              }
+            ]
           },
           {
             "key": "side-quest-4",
             "title": "Review one recording each week",
             "description": "Listen back to one practice recording and identify one strength and one phrase to improve.",
             "doneCondition": "One practice recording has a written review with one strength and one improvement note saved alongside it.",
-            "rewardIntent": "Build the habit of learning from evidence rather than vague self-judgment."
+            "rewardIntent": "Build the habit of learning from evidence rather than vague self-judgment.",
+            "steps": [
+              {
+                "key": "side-quest-4-step-1",
+                "description": "Draft the podcast details needed for review one recording each week."
+              },
+              {
+                "key": "side-quest-4-step-2",
+                "description": "Test the recording, guest, or publishing workflow for review one recording each week."
+              },
+              {
+                "key": "side-quest-4-step-3",
+                "description": "Review the episode artifact and update the launch notes for review one recording each week."
+              }
+            ]
           }
         ],
         "bossFights": [
@@ -119,21 +245,63 @@
             "title": "Prepare the coffee-chat plan",
             "description": "Assemble the topic list, follow-up questions, recovery phrases, and a short self-introduction into one ready-to-use note.",
             "doneCondition": "A single coffee-chat note file is complete and ready to review before the conversation.",
-            "rewardIntent": "Lower friction right before the live chat."
+            "rewardIntent": "Lower friction right before the live chat.",
+            "steps": [
+              {
+                "key": "main-quest-6-step-1",
+                "description": "Gather the Spanish prompts and notes needed for prepare the coffee-chat plan."
+              },
+              {
+                "key": "main-quest-6-step-2",
+                "description": "Practice the key conversation actions for prepare the coffee-chat plan aloud."
+              },
+              {
+                "key": "main-quest-6-step-3",
+                "description": "Record one review note that proves prepare the coffee-chat plan is ready."
+              }
+            ]
           },
           {
             "key": "main-quest-7",
             "title": "Rehearse the ten-minute chat",
             "description": "Run a timed practice version of the coffee conversation to test pacing, topic transitions, and recovery phrases.",
             "doneCondition": "A timed rehearsal lasts ten minutes, and notes show which topics were covered and where help or simplification was needed.",
-            "rewardIntent": "Make the real chat feel familiar and reveal what still needs adjustment."
+            "rewardIntent": "Make the real chat feel familiar and reveal what still needs adjustment.",
+            "steps": [
+              {
+                "key": "main-quest-7-step-1",
+                "description": "Gather the Spanish prompts and notes needed for rehearse the ten-minute chat."
+              },
+              {
+                "key": "main-quest-7-step-2",
+                "description": "Practice the key conversation actions for rehearse the ten-minute chat aloud."
+              },
+              {
+                "key": "main-quest-7-step-3",
+                "description": "Record one review note that proves rehearse the ten-minute chat is ready."
+              }
+            ]
           },
           {
             "key": "main-quest-8",
             "title": "Complete the real coffee chat",
             "description": "Hold the actual ten-minute coffee conversation in Spanish, use follow-up questions, and keep the exchange going without immediately switching to English.",
             "doneCondition": "A post-chat reflection or message note confirms that the conversation lasted ten minutes, included follow-up questions, and stayed primarily in Spanish.",
-            "rewardIntent": "Produce the central real-world outcome the adventure is built to support."
+            "rewardIntent": "Produce the central real-world outcome the adventure is built to support.",
+            "steps": [
+              {
+                "key": "main-quest-8-step-1",
+                "description": "Gather the Spanish prompts and notes needed for complete the real coffee chat."
+              },
+              {
+                "key": "main-quest-8-step-2",
+                "description": "Practice the key conversation actions for complete the real coffee chat aloud."
+              },
+              {
+                "key": "main-quest-8-step-3",
+                "description": "Record one review note that proves complete the real coffee chat is ready."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -142,7 +310,21 @@
             "title": "Write the post-chat reflection",
             "description": "Capture what worked, where freezing happened, and which phrases helped after the real conversation.",
             "doneCondition": "A reflection entry is saved the same day as the chat and names at least one success and one improvement area.",
-            "rewardIntent": "Turn a single conversation into a reusable learning loop."
+            "rewardIntent": "Turn a single conversation into a reusable learning loop.",
+            "steps": [
+              {
+                "key": "side-quest-5-step-1",
+                "description": "Gather the Spanish prompts and notes needed for write the post-chat reflection."
+              },
+              {
+                "key": "side-quest-5-step-2",
+                "description": "Practice the key conversation actions for write the post-chat reflection aloud."
+              },
+              {
+                "key": "side-quest-5-step-3",
+                "description": "Record one review note that proves write the post-chat reflection is ready."
+              }
+            ]
           }
         ],
         "bossFights": [

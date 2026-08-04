@@ -19,7 +19,21 @@
             "title": "Draft the Coffee Chat Prompt List",
             "description": "Write practical Spanish openers, follow-up questions, and fallback phrases for a coffee chat.",
             "doneCondition": "At least twelve prompts are written in the conversation prompt list.",
-            "rewardIntent": "Reward planning and speaking preparation."
+            "rewardIntent": "Reward planning and speaking preparation.",
+            "steps": [
+              {
+                "key": "quest-prompt-list-step-1",
+                "description": "Gather the Spanish prompts and notes needed for draft the coffee chat prompt list."
+              },
+              {
+                "key": "quest-prompt-list-step-2",
+                "description": "Practice the key conversation actions for draft the coffee chat prompt list aloud."
+              },
+              {
+                "key": "quest-prompt-list-step-3",
+                "description": "Record one review note that proves draft the coffee chat prompt list is ready."
+              }
+            ]
           }
         ],
         "sideQuests": [
@@ -28,7 +42,21 @@
             "title": "Practice Three Speaking Sprints",
             "description": "Practice aloud with a timer using the prompt list and reflection tracker.",
             "doneCondition": "Three five-minute speaking sprints are recorded and reviewed.",
-            "rewardIntent": "Reward repeated speaking practice."
+            "rewardIntent": "Reward repeated speaking practice.",
+            "steps": [
+              {
+                "key": "quest-speaking-sprint-step-1",
+                "description": "List the concrete requirements for practice three speaking sprints."
+              },
+              {
+                "key": "quest-speaking-sprint-step-2",
+                "description": "Prepare the tools or notes needed for practice three speaking sprints."
+              },
+              {
+                "key": "quest-speaking-sprint-step-3",
+                "description": "Review the finished artifact for practice three speaking sprints."
+              }
+            ]
           }
         ],
         "bossFights": [
