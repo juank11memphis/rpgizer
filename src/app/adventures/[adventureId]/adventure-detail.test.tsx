@@ -76,13 +76,16 @@ describe("AdventureForgedToast", () => {
 });
 
 describe("AdventureDetailMenuScreen", () => {
-  it("selects Journal by default and wires tabpanel semantics", async () => {
+  it("selects Journal by default and wires accessible tab semantics", async () => {
     await renderMenu(menuView);
 
+    const tabList = container.querySelector<HTMLElement>('[role="tablist"]');
     const journalTab = getTab("Journal");
     const panel = getTabPanel();
 
+    expect(tabList?.getAttribute("aria-label")).toBe("Adventure menu sections");
     expect(journalTab.getAttribute("aria-selected")).toBe("true");
+    expect(journalTab.getAttribute("aria-controls")).toBe(panel.id);
     expect(panel.getAttribute("aria-labelledby")).toBe(journalTab.id);
     expect(panel.textContent).toContain("Adventure roadmap");
     expect(panel.textContent).not.toContain("Readiness gear");
@@ -189,13 +192,17 @@ describe("AdventureDetailMenuScreen", () => {
     expect(panelText).not.toContain("Pick three run days");
   });
 
-  it("updates Journal details when selecting quests and Boss Fights without navigation", async () => {
+  it("updates Journal details and selected state without navigation", async () => {
     await renderMenu(menuView);
 
     await clickButton("Complete week one");
 
+    const selectedBossFight = getButton("Complete week one");
+    const firstQuest = getButton("Pick three run days");
     const panelText = getTabPanel().textContent ?? "";
 
+    expect(selectedBossFight.getAttribute("aria-pressed")).toBe("true");
+    expect(firstQuest.getAttribute("aria-pressed")).toBe("false");
     expect(panelText).toContain("Boss Fight");
     expect(panelText).toContain("Milestone challenge");
     expect(panelText).toContain("Finish three planned runs before the week ends.");
@@ -414,6 +421,10 @@ async function keyDownElement(element: HTMLElement, key: string) {
 }
 
 async function clickButton(name: string) {
+  await clickElement(getButton(name));
+}
+
+function getButton(name: string) {
   const button = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((element) =>
     element.textContent?.includes(name),
   );
@@ -422,7 +433,7 @@ async function clickButton(name: string) {
     throw new Error(`Missing button: ${name}`);
   }
 
-  await clickElement(button);
+  return button;
 }
 
 const menuView = {
