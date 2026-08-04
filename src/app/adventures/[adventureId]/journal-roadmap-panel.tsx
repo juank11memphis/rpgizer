@@ -27,10 +27,8 @@ export function JournalRoadmapPanel({
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(14rem,1fr)]">
       <section className="rounded-xl border border-amber-200/15 bg-black/25 p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-200/70">{act.title}</p>
-        <h2 className="mt-3 font-serif text-2xl text-amber-100">{act.summary}</h2>
         {hasRoadmapEntries ? (
-          <div className="mt-5 space-y-6">
+          <div className="space-y-6">
             <JournalRoadmapSection
               title="Main Quests"
               details={act.mainQuests}

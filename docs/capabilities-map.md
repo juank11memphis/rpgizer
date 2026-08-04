@@ -16,6 +16,7 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 - **Capture Goal Context One Question at a Time**: Guide the User through a focused Interview that gathers the minimum useful context without overwhelming them.
 - **Assess Adventure Readiness**: Decide whether enough context exists to generate a specific, actionable Adventure, or whether the Game Master should ask another question.
 - **Generate a Playable Roadmap**: Transform the clarified Goal into an RPG-style Roadmap with Acts, Main Quests, Side Quests, Boss Fights, Skills, Inventory, Achievements, and clear next actions.
+- **Generate Guided Quest Steps**: Break Main Quests and Side Quests into concrete pending/done steps that show the User how to complete the Quest without turning Boss Fights into checklist tasks.
 - **Communicate Adventure Generation Progress**: Help the User understand and trust the long-running forge from confirmed Interview to generated Adventure by showing truthful, RPG-facing progress, success, and recoverable failure states.
 - **Ground RPG Elements in Real Progress**: Ensure every generated quest, boss, skill, inventory item, and achievement maps back to real-world action or readiness.
 - **Create Goal-Specific RPG Flavor**: Give each Adventure a playful theme and old-school RPG feel while preserving clarity and usefulness.
@@ -23,6 +24,8 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 
 #### Adventure Progression
 
+- **Track Quest Step Progress**: Let the User mark individual Quest Steps as pending or done so progress is visible before the whole Quest is complete.
+- **Surface Quest Readiness**: Show when all Quest Steps are done and the Quest is ready to complete while preserving manual Quest completion.
 - **Complete Quests**: Let the User manually mark Main Quests and Side Quests as complete, making real action visible.
 - **Complete Boss Fights**: Let the User manually complete major milestone challenges that prove readiness to advance or finish a phase.
 - **Acquire Inventory Items**: Let the User mark practical tools, resources, documents, accounts, or materials as acquired.
@@ -39,6 +42,7 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 - **Explain the Roadmap**: Help the User understand why quests, skills, boss fights, achievements, and inventory items exist.
 - **Discuss Adventure Progress**: Let the User talk through the Adventure, ask for clarification, or reflect on what to focus on next.
 - **Update Roadmap Through Chat**: Let the User request targeted changes through conversation, such as replacing an impossible Side Quest with a better alternative.
+- **Update Quest Steps Through Chat**: Let the User ask the Game Master to clarify, add, remove, or replace Quest Steps while preserving the Quest's intent and done condition.
 - **Preserve Adventure Intent**: Keep roadmap updates focused and consistent with the larger Goal unless the User explicitly asks for a bigger rethink.
 - **Maintain Safe Guidance Boundaries**: Keep high-stakes guidance structural and non-authoritative rather than pretending to provide expert advice.
 
@@ -63,6 +67,7 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 - **Show the Adventure Detail Page**: Present the generated Adventure as the main place to review, follow, and discuss the roadmap.
 - **Visualize Acts and Phases**: Make the Adventure feel like chapters of progression, not a flat task list.
 - **Present Main Quests and Side Quests Clearly**: Distinguish required critical-path progress from optional but meaningful Side Quests.
+- **Present Quest Steps Clearly**: Show concrete Quest Steps inside Main Quest and Side Quest detail so the User can see how to progress without leaving the Adventure to invent the next actions.
 - **Highlight Boss Fights**: Make major challenge milestones feel special and motivating.
 - **Display Skill Progression**: Show Skill XP and levels as visible real-life capability growth.
 - **Display Inventory Readiness**: Show Inventory Items as practical things the User can acquire to prepare for action.
@@ -108,11 +113,11 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 4. **Start a New Adventure** begins the core product loop.
 5. **Capture Goal Context One Question at a Time** must happen before generation.
 6. **Assess Adventure Readiness** determines whether to continue the Interview or generate the Roadmap.
-7. **Generate a Playable Roadmap** creates the first usable Adventure Detail Page.
+7. **Generate a Playable Roadmap** and **Generate Guided Quest Steps** create the first usable Adventure Detail Page.
 8. **Communicate Adventure Generation Progress** keeps the User oriented during the forge when generation takes long enough that silent waiting would undermine trust.
-9. **Adventure Presentation** must make the generated structure feel RPG-native and actionable.
-10. **Adventure Progression** capabilities let the User complete Quests, acquire Inventory, gain XP, level Skills, unlock Achievements, and build momentum.
-11. **Game Master Assistant roadmap updates** let the User adapt the Adventure through chat without direct manual content editing.
+9. **Adventure Presentation** must make the generated structure feel RPG-native, actionable, and guided through visible Quest Steps.
+10. **Adventure Progression** capabilities let the User complete Quest Steps, complete Quests, acquire Inventory, gain XP, level Skills, unlock Achievements, and build momentum.
+11. **Game Master Assistant roadmap updates** let the User adapt the Adventure and Quest Steps through chat without direct manual content editing.
 12. **Safety & Trust** constrains public claims, generation, and update capabilities, especially for high-stakes Goals.
 13. **Product Quality Evaluation** supports maintainers before changes ship by selecting an Eval Suite, checking local configuration, running Test Cases, comparing Prompt / Model Variants, analyzing the Eval Matrix, focusing on failures or selected variants, inspecting local-only raw artifacts, reporting passed/failed/blocked outcomes, and surfacing safe diagnostics.
 
@@ -124,6 +129,7 @@ RPGizer's core capability is turning a real-life goal into a playable Adventure 
 - Whole-roadmap regeneration is not MVP; updates should be targeted through chat.
 - Goal-specific templates or special handling may emerge for travel, learning, fitness, career, creative projects, and product building.
 - Side Quest quality is a major product differentiator and should receive special attention.
+- Quest Steps should remain quest-agnostic guidance; richer goal-specific worksheets, generated artifacts, or templates can evolve later.
 - Boss Fight design must feel challenging and fun without discouraging the User.
 - Inventory may later evolve into richer readiness workflows, shopping/checklists, or integrations, but should remain practical and goal-connected.
 - The Game Master may later need a stronger character identity, name, voice, or lore.

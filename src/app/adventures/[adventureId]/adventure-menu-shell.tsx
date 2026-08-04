@@ -22,23 +22,20 @@ export function AdventureMenuShell({ header, children }: AdventureMenuShellProps
                 {header.title}
               </h1>
               <p className="max-w-3xl text-base leading-7 text-stone-200">{header.goalSummary}</p>
-              {header.themeSummary ? (
-                <p className="text-sm text-emerald-200/85">Theme: {header.themeSummary}</p>
-              ) : null}
             </div>
           </div>
-          <Link
-            href="/dashboard"
-            className="inline-flex min-h-11 w-fit items-center rounded-lg border border-amber-300/35 px-4 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-amber-100 transition hover:border-amber-200 hover:bg-amber-200/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-200"
-          >
-            Exit
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <AdventurePlanLimits safetyNotes={header.safetyNotes} />
+            <Link
+              href="/dashboard"
+              className="inline-flex min-h-11 w-fit items-center rounded-lg border border-amber-300/35 px-4 py-2 text-sm font-semibold uppercase tracking-[0.18em] text-amber-100 transition hover:border-amber-200 hover:bg-amber-200/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-amber-200"
+            >
+              Exit
+            </Link>
+          </div>
         </header>
 
-        <div className="grid flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="min-w-0">{children}</div>
-          <AdventurePlanLimits safetyNotes={header.safetyNotes} />
-        </div>
+        <div className="min-w-0 flex-1">{children}</div>
       </div>
     </section>
   );

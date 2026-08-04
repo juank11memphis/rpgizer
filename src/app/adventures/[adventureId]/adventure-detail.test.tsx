@@ -5,6 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AdventureDetailMenuScreen } from "./adventure-detail-menu-screen";
+import type { AdventureDetailMenuView } from "./adventure-detail-menu-types";
 import { AdventureForgedToast } from "./adventure-forged-toast";
 
 const routerReplace = vi.fn();
@@ -129,7 +130,6 @@ describe("AdventureDetailMenuScreen", () => {
     expect(container.textContent).toContain("RPGizer");
     expect(container.textContent).toContain("THE MORNING RUN QUEST");
     expect(container.textContent).toContain("Build a steady running habit");
-    expect(container.textContent).toContain("Theme: roadside guild trial");
     expect(exitLink?.textContent).toContain("Exit");
   });
 
@@ -143,6 +143,11 @@ describe("AdventureDetailMenuScreen", () => {
     });
 
     expect(container.textContent).toContain("Plan limits");
+    expect(container.textContent).not.toContain("Keep the first week gentle while the habit forms.");
+
+    await clickButton("Plan limits");
+
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain("Plan limits");
     expect(container.textContent).toContain("Keep the first week gentle while the habit forms.");
 
     await renderMenu(menuView);
@@ -436,7 +441,7 @@ function getButton(name: string) {
   return button;
 }
 
-const menuView = {
+const menuView: AdventureDetailMenuView = {
   header: {
     title: "THE MORNING RUN QUEST",
     goalSummary: "Build a steady running habit",
@@ -614,4 +619,4 @@ const menuView = {
       },
     ],
   },
-} as const;
+};

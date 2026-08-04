@@ -17,6 +17,7 @@ In scope for the business model:
 - A Game Master that interviews users, generates Adventures, explains the roadmap, and helps revise it through user-triggered conversation.
 - Adventures that move from interview to generated roadmap to active progress.
 - Roadmaps made of Acts, Main Quests, Side Quests, Boss Fights, Skills, Inventory Items, and Achievements.
+- Quest Steps that break Main Quests and Side Quests into concrete pending/done checklist items.
 - Manual completion of Quests and Boss Fights.
 - Manual acquisition of Inventory Items.
 - Skill XP and leveling driven primarily by Quest and Boss completion.
@@ -52,6 +53,7 @@ Out of scope for the initial domain model:
 | Side Quest | An optional but meaningful action that builds momentum, Skill, context, readiness, or delight. Side Quests should be interesting, not filler. |
 | Boss Fight | A major challenge milestone that proves readiness to move into a new Act or complete a major part of the Adventure. Boss Fights are first-class RPG elements. |
 | Quest | A general term for a Main Quest or Side Quest. Boss Fights are related progress units but have special milestone meaning. |
+| Quest Step | A concrete checklist item inside a Main Quest or Side Quest that tells the User how to make progress on that Quest. Quest Steps can be pending or done, and completing all Quest Steps makes the Quest ready to complete without automatically completing it. |
 | Skill | An Adventure-specific real-life capability the User is building. Quests and Boss Fights award XP to one or more Skills. |
 | Skill XP | Progress points awarded to Skills, primarily when Quests or Boss Fights are completed. |
 | Skill Level | A visible stage of growth in an Adventure-specific Skill. Leveling up should communicate real-world capability growth. |
@@ -82,6 +84,7 @@ Out of scope for the initial domain model:
 - “Goal” is the desired real-world outcome; “Adventure” is the playable RPG-shaped version of that goal.
 - “Roadmap” is the plan structure inside an Adventure, not a generic project plan.
 - “Quest” may refer to Main Quests and Side Quests collectively. Boss Fights are special milestone challenges and should not be treated as ordinary tasks.
+- “Quest Step” means a user-trackable checklist item within a Main Quest or Side Quest, not a separate Quest, subquest, or Boss Fight.
 - “Inventory” means real-world readiness items, not random fantasy loot.
 - “Game Master” is the AI assistant role, not a human coach or expert advisor.
 - “Visitor” is a pre-auth/public-site role; “User” is an authenticated Adventure owner.
@@ -97,7 +100,7 @@ Out of scope for the initial domain model:
 Core subdomains:
 
 - **Adventure Creation**: starting an Adventure, running the Interview, reaching readiness, and generating the Roadmap.
-- **Adventure Progression**: completing Quests and Boss Fights, acquiring Inventory Items, unlocking Achievements, and leveling Skills.
+- **Adventure Progression**: completing Quest Steps, completing Quests and Boss Fights, acquiring Inventory Items, unlocking Achievements, and leveling Skills.
 - **Game Master Assistant**: the AI assistant role across the Adventure lifecycle: interviewing, generating, explaining, and helping update the Roadmap through user-triggered conversation.
 
 Supporting subdomains:
@@ -181,7 +184,8 @@ flowchart TB
 - **Adventure** has one Roadmap after generation.
 - **Roadmap** contains one or more Acts.
 - **Act** contains Main Quests, Side Quests, and usually a Boss Fight.
-- **Quest** belongs to an Act and can award XP to one or more Skills.
+- **Quest** belongs to an Act, contains Quest Steps, and can award XP to one or more Skills.
+- **Quest Step** belongs to one Main Quest or Side Quest and gives the User one concrete pending/done action toward completing that Quest.
 - **Boss Fight** belongs to an Act and awards meaningful XP and progress when completed.
 - **Skill** belongs to one Adventure and gains XP from completed progress units.
 - **Inventory Item** belongs to one Adventure and may be referenced by Quests or Boss Fights.
@@ -210,6 +214,8 @@ flowchart TB
   Roadmap -->|organized into| Act["Acts / Phases"]
   Act --> MainQuest["Main Quests"]
   Act --> SideQuest["Side Quests"]
+  MainQuest --> QuestStep["Quest Steps"]
+  SideQuest --> QuestStep
   Act --> Boss["Boss Fights"]
   Adventure --> Skill["Skills"]
   Adventure --> Inventory["Inventory"]
@@ -245,7 +251,8 @@ flowchart TB
 - Landing Page: public promise, RPG-native value explanation, examples, trust framing, and calls to start an Adventure.
 - Adventure: title, Goal, current state, generated tone/theme, Acts, progress summary, Game Master context.
 - Interview: ordered questions and answers, readiness status, missing context, safety concerns if any.
-- Quest: title, description, type, Act, completion state, concrete done condition, linked Skills, optional Inventory references.
+- Quest: title, description, type, Act, completion state, ready-to-complete state, concrete done condition, Quest Steps, linked Skills, optional Inventory references.
+- Quest Step: concrete action wording, pending/done state, position within the Quest, and contribution to the Quest becoming ready to complete.
 - Boss Fight: title, description, Act, completion state, challenge purpose, done condition, linked Skills and Inventory.
 - Skill: name, real-world capability meaning, XP, level, progress explanation.
 - Inventory Item: name, practical purpose, required/recommended status, acquired state, linked Quests or Boss Fights.
@@ -267,6 +274,9 @@ flowchart TB
 - One Adventure has one Goal, but that Goal may be refined during the Interview or later Game Master conversation.
 - One Adventure has many Acts once generated.
 - One Act has many progress units and may culminate in one or more Boss Fights.
+- One Main Quest or Side Quest can have many Quest Steps.
+- One Quest Step belongs to one Main Quest or Side Quest.
+- Boss Fights do not contain Quest Steps in the current domain model.
 - One Quest can award XP to multiple Skills.
 - One Skill can receive XP from many Quests and Boss Fights.
 - One Inventory Item can support many Quests or Boss Fights.
@@ -293,12 +303,16 @@ flowchart TB
 - The Game Master must keep asking until the Adventure has enough context to be specific and actionable.
 - Every generated RPG element must connect back to real-world progress.
 - Every Quest and Boss Fight must have a concrete enough done condition that the User can tell when it is complete.
+- Every Main Quest and Side Quest should include concrete Quest Steps when the User needs hand-holding to complete it.
+- Quest Steps must describe real actions, decisions, checks, or artifacts that help the User complete the Quest.
+- Completing all Quest Steps can make a Quest ready to complete, but it must not automatically complete the Quest.
 - Main Quests must represent required critical-path progress.
 - Side Quests must be optional but meaningful; they must not be filler.
 - Boss Fights are first-class milestones, not optional flavor labels.
 - Skills are specific to an Adventure in the MVP.
 - Inventory Items must be practical readiness items, not meaningless loot.
 - Achievements are unlocked automatically from meaningful progress.
+- Quest Step completion is manually marked by the User.
 - Quest and Boss completion are manually triggered by the User.
 - Inventory acquisition is manually marked by the User.
 - The main progress and XP loop centers on Quest and Boss completion.
@@ -322,6 +336,8 @@ flowchart TB
 - When the User starts an Adventure, the Game Master begins an Interview rather than generating immediately.
 - When the Interview lacks enough context, the Game Master asks another focused question.
 - When the readiness threshold is met, the Game Master generates the Adventure Roadmap.
+- When a Quest Step is completed, the Adventure records step progress within its Quest.
+- When all Quest Steps in a Quest are completed, the Quest should become ready to complete while still requiring manual Quest completion.
 - When a Quest is completed, the Adventure updates progress and awards Skill XP.
 - When a Boss Fight is completed, the Adventure records a major milestone and awards meaningful Skill XP.
 - When Skill XP crosses a threshold, the Skill levels up.
@@ -363,6 +379,8 @@ Product Quality Evaluation run outcomes:
 - Interview Answered
 - Adventure Ready to Generate
 - Adventure Generated
+- Quest Step Completed
+- Quest Ready to Complete
 - Quest Completed
 - Boss Fight Completed
 - Inventory Item Acquired
@@ -383,7 +401,7 @@ Product Quality Evaluation run outcomes:
 - Eval Run Passed
 - Eval Run Failed
 
-The most important momentum event is **Quest Completed**. It proves RPGizer is helping a User turn a plan into action.
+The most important momentum event is **Quest Completed**. **Quest Step Completed** is a smaller momentum signal that shows the User is moving through a guided path toward real action.
 
 ## Out of Scope & Future Evolution
 
@@ -396,6 +414,7 @@ The most important momentum event is **Quest Completed**. It proves RPGizer is h
 - Whole-roadmap regeneration is not an MVP concept; roadmap changes happen through user-triggered Game Master conversation.
 - Skill XP values and leveling can be generated and adjusted by the system, but the User-facing meaning matters more than perfect numerical balance.
 - Inventory contributes to readiness and may unlock Achievements, but should not replace Quest and Boss completion as the main progress loop.
+- Quest Steps support Main Quest and Side Quest completion, but do not replace manual Quest completion as the main progression commitment.
 - Product Quality Evaluation is local-only maintainer tooling for now.
 - Eval Runs are viewed in the moment in the MVP; persistent run history is future evolution.
 - Prompt / Model comparison is part of local Product Quality Evaluation, but it remains a maintainer debugging workflow rather than a public benchmark.
@@ -409,4 +428,5 @@ The most important momentum event is **Quest Completed**. It proves RPGizer is h
 - The Game Master role may later need a stronger character identity, name, or lore.
 - High-stakes goals will require clear safety policies and disclaimers.
 - Inventory could evolve into richer readiness tracking, shopping/checklists, or integrations, but should remain grounded in real-world usefulness.
+- Quest Steps may later evolve into richer templates, generated worksheets, linked artifacts, or goal-specific guided tools, but the current domain model treats them as quest-agnostic checklist guidance.
 - Product Quality Evaluation may later evolve into persisted history, trend reports, CI integration, richer Test Case management, artifact export, or LLM-as-judge workflows, but those are outside the local MVP.
