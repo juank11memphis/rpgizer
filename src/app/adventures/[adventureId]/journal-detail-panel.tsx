@@ -1,5 +1,6 @@
 import type { JournalDetailView } from "./adventure-detail-menu-types";
 import { JournalDetailField } from "./journal-detail-field";
+import { JournalQuestSteps } from "./journal-quest-steps";
 
 type JournalDetailPanelProps = {
   detail: JournalDetailView | null;
@@ -8,6 +9,7 @@ type JournalDetailPanelProps = {
 
 export function JournalDetailPanel({ detail, emptyMessage }: JournalDetailPanelProps) {
   const isBossFight = detail?.type === "boss_fight";
+  const shouldShowSteps = detail ? !isBossFight && detail.steps.length > 0 : false;
 
   return (
     <aside
@@ -34,6 +36,7 @@ export function JournalDetailPanel({ detail, emptyMessage }: JournalDetailPanelP
             ) : null}
           </div>
           <p className="text-sm leading-6 text-stone-300">{detail.description}</p>
+          {shouldShowSteps ? <JournalQuestSteps key={detail.id} steps={detail.steps} /> : null}
           <JournalDetailField label="Done when" value={detail.doneCondition} />
           <JournalDetailField label="Reward" value={detail.rewardIntent} />
           {detail.skillRewards.length > 0 ? (

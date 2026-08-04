@@ -43,6 +43,11 @@ describe("AdventurePlannerAdventureDetailContentReader", () => {
     if (result.status !== "found") throw new Error("Expected found result.");
     expect(result.content.acts[0]?.mainQuests[0]).toMatchObject({
       id: "plan-first-menu",
+      steps: [
+        { id: "choose-recipe", description: "Pick one recipe that fits your weeknight time window.", sequenceNumber: 1 },
+        { id: "write-shopping-list", description: "Write every ingredient and tool needed before shopping.", sequenceNumber: 2 },
+        { id: "confirm-cooking-window", description: "Choose the evening and start time for cooking the meal.", sequenceNumber: 3 },
+      ],
       skillRewards: [{ skillId: "meal-planning", xp: 25 }],
       inventoryItemIds: ["weekly-menu-template"],
     });

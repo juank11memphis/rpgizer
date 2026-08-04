@@ -45,6 +45,11 @@ export type JournalActView = {
 
 export type JournalDetailType = "main_quest" | "side_quest" | "boss_fight";
 
+export type JournalQuestStepView = {
+  id: string;
+  description: string;
+};
+
 export type JournalDetailView = {
   id: string;
   type: JournalDetailType;
@@ -54,6 +59,7 @@ export type JournalDetailView = {
   doneCondition: string;
   rewardIntent: string;
   statusLabel: "Not started";
+  steps: JournalQuestStepView[];
   skillRewards: SkillRewardView[];
   linkedInventoryNames: string[];
 };

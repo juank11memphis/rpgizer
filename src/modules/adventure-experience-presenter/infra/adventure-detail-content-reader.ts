@@ -100,6 +100,11 @@ function translateGeneratedAdventure(persisted: PersistedGeneratedAdventure): Ad
         doneCondition: quest.doneCondition,
         rewardIntent: quest.rewardIntent,
         sequenceNumber: quest.sequenceNumber,
+        steps: quest.steps.map((step) => ({
+          id: step.key,
+          description: step.description,
+          sequenceNumber: step.sequenceNumber,
+        })),
         skillRewards: quest.skillRewards.map((reward) => ({
           skillId: reward.skillKey,
           xp: reward.xp,
@@ -113,6 +118,11 @@ function translateGeneratedAdventure(persisted: PersistedGeneratedAdventure): Ad
         doneCondition: quest.doneCondition,
         rewardIntent: quest.rewardIntent,
         sequenceNumber: quest.sequenceNumber,
+        steps: quest.steps.map((step) => ({
+          id: step.key,
+          description: step.description,
+          sequenceNumber: step.sequenceNumber,
+        })),
         skillRewards: quest.skillRewards.map((reward) => ({
           skillId: reward.skillKey,
           xp: reward.xp,

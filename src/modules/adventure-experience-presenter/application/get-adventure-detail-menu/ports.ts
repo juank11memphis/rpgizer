@@ -32,6 +32,12 @@ export type AdventureDetailContentAct = {
   bossFights: AdventureDetailContentBossFight[];
 };
 
+export type AdventureDetailContentQuestStep = {
+  id: string;
+  description: string;
+  sequenceNumber: number;
+};
+
 export type AdventureDetailContentQuest = {
   id: string;
   title: string;
@@ -39,11 +45,12 @@ export type AdventureDetailContentQuest = {
   doneCondition: string;
   rewardIntent: string;
   sequenceNumber: number;
+  steps?: AdventureDetailContentQuestStep[];
   skillRewards: AdventureDetailContentSkillReward[];
   inventoryItemIds: string[];
 };
 
-export type AdventureDetailContentBossFight = AdventureDetailContentQuest;
+export type AdventureDetailContentBossFight = Omit<AdventureDetailContentQuest, "steps">;
 
 export type AdventureDetailContentSkillReward = {
   skillId: string;

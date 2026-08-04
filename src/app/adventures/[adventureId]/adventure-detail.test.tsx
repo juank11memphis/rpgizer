@@ -184,6 +184,81 @@ describe("AdventureDetailMenuScreen", () => {
     expect(panelText).toContain("Not started");
   });
 
+  it("renders expanded read-only Quest Steps between description and Done when", async () => {
+    await renderMenu(menuView);
+
+    const panel = getTabPanel();
+    const panelText = panel.textContent ?? "";
+    const stepsSection = getStepsSection();
+    const stepsButton = getStepsButton(stepsSection);
+    const checkboxes = Array.from(stepsSection.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'));
+
+    expect(panelText).toContain("Steps");
+    expect(panelText).toContain("Tracking comes later.");
+    expect(panelText).toContain("Check your calendar for three realistic run windows.");
+    expect(panelText).toContain("Choose days with rest between them.");
+    expect(panelText.indexOf("Choose three realistic run days this week.")).toBeLessThan(panelText.indexOf("Steps"));
+    expect(panelText.indexOf("Steps")).toBeLessThan(panelText.indexOf("Done when"));
+    expect(panelText).toContain("Reward");
+    expect(panelText).toContain("Skill rewards");
+    expect(panelText).toContain("Inventory");
+    expect(stepsButton.getAttribute("aria-expanded")).toBe("true");
+    expect(stepsButton.getAttribute("aria-controls")).toBeTruthy();
+    expect(stepsButton.getAttribute("type")).toBe("button");
+    expect(checkboxes).toHaveLength(3);
+    expect(checkboxes.every((checkbox) => checkbox.disabled)).toBe(true);
+  });
+
+  it("collapses and expands Quest Steps without exposing active step controls", async () => {
+    await renderMenu(menuView);
+
+    const stepsSection = getStepsSection();
+    const stepsButton = getStepsButton(stepsSection);
+
+    await clickElement(stepsButton);
+
+    expect(stepsButton.getAttribute("aria-expanded")).toBe("false");
+    expect(stepsSection.textContent).not.toContain("Tracking comes later.");
+    expect(stepsSection.textContent).not.toContain("Check your calendar for three realistic run windows.");
+
+    await clickElement(stepsButton);
+
+    expect(stepsButton.getAttribute("aria-expanded")).toBe("true");
+    expect(stepsSection.textContent).toContain("Tracking comes later.");
+  });
+
+  it("omits Quest Steps for Boss Fights and older step-less Quests", async () => {
+    await renderMenu(menuView);
+
+    await clickButton("Complete week one");
+
+    let panelText = getTabPanel().textContent ?? "";
+    expect(panelText).toContain("Boss Fight");
+    expect(panelText).not.toContain("Steps");
+    expect(panelText).not.toContain("Tracking comes later.");
+
+    await renderMenu({
+      ...menuView,
+      journal: {
+        ...menuView.journal,
+        defaultSelectedDetailId: "quest-1",
+        acts: [
+          {
+            ...menuView.journal.acts[0]!,
+            mainQuests: menuView.journal.acts[0]!.mainQuests.map((quest) => ({ ...quest, steps: [] })),
+          },
+        ],
+      },
+    });
+
+    panelText = getTabPanel().textContent ?? "";
+    expect(panelText).toContain("Pick three run days");
+    expect(panelText).not.toContain("Steps");
+    expect(panelText).not.toContain("Tracking comes later.");
+    expect(panelText).toContain("Done when");
+    expect(panelText).toContain("Reward");
+  });
+
   it("changes Journal Act selection and falls back to the first available detail", async () => {
     await renderMenu(menuView);
 
@@ -413,6 +488,26 @@ function getTabPanel() {
   return panel;
 }
 
+function getStepsSection() {
+  const section = container.querySelector<HTMLElement>('section[aria-label="Steps"]');
+
+  if (!section) {
+    throw new Error("Missing Steps section");
+  }
+
+  return section;
+}
+
+function getStepsButton(section: HTMLElement) {
+  const button = section.querySelector<HTMLButtonElement>("button");
+
+  if (!button) {
+    throw new Error("Missing Steps button");
+  }
+
+  return button;
+}
+
 async function clickElement(element: HTMLElement) {
   await act(async () => {
     element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -474,6 +569,11 @@ const menuView: AdventureDetailMenuView = {
             doneCondition: "Your run days are chosen.",
             rewardIntent: "+20 Stamina",
             statusLabel: "Not started",
+            steps: [
+              { id: "step-1", description: "Check your calendar for three realistic run windows." },
+              { id: "step-2", description: "Choose days with rest between them." },
+              { id: "step-3", description: "Set a start time for each run day." },
+            ],
             skillRewards: [
               {
                 skillId: "skill-1",
@@ -495,6 +595,10 @@ const menuView: AdventureDetailMenuView = {
             doneCondition: "Your playlist is ready before the next run.",
             rewardIntent: "+10 Routine",
             statusLabel: "Not started",
+            steps: [
+              { id: "step-4", description: "Pick songs that make the first five minutes easier." },
+              { id: "step-5", description: "Save the playlist where you can find it quickly." },
+            ],
             skillRewards: [
               {
                 skillId: "skill-2",
@@ -516,6 +620,7 @@ const menuView: AdventureDetailMenuView = {
             doneCondition: "All three runs are complete.",
             rewardIntent: "Prove the habit can live for one week.",
             statusLabel: "Not started",
+            steps: [],
             skillRewards: [
               {
                 skillId: "skill-1",
@@ -543,6 +648,10 @@ const menuView: AdventureDetailMenuView = {
             doneCondition: "You know where the route starts and ends.",
             rewardIntent: "+10 Routine",
             statusLabel: "Not started",
+            steps: [
+              { id: "step-6", description: "Walk the loop entrance before your next run." },
+              { id: "step-7", description: "Note one safer fallback route." },
+            ],
             skillRewards: [],
             linkedInventoryNames: [],
           },

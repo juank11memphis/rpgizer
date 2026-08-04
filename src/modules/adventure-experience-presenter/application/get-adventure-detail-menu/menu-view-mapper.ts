@@ -126,6 +126,7 @@ function mapJournalDetail(
     doneCondition: detail.doneCondition,
     rewardIntent: detail.rewardIntent,
     statusLabel: "Not started",
+    steps: mapJournalDetailSteps(detail, type),
     skillRewards: detail.skillRewards.map((reward) => {
       const skillName = skillsById.get(reward.skillId)?.name ?? reward.skillId;
       return {
@@ -139,6 +140,23 @@ function mapJournalDetail(
       (inventoryItemId) => inventoryNamesById.get(inventoryItemId) ?? inventoryItemId,
     ),
   };
+}
+
+function mapJournalDetailSteps(
+  detail: AdventureDetailContentQuest | AdventureDetailContentBossFight,
+  type: JournalDetailType,
+) {
+  if (type === "boss_fight") {
+    return [];
+  }
+
+  return mapQuestSteps((detail as AdventureDetailContentQuest).steps);
+}
+
+function mapQuestSteps(steps: AdventureDetailContentQuest["steps"] = []) {
+  return [...steps]
+    .sort(bySequenceNumber)
+    .map((step) => ({ id: step.id, description: step.description }));
 }
 
 function selectDefaultJournalDetail(act: {

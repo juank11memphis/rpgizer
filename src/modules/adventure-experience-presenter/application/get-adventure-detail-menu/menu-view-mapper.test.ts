@@ -61,6 +61,10 @@ const completeContent: AdventureDetailContent = {
           doneCondition: "A recipe is chosen and every needed ingredient is on a shopping list.",
           rewardIntent: "Build confidence by turning an unclear dinner goal into a concrete plan.",
           sequenceNumber: 1,
+          steps: [
+            { id: "step-list-pantry", description: "List pantry ingredients before choosing recipes.", sequenceNumber: 2 },
+            { id: "step-pick-recipe", description: "Pick one recipe that fits the first weeknight.", sequenceNumber: 1 },
+          ],
           skillRewards: [{ skillId: "skill-meal-planning", xp: 25 }],
           inventoryItemIds: ["item-menu-template"],
         },
@@ -73,6 +77,10 @@ const completeContent: AdventureDetailContent = {
           doneCondition: "Counter space is clear and the needed tools are ready before cooking starts.",
           rewardIntent: "Reduce friction and make the main quest easier to start.",
           sequenceNumber: 1,
+          steps: [
+            { id: "step-clear-counter", description: "Clear enough counter space for prep.", sequenceNumber: 1 },
+            { id: "step-stage-tools", description: "Stage the knife and board before cooking.", sequenceNumber: 2 },
+          ],
           skillRewards: [{ skillId: "skill-knife-basics", xp: 10 }],
           inventoryItemIds: ["item-chefs-knife"],
         },
@@ -128,14 +136,45 @@ describe("mapAdventureDetailMenuView", () => {
       typeLabel: "Main Quest",
       title: "Plan the First Menu",
       statusLabel: "Not started",
+      steps: [
+        { id: "step-pick-recipe", description: "Pick one recipe that fits the first weeknight." },
+        { id: "step-list-pantry", description: "List pantry ingredients before choosing recipes." },
+      ],
       skillRewards: [{ skillId: "skill-meal-planning", skillName: "Meal Planning", xp: 25, label: "+25 Meal Planning" }],
       linkedInventoryNames: ["Weekly Menu Template"],
     });
-    expect(act?.sideQuests[0]?.typeLabel).toBe("Side Quest");
+    expect(act?.sideQuests[0]).toMatchObject({
+      typeLabel: "Side Quest",
+      steps: [
+        { id: "step-clear-counter", description: "Clear enough counter space for prep." },
+        { id: "step-stage-tools", description: "Stage the knife and board before cooking." },
+      ],
+    });
     expect(act?.bossFights[0]).toMatchObject({
       typeLabel: "Boss Fight",
+      steps: [],
       linkedInventoryNames: ["Weekly Menu Template", "Sharp Chef's Knife"],
     });
+  });
+
+
+  it("maps step-less older Main and Side Quests to empty step collections", () => {
+    const menu = mapAdventureDetailMenuView({
+      ...completeContent,
+      acts: [
+        {
+          ...completeContent.acts[0]!,
+          mainQuests: completeContent.acts[0]!.mainQuests.map((quest) => ({ ...quest, steps: undefined })),
+          sideQuests: completeContent.acts[0]!.sideQuests.map((quest) => ({ ...quest, steps: undefined })),
+        },
+      ],
+    });
+
+    const act = menu.journal.acts[0];
+
+    expect(act?.mainQuests[0]?.steps).toEqual([]);
+    expect(act?.sideQuests[0]?.steps).toEqual([]);
+    expect(act?.bossFights[0]?.steps).toEqual([]);
   });
 
   it("centralizes read-only display wording", () => {
