@@ -9,6 +9,8 @@ import type {
   CharacterTabView,
   InventoryItemView,
   InventoryTabView,
+  JournalActView,
+  JournalDetailView,
   JournalTabView,
 } from "@/modules/adventure-experience-presenter/application/get-adventure-detail-menu/output";
 
@@ -23,5 +25,7 @@ export type {
   CharacterTabView,
   InventoryItemView,
   InventoryTabView,
+  JournalActView,
+  JournalDetailView,
   JournalTabView,
 };

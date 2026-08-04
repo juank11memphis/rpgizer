@@ -153,6 +153,110 @@ describe("AdventureDetailMenuScreen", () => {
     expect(container.textContent).not.toMatch(/complete quest|edit|regenerate|chat|acquire|unlock/i);
   });
 
+
+  it("renders Journal roadmap groups and selected quest details by default", async () => {
+    await renderMenu(menuView);
+
+    const panelText = getTabPanel().textContent ?? "";
+
+    expect(panelText).toContain("ACT I — Find Your Pace");
+    expect(panelText).toContain("Main Quests");
+    expect(panelText).toContain("Side Quests");
+    expect(panelText).toContain("Boss Fights");
+    expect(panelText).toContain("Pick three run days");
+    expect(panelText).toContain("Choose three realistic run days this week.");
+    expect(panelText).toContain("Done when");
+    expect(panelText).toContain("Your run days are chosen.");
+    expect(panelText).toContain("Reward");
+    expect(panelText).toContain("+20 Stamina");
+    expect(panelText).toContain("Skill rewards");
+    expect(panelText).toContain("Stamina +20 XP");
+    expect(panelText).toContain("Inventory");
+    expect(panelText).toContain("Running Shoes");
+    expect(panelText).toContain("Not started");
+  });
+
+  it("changes Journal Act selection and falls back to the first available detail", async () => {
+    await renderMenu(menuView);
+
+    await clickButton("ACT II — Build the Route");
+
+    const panelText = getTabPanel().textContent ?? "";
+
+    expect(panelText).toContain("ACT II — Build the Route");
+    expect(panelText).toContain("Scout the hill loop");
+    expect(panelText).toContain("Try the route once before week two.");
+    expect(panelText).not.toContain("Pick three run days");
+  });
+
+  it("updates Journal details when selecting quests and Boss Fights without navigation", async () => {
+    await renderMenu(menuView);
+
+    await clickButton("Complete week one");
+
+    const panelText = getTabPanel().textContent ?? "";
+
+    expect(panelText).toContain("Boss Fight");
+    expect(panelText).toContain("Milestone challenge");
+    expect(panelText).toContain("Finish three planned runs before the week ends.");
+    expect(panelText).toContain("Prove the habit can live for one week.");
+    expect(routerReplace).not.toHaveBeenCalled();
+  });
+
+  it("falls back Journal default selection from Main Quest to Side Quest then Boss Fight", async () => {
+    await renderMenu({
+      ...menuView,
+      journal: {
+        ...menuView.journal,
+        defaultSelectedDetailId: null,
+        acts: [
+          {
+            ...menuView.journal.acts[0],
+            mainQuests: [],
+          },
+        ],
+      },
+    });
+
+    expect(getTabPanel().textContent).toContain("Make a running playlist");
+    expect(getTabPanel().textContent).toContain("Build a playlist that makes starting feel easier.");
+
+    await renderMenu({
+      ...menuView,
+      journal: {
+        ...menuView.journal,
+        defaultSelectedDetailId: null,
+        acts: [
+          {
+            ...menuView.journal.acts[0],
+            mainQuests: [],
+            sideQuests: [],
+          },
+        ],
+      },
+    });
+
+    expect(getTabPanel().textContent).toContain("Complete week one");
+    expect(getTabPanel().textContent).toContain("Finish three planned runs before the week ends.");
+  });
+
+  it("renders Journal empty state and no mutation-looking Journal controls", async () => {
+    await renderMenu({
+      ...menuView,
+      journal: {
+        ...menuView.journal,
+        defaultSelectedActId: null,
+        defaultSelectedDetailId: null,
+        acts: [],
+      },
+    });
+
+    const panelText = getTabPanel().textContent ?? "";
+
+    expect(panelText).toContain("No journal entries yet.");
+    expect(panelText).not.toMatch(/complete quest|edit|regenerate|chat|acquire|unlock|claim|award xp|level up/i);
+  });
+
   it("renders Inventory readiness gear with default and selected item details", async () => {
     await renderMenu(menuView);
 
@@ -354,11 +458,79 @@ const menuView = {
             doneCondition: "Your run days are chosen.",
             rewardIntent: "+20 Stamina",
             statusLabel: "Not started",
+            skillRewards: [
+              {
+                skillId: "skill-1",
+                skillName: "Stamina",
+                xp: 20,
+                label: "Stamina +20 XP",
+              },
+            ],
+            linkedInventoryNames: ["Running Shoes"],
+          },
+        ],
+        sideQuests: [
+          {
+            id: "quest-2",
+            type: "side_quest",
+            typeLabel: "Side Quest",
+            title: "Make a running playlist",
+            description: "Build a playlist that makes starting feel easier.",
+            doneCondition: "Your playlist is ready before the next run.",
+            rewardIntent: "+10 Routine",
+            statusLabel: "Not started",
+            skillRewards: [
+              {
+                skillId: "skill-2",
+                skillName: "Routine",
+                xp: 10,
+                label: "Routine +10 XP",
+              },
+            ],
+            linkedInventoryNames: ["Water Bottle"],
+          },
+        ],
+        bossFights: [
+          {
+            id: "boss-1",
+            type: "boss_fight",
+            typeLabel: "Boss Fight",
+            title: "Complete week one",
+            description: "Finish three planned runs before the week ends.",
+            doneCondition: "All three runs are complete.",
+            rewardIntent: "Prove the habit can live for one week.",
+            statusLabel: "Not started",
+            skillRewards: [
+              {
+                skillId: "skill-1",
+                skillName: "Stamina",
+                xp: 30,
+                label: "Stamina +30 XP",
+              },
+            ],
+            linkedInventoryNames: ["Running Shoes", "Water Bottle"],
+          },
+        ],
+      },
+      {
+        id: "act-2",
+        title: "ACT II — Build the Route",
+        summary: "Prepare the next stretch.",
+        mainQuests: [],
+        sideQuests: [
+          {
+            id: "quest-3",
+            type: "side_quest",
+            typeLabel: "Side Quest",
+            title: "Scout the hill loop",
+            description: "Try the route once before week two.",
+            doneCondition: "You know where the route starts and ends.",
+            rewardIntent: "+10 Routine",
+            statusLabel: "Not started",
             skillRewards: [],
             linkedInventoryNames: [],
           },
         ],
-        sideQuests: [],
         bossFights: [],
       },
     ],
