@@ -152,6 +152,115 @@ describe("AdventureDetailMenuScreen", () => {
 
     expect(container.textContent).not.toMatch(/complete quest|edit|regenerate|chat|acquire|unlock/i);
   });
+
+  it("renders Inventory readiness gear with default and selected item details", async () => {
+    await renderMenu(menuView);
+
+    await clickElement(getTab("Inventory"));
+
+    expect(getTabPanel().textContent).toContain("Readiness gear");
+    expect(getTabPanel().textContent).toContain("Running Shoes");
+    expect(getTabPanel().textContent).toContain("Water Bottle");
+    expect(getTabPanel().textContent).toContain("Comfortable shoes reduce the friction of starting.");
+
+    await clickButton("Water Bottle");
+
+    expect(getTabPanel().textContent).toContain("Hydration keeps the path safer.");
+    expect(getTabPanel().textContent).toContain("Needed");
+  });
+
+  it("renders Inventory empty state without stale selected item details", async () => {
+    await renderMenu({
+      ...menuView,
+      inventory: {
+        ...menuView.inventory,
+        defaultSelectedItemId: null,
+        items: [],
+      },
+    });
+
+    await clickElement(getTab("Inventory"));
+
+    expect(getTabPanel().textContent).toContain("No inventory items yet.");
+    expect(getTabPanel().textContent).not.toContain("Running Shoes");
+  });
+
+  it("renders Character skills with default and selected skill details", async () => {
+    await renderMenu(menuView);
+
+    await clickElement(getTab("Character"));
+
+    expect(getTabPanel().textContent).toContain("Your Adventure skills");
+    expect(getTabPanel().textContent).toContain("Stamina");
+    expect(getTabPanel().textContent).toContain("Routine");
+    expect(getTabPanel().textContent).toContain("Level 1");
+    expect(getTabPanel().textContent).toContain("XP 20 / 100");
+    expect(getTabPanel().textContent).toContain("Keep moving when it is easier to quit.");
+
+    await clickButton("Routine");
+
+    expect(getTabPanel().textContent).toContain("Protect the habit with simple repeatable plans.");
+    expect(getTabPanel().textContent).toContain("XP 10 / 100");
+  });
+
+  it("renders Character empty state without implying skills exist", async () => {
+    await renderMenu({
+      ...menuView,
+      character: {
+        ...menuView.character,
+        defaultSelectedSkillId: null,
+        skills: [],
+      },
+    });
+
+    await clickElement(getTab("Character"));
+
+    expect(getTabPanel().textContent).toContain("No skills yet.");
+    expect(getTabPanel().textContent).not.toContain("Stamina");
+  });
+
+  it("renders Achievement badges with Available status and selected milestone details", async () => {
+    await renderMenu(menuView);
+
+    await clickElement(getTab("Achievements"));
+
+    expect(getTabPanel().textContent).toContain("Campaign milestones");
+    expect(getTabPanel().textContent).toContain("First Steps");
+    expect(getTabPanel().textContent).toContain("Week One Warden");
+    expect(getTabPanel().textContent).toContain("Available");
+    expect(getTabPanel().textContent).toContain("Complete your first run.");
+
+    await clickButton("Week One Warden");
+
+    expect(getTabPanel().textContent).toContain("Finish the first week.");
+  });
+
+  it("renders Achievements empty state without stale milestone details", async () => {
+    await renderMenu({
+      ...menuView,
+      achievements: {
+        ...menuView.achievements,
+        defaultSelectedAchievementId: null,
+        achievements: [],
+      },
+    });
+
+    await clickElement(getTab("Achievements"));
+
+    expect(getTabPanel().textContent).toContain("No achievements yet.");
+    expect(getTabPanel().textContent).not.toContain("First Steps");
+  });
+
+  it("does not show mutation-looking controls in supplemental tabs", async () => {
+    await renderMenu(menuView);
+
+    for (const tabName of ["Inventory", "Character", "Achievements"]) {
+      await clickElement(getTab(tabName));
+      expect(getTabPanel().textContent).not.toMatch(
+        /acquire item|award xp|xp award|level up|unlock achievement|claim|complete quest|edit|regenerate|chat/i,
+      );
+    }
+  });
 });
 
 async function renderToast() {
@@ -198,6 +307,18 @@ async function keyDownElement(element: HTMLElement, key: string) {
   await act(async () => {
     element.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
   });
+}
+
+async function clickButton(name: string) {
+  const button = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find((element) =>
+    element.textContent?.includes(name),
+  );
+
+  if (!button) {
+    throw new Error(`Missing button: ${name}`);
+  }
+
+  await clickElement(button);
 }
 
 const menuView = {
@@ -254,6 +375,12 @@ const menuView = {
         purpose: "Comfortable shoes reduce the friction of starting.",
         statusLabel: "Needed",
       },
+      {
+        id: "item-2",
+        name: "Water Bottle",
+        purpose: "Hydration keeps the path safer.",
+        statusLabel: "Needed",
+      },
     ],
   },
   character: {
@@ -271,6 +398,15 @@ const menuView = {
         levelLabel: "Level 1",
         xpLabel: "XP 20 / 100",
       },
+      {
+        id: "skill-2",
+        name: "Routine",
+        description: "Protect the habit with simple repeatable plans.",
+        level: 1,
+        xp: 10,
+        levelLabel: "Level 1",
+        xpLabel: "XP 10 / 100",
+      },
     ],
   },
   achievements: {
@@ -284,6 +420,13 @@ const menuView = {
         name: "First Steps",
         description: "Complete your first run.",
         unlockCondition: "Complete your first run.",
+        statusLabel: "Available",
+      },
+      {
+        id: "achievement-2",
+        name: "Week One Warden",
+        description: "Finish the first week.",
+        unlockCondition: "Finish the first week.",
         statusLabel: "Available",
       },
     ],
