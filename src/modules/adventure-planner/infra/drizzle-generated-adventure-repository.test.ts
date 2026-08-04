@@ -15,6 +15,7 @@ import {
   adventureQuestInventoryItems,
   adventureQuests,
   adventureQuestSkillRewards,
+  adventureQuestSteps,
   adventureSkills,
   adventures,
   generatedAdventureManifests,
@@ -78,6 +79,7 @@ runWithDatabase("DrizzleGeneratedAdventureRepository", () => {
     await expect(selectRowsForAdventure(adventureSkills)).resolves.toHaveLength(2);
     await expect(selectRowsForAdventure(adventureInventoryItems)).resolves.toHaveLength(2);
     await expect(selectRowsForAdventure(adventureQuests)).resolves.toHaveLength(2);
+    await expect(selectQuestSteps()).resolves.toHaveLength(5);
     await expect(selectRowsForAdventure(adventureBossFights)).resolves.toHaveLength(1);
     await expect(selectRowsForAdventure(adventureAchievements)).resolves.toHaveLength(1);
     await expect(selectRowsForAdventure(adventureFocusedNextActions)).resolves.toHaveLength(1);
@@ -88,6 +90,16 @@ runWithDatabase("DrizzleGeneratedAdventureRepository", () => {
 
     const reloaded = await repository.findExistingGeneratedAdventure({ userId, adventureId });
     expect(reloaded?.adventure.focusedNextActions).toEqual(adventure.focusedNextActions);
+    expect(reloaded?.adventure.acts[0].mainQuests[0].steps).toEqual([
+      expect.objectContaining({ description: "Pick one recipe that fits your weeknight time window.", sequenceNumber: 1 }),
+      expect.objectContaining({ description: "Write every ingredient and tool needed before shopping.", sequenceNumber: 2 }),
+      expect.objectContaining({ description: "Choose the evening and start time for cooking the meal.", sequenceNumber: 3 }),
+    ]);
+    expect(reloaded?.adventure.acts[0].sideQuests[0].steps).toEqual([
+      expect.objectContaining({ description: "Clear enough counter space for safe chopping and staging.", sequenceNumber: 1 }),
+      expect.objectContaining({ description: "Place the knife, board, pan, and template within reach.", sequenceNumber: 2 }),
+    ]);
+    expect(reloaded?.adventure.acts[0].bossFights[0]).not.toHaveProperty("steps");
 
     const savedAdventureRows = await db.select({ state: adventures.state }).from(adventures).where(eq(adventures.id, adventureId));
     expect(savedAdventureRows[0]?.state).toBe("generated");
@@ -115,6 +127,42 @@ runWithDatabase("DrizzleGeneratedAdventureRepository", () => {
     ).rejects.toThrow("Adventure was not found.");
   });
 
+
+  it("loads older generated adventures that have no Quest Step rows", async () => {
+    if (!db) throw new Error("DATABASE_URL is required for this test.");
+    const repository = new DrizzleGeneratedAdventureRepository(db);
+    const adventure = parseGeneratedAdventure(buildGeneratedAdventureBoundaryPayload());
+
+    await repository.saveGeneratedAdventure({
+      userId,
+      adventureId,
+      interviewOutputArtifactId: artifactId,
+      adventure,
+    });
+    await db.delete(adventureQuestSteps);
+
+    const reloaded = await repository.findExistingGeneratedAdventure({ userId, adventureId });
+
+    expect(reloaded?.adventure.acts[0].mainQuests[0].steps).toEqual([]);
+    expect(reloaded?.adventure.acts[0].sideQuests[0].steps).toEqual([]);
+  });
+
+  it("deletes Quest Steps when the owning Quest is deleted", async () => {
+    if (!db) throw new Error("DATABASE_URL is required for this test.");
+    const repository = new DrizzleGeneratedAdventureRepository(db);
+    const adventure = parseGeneratedAdventure(buildGeneratedAdventureBoundaryPayload());
+
+    await repository.saveGeneratedAdventure({ userId, adventureId, interviewOutputArtifactId: artifactId, adventure });
+    const questRows = await db.select({ id: adventureQuests.id }).from(adventureQuests).where(eq(adventureQuests.adventureId, adventureId)).limit(1);
+    const questId = questRows[0]?.id;
+    if (!questId) throw new Error("Expected saved Quest row.");
+
+    await db.delete(adventureQuests).where(eq(adventureQuests.id, questId));
+
+    const remainingSteps = await db.select().from(adventureQuestSteps).where(eq(adventureQuestSteps.questId, questId));
+    expect(remainingSteps).toEqual([]);
+  });
+
   async function selectRowsForAdventure(
     table:
       | typeof generatedAdventureManifests
@@ -128,6 +176,15 @@ runWithDatabase("DrizzleGeneratedAdventureRepository", () => {
   ): Promise<unknown[]> {
     if (!db) throw new Error("DATABASE_URL is required for this test.");
     return db.select().from(table).where(eq(table.adventureId, adventureId));
+  }
+
+  async function selectQuestSteps(): Promise<unknown[]> {
+    if (!db) throw new Error("DATABASE_URL is required for this test.");
+    return db
+      .select()
+      .from(adventureQuestSteps)
+      .innerJoin(adventureQuests, eq(adventureQuests.id, adventureQuestSteps.questId))
+      .where(eq(adventureQuests.adventureId, adventureId));
   }
 
   async function selectQuestSkillRewards(): Promise<unknown[]> {

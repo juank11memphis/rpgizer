@@ -129,6 +129,32 @@ describeWithDatabase("generated Adventure schema constraints", () => {
           values (${bossFightId}, ${skillId}, -1)
         `,
       );
+      await sql`
+        insert into "adventureQuestSteps" ("questId", "description", "sequenceNumber")
+        values (${questId}, 'Confirm the owning quest exists.', 1)
+      `;
+      await expectDatabaseConstraintViolation(
+        () => sql`
+          insert into "adventureQuestSteps" ("questId", "description", "sequenceNumber")
+          values ('missing-quest', 'Missing ownership is rejected.', 1)
+        `,
+      );
+      await expectDatabaseConstraintViolation(
+        () => sql`
+          insert into "adventureQuestSteps" ("questId", "description", "sequenceNumber")
+          values (${questId}, 'Duplicate sequence is rejected.', 1)
+        `,
+      );
+      await expectDatabaseConstraintViolation(
+        () => sql`
+          insert into "adventureQuestSteps" ("questId", "description", "sequenceNumber")
+          values (${questId}, 'Invalid sequence is rejected.', 0)
+        `,
+      );
+      await sql`delete from "adventureQuests" where "id" = ${questId}`;
+      const remainingQuestSteps = await sql`select * from "adventureQuestSteps" where "questId" = ${questId}`;
+      expect(remainingQuestSteps).toHaveLength(0);
+
       await expectDatabaseConstraintViolation(
         () => sql`
           insert into "adventureQuestInventoryItems" ("questId", "inventoryItemId")

@@ -56,6 +56,8 @@ describe("OpenAIAdventureContentGenerator", () => {
 
     expect(result.title).toBe(validPayload.title);
     expect(result.acts[0]).toMatchObject({ sequenceNumber: 1 });
+    expect(result.acts[0].mainQuests[0].steps).toHaveLength(3);
+    expect(result.acts[0].bossFights[0]).not.toHaveProperty("steps");
     expect(result.acts[0].mainQuests[0]).not.toHaveProperty("skillRewards");
     expect(result.acts[0].mainQuests[0]).not.toHaveProperty("inventoryItemKeys");
     expect(result.skills[0]).toMatchObject({ xp: 0, level: 1 });
@@ -80,6 +82,10 @@ describe("OpenAIAdventureContentGenerator", () => {
     expect(schemaText).toContain("Full verifiable evidence sentence");
     expect(schemaText).toContain("Verb-based real-world capability");
     expect(schemaText).toContain("practical readiness item");
+    expect(schemaText).toContain("steps");
+    expect(schemaText).toContain("minItems\":2");
+    expect(schemaText).toContain("maxItems\":7");
+    expect(schemaText).toContain("Quest-specific user action");
     expect(schemaText).not.toContain("skillRewards");
     expect(schemaText).not.toContain("inventoryItemKeys");
     expect(schemaText.toLowerCase()).not.toContain("xp");
@@ -167,6 +173,29 @@ describe("OpenAIAdventureContentGenerator", () => {
         error: expect.objectContaining({ name: "AdventureGeneratorError" }),
       }),
     ]);
+  });
+
+
+  it("rejects Boss Fight steps as invalid unlinked content", async () => {
+    const bossFightStepsPayload = {
+      ...validPayload,
+      acts: [
+        {
+          ...validPayload.acts[0],
+          bossFights: [
+            {
+              ...validPayload.acts[0].bossFights[0],
+              steps: [{ key: "prepare", description: "Prepare the proof." }, { key: "finish", description: "Finish the proof." }],
+            },
+          ],
+        },
+      ],
+    };
+    const client = createMockClient(responseWithOutput(JSON.stringify(bossFightStepsPayload)));
+
+    await expect(createGenerator(client).generateAdventureContent(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
   });
 
   it("normalizes provider request failures", async () => {
@@ -272,6 +301,8 @@ describe("OpenAIAdventureContentGenerator", () => {
     expect(prompt).toContain("RPG-native plan");
     expect(prompt).toContain("doneCondition is one observable proof sentence");
     expect(prompt).toContain("focusedNextActions");
+    expect(prompt).toContain("Main/Side Quest objects must include 2–7 steps");
+    expect(prompt).toContain("Boss Fight objects must not include steps");
     expect(prompt).toContain("must not contain skillRewards, inventoryItemKeys");
     expect(prompt).toContain("later steps will link Skills, Inventory Items, and XP");
     expect(prompt).toContain("Do not assume external people/resources exist unless the interview explicitly says they do");

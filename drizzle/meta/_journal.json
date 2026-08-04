@@ -50,6 +50,13 @@
       "when": 1783707930358,
       "tag": "0006_milky_morlocks",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785888000000,
+      "tag": "0007_adventure_quest_steps",
+      "breakpoints": true
     }
   ]
 }

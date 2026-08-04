@@ -433,11 +433,12 @@ function contentQuestSchema() {
   return {
     type: "object",
     additionalProperties: false,
-    required: ["key", "title", "description", "doneCondition", "rewardIntent"],
+    required: ["key", "title", "description", "doneCondition", "rewardIntent", "steps"],
     properties: {
       key: keySchema(),
       title: nonEmptyStringSchema(),
       description: nonEmptyStringSchema("Real-world action, context, and why it matters."),
+      steps: questStepsSchema(),
       doneCondition: nonEmptyStringSchema(
         "Full verifiable evidence sentence proving completion; not a title, imperative command, or feeling-only phrase.",
       ),
@@ -449,7 +450,41 @@ function contentQuestSchema() {
 }
 
 function contentBossFightSchema() {
-  return contentQuestSchema();
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["key", "title", "description", "doneCondition", "rewardIntent"],
+    properties: {
+      key: keySchema(),
+      title: nonEmptyStringSchema(),
+      description: nonEmptyStringSchema("Real-world challenge, stakes, and why it matters."),
+      doneCondition: nonEmptyStringSchema(
+        "Full verifiable evidence sentence proving completion; not a title, imperative command, or feeling-only phrase.",
+      ),
+      rewardIntent: nonEmptyStringSchema(
+        "Why completion should later be linked to relevant real-world skill growth; do not include reward amounts or skill keys.",
+      ),
+    },
+  };
+}
+
+function questStepsSchema() {
+  return {
+    type: "array",
+    minItems: 2,
+    maxItems: 7,
+    items: {
+      type: "object",
+      additionalProperties: false,
+      required: ["key", "description"],
+      properties: {
+        key: keySchema(),
+        description: nonEmptyStringSchema(
+          "Concrete Quest-specific user action, decision, check, or artifact; avoid generic filler.",
+        ),
+      },
+    },
+  };
 }
 
 function nonEmptyArrayOf(items: Record<string, unknown>) {

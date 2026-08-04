@@ -33,6 +33,7 @@ describe("FakeGeneratedAdventureRepository", () => {
       adventure,
     });
     expect(saved.reusedExistingAdventure).toBe(false);
+    expect(saved.adventure.acts[0].mainQuests[0].steps).toEqual(adventure.acts[0].mainQuests[0].steps);
     expect(duplicate).toEqual({ ...saved, reusedExistingAdventure: true });
   });
 

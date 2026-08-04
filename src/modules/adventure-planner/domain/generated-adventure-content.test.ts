@@ -16,6 +16,11 @@ describe("parseGeneratedAdventureContent", () => {
       type: "main",
       status: "not_started",
       sequenceNumber: 1,
+      steps: [
+        { key: "choose-recipe", description: "Pick one recipe that fits your weeknight time window.", sequenceNumber: 1 },
+        { key: "write-shopping-list", description: "Write every ingredient and tool needed before shopping.", sequenceNumber: 2 },
+        { key: "confirm-cooking-window", description: "Choose the evening and start time for cooking the meal.", sequenceNumber: 3 },
+      ],
     });
     expect(content.acts[0].mainQuests[0]).not.toHaveProperty("skillRewards");
     expect(content.acts[0].mainQuests[0]).not.toHaveProperty("inventoryItemKeys");
@@ -42,6 +47,106 @@ describe("parseGeneratedAdventureContent", () => {
         skills: [payload.skills[0], { ...payload.skills[0] }],
       }),
     ).toThrow("duplicate key");
+  });
+
+
+  it("requires 2 to 7 non-empty Quest Steps for Main and Side Quests", () => {
+    const payload = buildGeneratedAdventureContentBoundaryPayload();
+
+    expect(() =>
+      parseGeneratedAdventureContent({
+        ...payload,
+        acts: [{ ...payload.acts[0], mainQuests: [{ ...payload.acts[0].mainQuests[0], steps: undefined }] }],
+      }),
+    ).toThrow("steps");
+
+    expect(() =>
+      parseGeneratedAdventureContent({
+        ...payload,
+        acts: [
+          {
+            ...payload.acts[0],
+            sideQuests: [{ ...payload.acts[0].sideQuests[0], steps: [{ key: "only-step", description: "Do one thing." }] }],
+          },
+        ],
+      }),
+    ).toThrow("between 2 and 7");
+
+    expect(() =>
+      parseGeneratedAdventureContent({
+        ...payload,
+        acts: [
+          {
+            ...payload.acts[0],
+            mainQuests: [
+              {
+                ...payload.acts[0].mainQuests[0],
+                steps: Array.from({ length: 8 }, (_, index) => ({ key: `step-${index + 1}`, description: `Do concrete thing ${index + 1}.` })),
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("between 2 and 7");
+
+    expect(() =>
+      parseGeneratedAdventureContent({
+        ...payload,
+        acts: [
+          {
+            ...payload.acts[0],
+            mainQuests: [
+              {
+                ...payload.acts[0].mainQuests[0],
+                steps: [{ key: "valid", description: "Do a concrete thing." }, { key: "blank", description: " " }],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("description");
+  });
+
+  it("rejects duplicate step keys within each Quest", () => {
+    const payload = buildGeneratedAdventureContentBoundaryPayload();
+
+    expect(() =>
+      parseGeneratedAdventureContent({
+        ...payload,
+        acts: [
+          {
+            ...payload.acts[0],
+            mainQuests: [
+              {
+                ...payload.acts[0].mainQuests[0],
+                steps: [{ key: "same-step", description: "Do the first thing." }, { key: "same-step", description: "Do the second thing." }],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("duplicate key");
+  });
+
+  it("rejects Boss Fight steps", () => {
+    const payload = buildGeneratedAdventureContentBoundaryPayload();
+
+    expect(() =>
+      parseGeneratedAdventureContent({
+        ...payload,
+        acts: [
+          {
+            ...payload.acts[0],
+            bossFights: [
+              {
+                ...payload.acts[0].bossFights[0],
+                steps: [{ key: "prepare", description: "Prepare for the milestone." }, { key: "prove", description: "Complete the milestone proof." }],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("must not include Quest Steps");
   });
 
   it("rejects dependency fields on unlinked Quests and Boss Fights", () => {

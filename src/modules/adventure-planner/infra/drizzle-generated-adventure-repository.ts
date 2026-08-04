@@ -13,6 +13,7 @@ import {
   adventureQuestInventoryItems,
   adventureQuests,
   adventureQuestSkillRewards,
+  adventureQuestSteps,
   adventureSkills,
   adventures,
   generatedAdventureManifests,
@@ -45,6 +46,7 @@ type InventoryItemRow = Pick<typeof adventureInventoryItems.$inferSelect, "id" |
 type FocusedNextActionRow = Pick<typeof adventureFocusedNextActions.$inferSelect, "title" | "description" | "sequenceNumber">;
 type AchievementRow = Pick<typeof adventureAchievements.$inferSelect, "id" | "name" | "description" | "unlockCondition" | "status" | "unlockedAt" | "sequenceNumber">;
 type QuestRow = Pick<typeof adventureQuests.$inferSelect, "id" | "actId" | "type" | "title" | "description" | "doneCondition" | "rewardIntent" | "status" | "sequenceNumber">;
+type QuestStepRow = Pick<typeof adventureQuestSteps.$inferSelect, "id" | "questId" | "description" | "sequenceNumber">;
 type BossFightRow = Pick<typeof adventureBossFights.$inferSelect, "id" | "actId" | "title" | "description" | "doneCondition" | "rewardIntent" | "status" | "sequenceNumber">;
 type SkillRewardRow = { sourceId: string; skillId: string; xp: number };
 type InventoryLinkRow = { sourceId: string; inventoryItemId: string };
@@ -109,14 +111,15 @@ async function loadGeneratedAdventure(db: QueryExecutor, input: ExistingGenerate
     db.select({ id: adventureBossFights.id, actId: adventureBossFights.actId, title: adventureBossFights.title, description: adventureBossFights.description, doneCondition: adventureBossFights.doneCondition, rewardIntent: adventureBossFights.rewardIntent, status: adventureBossFights.status, sequenceNumber: adventureBossFights.sequenceNumber }).from(adventureBossFights).where(eq(adventureBossFights.adventureId, input.adventureId)).orderBy(adventureBossFights.sequenceNumber),
   ]);
 
-  const [questRewardRows, bossRewardRows, questInventoryRows, bossInventoryRows] = await Promise.all([
+  const [questRewardRows, bossRewardRows, questInventoryRows, bossInventoryRows, questStepRows] = await Promise.all([
     db.select({ sourceId: adventureQuestSkillRewards.questId, skillId: adventureQuestSkillRewards.skillId, xp: adventureQuestSkillRewards.xp }).from(adventureQuestSkillRewards).innerJoin(adventureQuests, eq(adventureQuests.id, adventureQuestSkillRewards.questId)).where(eq(adventureQuests.adventureId, input.adventureId)),
     db.select({ sourceId: adventureBossFightSkillRewards.bossFightId, skillId: adventureBossFightSkillRewards.skillId, xp: adventureBossFightSkillRewards.xp }).from(adventureBossFightSkillRewards).innerJoin(adventureBossFights, eq(adventureBossFights.id, adventureBossFightSkillRewards.bossFightId)).where(eq(adventureBossFights.adventureId, input.adventureId)),
     db.select({ sourceId: adventureQuestInventoryItems.questId, inventoryItemId: adventureQuestInventoryItems.inventoryItemId }).from(adventureQuestInventoryItems).innerJoin(adventureQuests, eq(adventureQuests.id, adventureQuestInventoryItems.questId)).where(eq(adventureQuests.adventureId, input.adventureId)),
     db.select({ sourceId: adventureBossFightInventoryItems.bossFightId, inventoryItemId: adventureBossFightInventoryItems.inventoryItemId }).from(adventureBossFightInventoryItems).innerJoin(adventureBossFights, eq(adventureBossFights.id, adventureBossFightInventoryItems.bossFightId)).where(eq(adventureBossFights.adventureId, input.adventureId)),
+    db.select({ id: adventureQuestSteps.id, questId: adventureQuestSteps.questId, description: adventureQuestSteps.description, sequenceNumber: adventureQuestSteps.sequenceNumber }).from(adventureQuestSteps).innerJoin(adventureQuests, eq(adventureQuests.id, adventureQuestSteps.questId)).where(eq(adventureQuests.adventureId, input.adventureId)).orderBy(adventureQuestSteps.sequenceNumber),
   ]);
 
-  return { adventureId: manifest.adventureId, generatedAdventureId: manifest.id, adventure: mapGeneratedAdventure(manifest, { acts: actRows, skills: skillRows, inventoryItems: inventoryRows, achievements: achievementRows, focusedNextActions: focusedNextActionRows, quests: questRows, bossFights: bossFightRows, questRewards: questRewardRows, bossFightRewards: bossRewardRows, questInventoryItems: questInventoryRows, bossFightInventoryItems: bossInventoryRows }) };
+  return { adventureId: manifest.adventureId, generatedAdventureId: manifest.id, adventure: mapGeneratedAdventure(manifest, { acts: actRows, skills: skillRows, inventoryItems: inventoryRows, achievements: achievementRows, focusedNextActions: focusedNextActionRows, quests: questRows, bossFights: bossFightRows, questRewards: questRewardRows, bossFightRewards: bossRewardRows, questInventoryItems: questInventoryRows, bossFightInventoryItems: bossInventoryRows, questSteps: questStepRows }) };
 }
 
 async function insertManifest(db: QueryExecutor, input: SaveGeneratedAdventureInput): Promise<{ id: string }> {
@@ -166,6 +169,7 @@ async function insertQuestsAndBossFights(db: QueryExecutor, input: SaveGenerated
       const questRows = await db.insert(adventureQuests).values({ adventureId: input.adventureId, actId, type: quest.type, title: quest.title, description: quest.description, doneCondition: quest.doneCondition, rewardIntent: quest.rewardIntent, status: quest.status, sequenceNumber: quest.sequenceNumber, completedAt: null }).returning({ id: adventureQuests.id });
       const questId = questRows[0]?.id;
       if (!questId) throw new Error(`Generated Adventure quest could not be created: ${quest.key}.`);
+      await insertQuestSteps(db, questId, quest.steps);
       await insertSkillRewards(db, questId, quest.skillRewards, skillIdsByKey, "quest");
       await insertInventoryLinks(db, questId, quest.inventoryItemKeys, inventoryItemIdsByKey, "quest");
     }
@@ -176,6 +180,16 @@ async function insertQuestsAndBossFights(db: QueryExecutor, input: SaveGenerated
       await insertSkillRewards(db, bossFightId, bossFight.skillRewards, skillIdsByKey, "bossFight");
       await insertInventoryLinks(db, bossFightId, bossFight.inventoryItemKeys, inventoryItemIdsByKey, "bossFight");
     }
+  }
+}
+
+async function insertQuestSteps(db: QueryExecutor, questId: string, steps: GeneratedAdventureQuest["steps"]): Promise<void> {
+  for (const step of steps) {
+    await db.insert(adventureQuestSteps).values({
+      questId,
+      description: step.description,
+      sequenceNumber: step.sequenceNumber,
+    });
   }
 }
 
@@ -212,12 +226,13 @@ async function insertFocusedNextActions(db: QueryExecutor, input: SaveGeneratedA
   }
 }
 
-function mapGeneratedAdventure(manifest: ManifestRow, rows: { acts: ActRow[]; skills: SkillRow[]; inventoryItems: InventoryItemRow[]; achievements: AchievementRow[]; focusedNextActions: FocusedNextActionRow[]; quests: QuestRow[]; bossFights: BossFightRow[]; questRewards: SkillRewardRow[]; bossFightRewards: SkillRewardRow[]; questInventoryItems: InventoryLinkRow[]; bossFightInventoryItems: InventoryLinkRow[] }): GeneratedAdventure {
+function mapGeneratedAdventure(manifest: ManifestRow, rows: { acts: ActRow[]; skills: SkillRow[]; inventoryItems: InventoryItemRow[]; achievements: AchievementRow[]; focusedNextActions: FocusedNextActionRow[]; quests: QuestRow[]; bossFights: BossFightRow[]; questRewards: SkillRewardRow[]; bossFightRewards: SkillRewardRow[]; questInventoryItems: InventoryLinkRow[]; bossFightInventoryItems: InventoryLinkRow[]; questSteps: QuestStepRow[] }): GeneratedAdventure {
   const questsByActId = groupBy(rows.quests, (quest) => quest.actId);
   const bossFightsByActId = groupBy(rows.bossFights, (bossFight) => bossFight.actId);
   const questRewardsByQuestId = groupBy(rows.questRewards, (reward) => reward.sourceId);
   const bossRewardsByBossId = groupBy(rows.bossFightRewards, (reward) => reward.sourceId);
   const questInventoryByQuestId = groupBy(rows.questInventoryItems, (link) => link.sourceId);
+  const questStepsByQuestId = groupBy(rows.questSteps, (step) => step.questId);
   const bossInventoryByBossId = groupBy(rows.bossFightInventoryItems, (link) => link.sourceId);
 
   return {
@@ -228,25 +243,25 @@ function mapGeneratedAdventure(manifest: ManifestRow, rows: { acts: ActRow[]; sk
     skills: rows.skills.map((skill) => ({ key: skill.id, name: skill.name, description: skill.description, xp: 0, level: 1 })),
     inventoryItems: rows.inventoryItems.map(mapInventoryItem),
     achievements: rows.achievements.map((achievement) => ({ key: achievement.id, name: achievement.name, description: achievement.description, unlockCondition: achievement.unlockCondition, status: "locked", unlockedAt: null, sequenceNumber: achievement.sequenceNumber })),
-    acts: rows.acts.map((act) => mapAct(act, { quests: questsByActId.get(act.id) ?? [], bossFights: bossFightsByActId.get(act.id) ?? [], questRewardsByQuestId, bossRewardsByBossId, questInventoryByQuestId, bossInventoryByBossId })),
+    acts: rows.acts.map((act) => mapAct(act, { quests: questsByActId.get(act.id) ?? [], bossFights: bossFightsByActId.get(act.id) ?? [], questRewardsByQuestId, bossRewardsByBossId, questInventoryByQuestId, bossInventoryByBossId, questStepsByQuestId })),
     focusedNextActions: rows.focusedNextActions.map(mapFocusedNextAction),
   };
 }
 
-function mapAct(act: ActRow, rows: { quests: QuestRow[]; bossFights: BossFightRow[]; questRewardsByQuestId: ReadonlyMap<string, SkillRewardRow[]>; bossRewardsByBossId: ReadonlyMap<string, SkillRewardRow[]>; questInventoryByQuestId: ReadonlyMap<string, InventoryLinkRow[]>; bossInventoryByBossId: ReadonlyMap<string, InventoryLinkRow[]> }): GeneratedAdventureAct {
+function mapAct(act: ActRow, rows: { quests: QuestRow[]; bossFights: BossFightRow[]; questRewardsByQuestId: ReadonlyMap<string, SkillRewardRow[]>; bossRewardsByBossId: ReadonlyMap<string, SkillRewardRow[]>; questInventoryByQuestId: ReadonlyMap<string, InventoryLinkRow[]>; bossInventoryByBossId: ReadonlyMap<string, InventoryLinkRow[]>; questStepsByQuestId: ReadonlyMap<string, QuestStepRow[]> }): GeneratedAdventureAct {
   return {
     key: act.id,
     title: act.title,
     summary: act.summary,
     sequenceNumber: act.sequenceNumber,
-    mainQuests: rows.quests.filter((quest) => quest.type === "main").map((quest) => mapQuest(quest, rows.questRewardsByQuestId, rows.questInventoryByQuestId)),
-    sideQuests: rows.quests.filter((quest) => quest.type === "side").map((quest) => mapQuest(quest, rows.questRewardsByQuestId, rows.questInventoryByQuestId)),
+    mainQuests: rows.quests.filter((quest) => quest.type === "main").map((quest) => mapQuest(quest, rows.questRewardsByQuestId, rows.questInventoryByQuestId, rows.questStepsByQuestId)),
+    sideQuests: rows.quests.filter((quest) => quest.type === "side").map((quest) => mapQuest(quest, rows.questRewardsByQuestId, rows.questInventoryByQuestId, rows.questStepsByQuestId)),
     bossFights: rows.bossFights.map((bossFight) => mapBossFight(bossFight, rows.bossRewardsByBossId, rows.bossInventoryByBossId)),
   };
 }
 
-function mapQuest(quest: QuestRow, rewardsByQuestId: ReadonlyMap<string, SkillRewardRow[]>, inventoryByQuestId: ReadonlyMap<string, InventoryLinkRow[]>): GeneratedAdventureQuest {
-  return { key: quest.id, type: quest.type === "side" ? "side" : "main", title: quest.title, description: quest.description, doneCondition: quest.doneCondition, rewardIntent: quest.rewardIntent, status: "not_started", sequenceNumber: quest.sequenceNumber, skillRewards: (rewardsByQuestId.get(quest.id) ?? []).map((reward) => ({ skillKey: reward.skillId, xp: reward.xp })), inventoryItemKeys: (inventoryByQuestId.get(quest.id) ?? []).map((link) => link.inventoryItemId) };
+function mapQuest(quest: QuestRow, rewardsByQuestId: ReadonlyMap<string, SkillRewardRow[]>, inventoryByQuestId: ReadonlyMap<string, InventoryLinkRow[]>, stepsByQuestId: ReadonlyMap<string, QuestStepRow[]>): GeneratedAdventureQuest {
+  return { key: quest.id, type: quest.type === "side" ? "side" : "main", title: quest.title, description: quest.description, doneCondition: quest.doneCondition, rewardIntent: quest.rewardIntent, steps: (stepsByQuestId.get(quest.id) ?? []).map((step) => ({ key: step.id, description: step.description, sequenceNumber: step.sequenceNumber })), status: "not_started", sequenceNumber: quest.sequenceNumber, skillRewards: (rewardsByQuestId.get(quest.id) ?? []).map((reward) => ({ skillKey: reward.skillId, xp: reward.xp })), inventoryItemKeys: (inventoryByQuestId.get(quest.id) ?? []).map((link) => link.inventoryItemId) };
 }
 
 function mapBossFight(bossFight: BossFightRow, rewardsByBossId: ReadonlyMap<string, SkillRewardRow[]>, inventoryByBossId: ReadonlyMap<string, InventoryLinkRow[]>): GeneratedAdventureBossFight {

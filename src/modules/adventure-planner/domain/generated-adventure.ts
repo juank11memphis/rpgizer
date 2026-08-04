@@ -20,6 +20,12 @@ export type GeneratedAdventureAct = {
   bossFights: GeneratedAdventureBossFight[];
 };
 
+export type GeneratedAdventureQuestStep = {
+  key: string;
+  description: string;
+  sequenceNumber: number;
+};
+
 export type GeneratedAdventureQuest = {
   key: string;
   type: "main" | "side";
@@ -27,6 +33,7 @@ export type GeneratedAdventureQuest = {
   description: string;
   doneCondition: string;
   rewardIntent: string;
+  steps: GeneratedAdventureQuestStep[];
   status: "not_started";
   sequenceNumber: number;
   skillRewards: GeneratedAdventureSkillReward[];
@@ -166,6 +173,7 @@ function parseQuest(
     description: readRequiredText(record, "description"),
     doneCondition: readRequiredText(record, "doneCondition"),
     rewardIntent: readRequiredText(record, "rewardIntent"),
+    steps: readQuestSteps(record, `${type}Quests[${index}]`),
     status: "not_started",
     sequenceNumber: index + 1,
     skillRewards: readSkillRewards(record, skillKeys),
@@ -179,7 +187,9 @@ function parseBossFight(
   skillKeys: ReadonlySet<string>,
   inventoryItemKeys: ReadonlySet<string>,
 ): GeneratedAdventureBossFight {
-  const record = readRecord(input, `bossFights[${index}] must be an object.`);
+  const path = `bossFights[${index}]`;
+  const record = readRecord(input, `${path} must be an object.`);
+  rejectQuestStepFields(record, path);
 
   return {
     key: readRequiredText(record, "key"),
@@ -241,6 +251,32 @@ function parseFocusedNextAction(input: unknown, index: number): GeneratedAdventu
     description: readRequiredText(record, "description"),
     sequenceNumber: index + 1,
   };
+}
+
+function readQuestSteps(input: Record<string, unknown>, path: string): GeneratedAdventureQuestStep[] {
+  const steps = readRequiredArray(input, "steps", (item, index) => {
+    const step = readRecord(item, `${path}.steps[${index}] must be an object.`);
+
+    return {
+      key: readRequiredText(step, "key"),
+      description: readRequiredText(step, "description"),
+      sequenceNumber: index + 1,
+    };
+  });
+
+  if (steps.length < 2 || steps.length > 7) {
+    throw new Error(`${path}.steps must include between 2 and 7 Quest Steps.`);
+  }
+
+  collectUniqueKeys(steps, `${path}.steps`);
+
+  return steps;
+}
+
+function rejectQuestStepFields(input: Record<string, unknown>, path: string): void {
+  if ("steps" in input) {
+    throw new Error(`${path} must not include Quest Steps.`);
+  }
 }
 
 function readSkillRewards(

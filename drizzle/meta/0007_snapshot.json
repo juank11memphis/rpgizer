@@ -1,0 +1,1727 @@
+{
+  "id": "71cbf4de-6bd2-48d5-9fb2-f2c438e53fb8",
+  "prevId": "b48c3507-40cd-4adc-961a-d9be1a10c0c7",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.accounts": {
+      "name": "accounts",
+      "schema": "",
+      "columns": {
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "providerAccountId": {
+          "name": "providerAccountId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_type": {
+          "name": "token_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_state": {
+          "name": "session_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "accounts_userId_users_id_fk": {
+          "name": "accounts_userId_users_id_fk",
+          "tableFrom": "accounts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "accounts_provider_providerAccountId_pk": {
+          "name": "accounts_provider_providerAccountId_pk",
+          "columns": [
+            "provider",
+            "providerAccountId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.adventureAchievements": {
+      "name": "adventureAchievements",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unlockCondition": {
+          "name": "unlockCondition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'locked'"
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unlockedAt": {
+          "name": "unlockedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureAchievements_adventureId_adventures_id_fk": {
+          "name": "adventureAchievements_adventureId_adventures_id_fk",
+          "tableFrom": "adventureAchievements",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_achievements_adventure_sequence_unique": {
+          "name": "adventure_achievements_adventure_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_achievements_sequence_number_check": {
+          "name": "adventure_achievements_sequence_number_check",
+          "value": "\"adventureAchievements\".\"sequenceNumber\" > 0"
+        },
+        "adventure_achievements_status_check": {
+          "name": "adventure_achievements_status_check",
+          "value": "\"adventureAchievements\".\"status\" in ('locked', 'unlocked')"
+        },
+        "adventure_achievements_unlocked_at_check": {
+          "name": "adventure_achievements_unlocked_at_check",
+          "value": "(\"adventureAchievements\".\"status\" = 'unlocked' and \"adventureAchievements\".\"unlockedAt\" is not null) or (\"adventureAchievements\".\"status\" = 'locked' and \"adventureAchievements\".\"unlockedAt\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureActs": {
+      "name": "adventureActs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureActs_adventureId_adventures_id_fk": {
+          "name": "adventureActs_adventureId_adventures_id_fk",
+          "tableFrom": "adventureActs",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_acts_adventure_sequence_unique": {
+          "name": "adventure_acts_adventure_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_acts_sequence_number_check": {
+          "name": "adventure_acts_sequence_number_check",
+          "value": "\"adventureActs\".\"sequenceNumber\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureBossFightInventoryItems": {
+      "name": "adventureBossFightInventoryItems",
+      "schema": "",
+      "columns": {
+        "bossFightId": {
+          "name": "bossFightId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inventoryItemId": {
+          "name": "inventoryItemId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventure_boss_fight_inventory_boss_fk": {
+          "name": "adventure_boss_fight_inventory_boss_fk",
+          "tableFrom": "adventureBossFightInventoryItems",
+          "tableTo": "adventureBossFights",
+          "columnsFrom": [
+            "bossFightId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "adventure_boss_fight_inventory_item_fk": {
+          "name": "adventure_boss_fight_inventory_item_fk",
+          "tableFrom": "adventureBossFightInventoryItems",
+          "tableTo": "adventureInventoryItems",
+          "columnsFrom": [
+            "inventoryItemId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "adventureBossFightInventoryItems_bossFightId_inventoryItemId_pk": {
+          "name": "adventureBossFightInventoryItems_bossFightId_inventoryItemId_pk",
+          "columns": [
+            "bossFightId",
+            "inventoryItemId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.adventureBossFightSkillRewards": {
+      "name": "adventureBossFightSkillRewards",
+      "schema": "",
+      "columns": {
+        "bossFightId": {
+          "name": "bossFightId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "skillId": {
+          "name": "skillId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "xp": {
+          "name": "xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventure_boss_fight_skill_rewards_boss_fk": {
+          "name": "adventure_boss_fight_skill_rewards_boss_fk",
+          "tableFrom": "adventureBossFightSkillRewards",
+          "tableTo": "adventureBossFights",
+          "columnsFrom": [
+            "bossFightId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "adventure_boss_fight_skill_rewards_skill_fk": {
+          "name": "adventure_boss_fight_skill_rewards_skill_fk",
+          "tableFrom": "adventureBossFightSkillRewards",
+          "tableTo": "adventureSkills",
+          "columnsFrom": [
+            "skillId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "adventureBossFightSkillRewards_bossFightId_skillId_pk": {
+          "name": "adventureBossFightSkillRewards_bossFightId_skillId_pk",
+          "columns": [
+            "bossFightId",
+            "skillId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "adventure_boss_fight_skill_rewards_xp_check": {
+          "name": "adventure_boss_fight_skill_rewards_xp_check",
+          "value": "\"adventureBossFightSkillRewards\".\"xp\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureBossFights": {
+      "name": "adventureBossFights",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actId": {
+          "name": "actId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "doneCondition": {
+          "name": "doneCondition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rewardIntent": {
+          "name": "rewardIntent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_started'"
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completedAt": {
+          "name": "completedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureBossFights_adventureId_adventures_id_fk": {
+          "name": "adventureBossFights_adventureId_adventures_id_fk",
+          "tableFrom": "adventureBossFights",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "adventureBossFights_actId_adventureActs_id_fk": {
+          "name": "adventureBossFights_actId_adventureActs_id_fk",
+          "tableFrom": "adventureBossFights",
+          "tableTo": "adventureActs",
+          "columnsFrom": [
+            "actId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_boss_fights_act_sequence_unique": {
+          "name": "adventure_boss_fights_act_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "actId",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_boss_fights_sequence_number_check": {
+          "name": "adventure_boss_fights_sequence_number_check",
+          "value": "\"adventureBossFights\".\"sequenceNumber\" > 0"
+        },
+        "adventure_boss_fights_status_check": {
+          "name": "adventure_boss_fights_status_check",
+          "value": "\"adventureBossFights\".\"status\" in ('not_started', 'completed')"
+        },
+        "adventure_boss_fights_completed_at_check": {
+          "name": "adventure_boss_fights_completed_at_check",
+          "value": "(\"adventureBossFights\".\"status\" = 'completed' and \"adventureBossFights\".\"completedAt\" is not null) or (\"adventureBossFights\".\"status\" = 'not_started' and \"adventureBossFights\".\"completedAt\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureFocusedNextActions": {
+      "name": "adventureFocusedNextActions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureFocusedNextActions_adventureId_adventures_id_fk": {
+          "name": "adventureFocusedNextActions_adventureId_adventures_id_fk",
+          "tableFrom": "adventureFocusedNextActions",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_focused_next_actions_adventure_sequence_unique": {
+          "name": "adventure_focused_next_actions_adventure_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_focused_next_actions_sequence_number_check": {
+          "name": "adventure_focused_next_actions_sequence_number_check",
+          "value": "\"adventureFocusedNextActions\".\"sequenceNumber\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureInterviewMessages": {
+      "name": "adventureInterviewMessages",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureInterviewMessages_adventureId_adventures_id_fk": {
+          "name": "adventureInterviewMessages_adventureId_adventures_id_fk",
+          "tableFrom": "adventureInterviewMessages",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_interview_messages_adventure_sequence_unique": {
+          "name": "adventure_interview_messages_adventure_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_interview_messages_role_check": {
+          "name": "adventure_interview_messages_role_check",
+          "value": "\"adventureInterviewMessages\".\"role\" in ('user', 'game_master')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureInventoryItems": {
+      "name": "adventureInventoryItems",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'needed'"
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "acquiredAt": {
+          "name": "acquiredAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureInventoryItems_adventureId_adventures_id_fk": {
+          "name": "adventureInventoryItems_adventureId_adventures_id_fk",
+          "tableFrom": "adventureInventoryItems",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_inventory_items_adventure_sequence_unique": {
+          "name": "adventure_inventory_items_adventure_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_inventory_items_sequence_number_check": {
+          "name": "adventure_inventory_items_sequence_number_check",
+          "value": "\"adventureInventoryItems\".\"sequenceNumber\" > 0"
+        },
+        "adventure_inventory_items_status_check": {
+          "name": "adventure_inventory_items_status_check",
+          "value": "\"adventureInventoryItems\".\"status\" in ('needed', 'acquired')"
+        },
+        "adventure_inventory_items_acquired_at_check": {
+          "name": "adventure_inventory_items_acquired_at_check",
+          "value": "(\"adventureInventoryItems\".\"status\" = 'acquired' and \"adventureInventoryItems\".\"acquiredAt\" is not null) or (\"adventureInventoryItems\".\"status\" = 'needed' and \"adventureInventoryItems\".\"acquiredAt\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureQuestInventoryItems": {
+      "name": "adventureQuestInventoryItems",
+      "schema": "",
+      "columns": {
+        "questId": {
+          "name": "questId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inventoryItemId": {
+          "name": "inventoryItemId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventure_quest_inventory_items_quest_fk": {
+          "name": "adventure_quest_inventory_items_quest_fk",
+          "tableFrom": "adventureQuestInventoryItems",
+          "tableTo": "adventureQuests",
+          "columnsFrom": [
+            "questId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "adventure_quest_inventory_items_item_fk": {
+          "name": "adventure_quest_inventory_items_item_fk",
+          "tableFrom": "adventureQuestInventoryItems",
+          "tableTo": "adventureInventoryItems",
+          "columnsFrom": [
+            "inventoryItemId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "adventureQuestInventoryItems_questId_inventoryItemId_pk": {
+          "name": "adventureQuestInventoryItems_questId_inventoryItemId_pk",
+          "columns": [
+            "questId",
+            "inventoryItemId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.adventureQuestSkillRewards": {
+      "name": "adventureQuestSkillRewards",
+      "schema": "",
+      "columns": {
+        "questId": {
+          "name": "questId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "skillId": {
+          "name": "skillId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "xp": {
+          "name": "xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureQuestSkillRewards_questId_adventureQuests_id_fk": {
+          "name": "adventureQuestSkillRewards_questId_adventureQuests_id_fk",
+          "tableFrom": "adventureQuestSkillRewards",
+          "tableTo": "adventureQuests",
+          "columnsFrom": [
+            "questId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "adventureQuestSkillRewards_skillId_adventureSkills_id_fk": {
+          "name": "adventureQuestSkillRewards_skillId_adventureSkills_id_fk",
+          "tableFrom": "adventureQuestSkillRewards",
+          "tableTo": "adventureSkills",
+          "columnsFrom": [
+            "skillId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "adventureQuestSkillRewards_questId_skillId_pk": {
+          "name": "adventureQuestSkillRewards_questId_skillId_pk",
+          "columns": [
+            "questId",
+            "skillId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "adventure_quest_skill_rewards_xp_check": {
+          "name": "adventure_quest_skill_rewards_xp_check",
+          "value": "\"adventureQuestSkillRewards\".\"xp\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureQuests": {
+      "name": "adventureQuests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actId": {
+          "name": "actId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "doneCondition": {
+          "name": "doneCondition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rewardIntent": {
+          "name": "rewardIntent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_started'"
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completedAt": {
+          "name": "completedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureQuests_adventureId_adventures_id_fk": {
+          "name": "adventureQuests_adventureId_adventures_id_fk",
+          "tableFrom": "adventureQuests",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "adventureQuests_actId_adventureActs_id_fk": {
+          "name": "adventureQuests_actId_adventureActs_id_fk",
+          "tableFrom": "adventureQuests",
+          "tableTo": "adventureActs",
+          "columnsFrom": [
+            "actId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_quests_act_type_sequence_unique": {
+          "name": "adventure_quests_act_type_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "actId",
+            "type",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_quests_type_check": {
+          "name": "adventure_quests_type_check",
+          "value": "\"adventureQuests\".\"type\" in ('main', 'side')"
+        },
+        "adventure_quests_status_check": {
+          "name": "adventure_quests_status_check",
+          "value": "\"adventureQuests\".\"status\" in ('not_started', 'completed')"
+        },
+        "adventure_quests_sequence_number_check": {
+          "name": "adventure_quests_sequence_number_check",
+          "value": "\"adventureQuests\".\"sequenceNumber\" > 0"
+        },
+        "adventure_quests_completed_at_check": {
+          "name": "adventure_quests_completed_at_check",
+          "value": "(\"adventureQuests\".\"status\" = 'completed' and \"adventureQuests\".\"completedAt\" is not null) or (\"adventureQuests\".\"status\" = 'not_started' and \"adventureQuests\".\"completedAt\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventureSkills": {
+      "name": "adventureSkills",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "xp": {
+          "name": "xp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureSkills_adventureId_adventures_id_fk": {
+          "name": "adventureSkills_adventureId_adventures_id_fk",
+          "tableFrom": "adventureSkills",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_skills_adventure_name_unique": {
+          "name": "adventure_skills_adventure_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId",
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_skills_xp_check": {
+          "name": "adventure_skills_xp_check",
+          "value": "\"adventureSkills\".\"xp\" >= 0"
+        },
+        "adventure_skills_level_check": {
+          "name": "adventure_skills_level_check",
+          "value": "\"adventureSkills\".\"level\" >= 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.adventures": {
+      "name": "adventures",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "goalText": {
+          "name": "goalText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'drafting'"
+        },
+        "readinessStatus": {
+          "name": "readinessStatus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'not_ready'"
+        },
+        "interviewStatus": {
+          "name": "interviewStatus",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'interviewing'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventures_userId_users_id_fk": {
+          "name": "adventures_userId_users_id_fk",
+          "tableFrom": "adventures",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "adventures_state_check": {
+          "name": "adventures_state_check",
+          "value": "\"adventures\".\"state\" in ('drafting', 'generated')"
+        },
+        "adventures_readiness_status_check": {
+          "name": "adventures_readiness_status_check",
+          "value": "\"adventures\".\"readinessStatus\" in ('not_ready', 'ready_to_generate')"
+        },
+        "adventures_interview_status_check": {
+          "name": "adventures_interview_status_check",
+          "value": "\"adventures\".\"interviewStatus\" in ('interviewing', 'awaiting_confirmation', 'confirmed')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.generatedAdventureManifests": {
+      "name": "generatedAdventureManifests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "interviewOutputArtifactId": {
+          "name": "interviewOutputArtifactId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "themeSummary": {
+          "name": "themeSummary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "goalSummary": {
+          "name": "goalSummary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "safetySummary": {
+          "name": "safetySummary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "generatedAdventureManifests_adventureId_adventures_id_fk": {
+          "name": "generatedAdventureManifests_adventureId_adventures_id_fk",
+          "tableFrom": "generatedAdventureManifests",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "generated_adventure_manifests_artifact_fk": {
+          "name": "generated_adventure_manifests_artifact_fk",
+          "tableFrom": "generatedAdventureManifests",
+          "tableTo": "interviewOutputArtifacts",
+          "columnsFrom": [
+            "interviewOutputArtifactId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "generated_adventure_manifests_adventure_unique": {
+          "name": "generated_adventure_manifests_adventure_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.interviewOutputArtifacts": {
+      "name": "interviewOutputArtifacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "adventureId": {
+          "name": "adventureId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "interviewOutputArtifacts_adventureId_adventures_id_fk": {
+          "name": "interviewOutputArtifacts_adventureId_adventures_id_fk",
+          "tableFrom": "interviewOutputArtifacts",
+          "tableTo": "adventures",
+          "columnsFrom": [
+            "adventureId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "interview_output_artifacts_adventure_unique": {
+          "name": "interview_output_artifacts_adventure_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "adventureId"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "sessionToken": {
+          "name": "sessionToken",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sessions_userId_users_id_fk": {
+          "name": "sessions_userId_users_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "emailVerified": {
+          "name": "emailVerified",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verificationTokens": {
+      "name": "verificationTokens",
+      "schema": "",
+      "columns": {
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "verificationTokens_identifier_token_pk": {
+          "name": "verificationTokens_identifier_token_pk",
+          "columns": [
+            "identifier",
+            "token"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.adventureQuestSteps": {
+      "name": "adventureQuestSteps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()::text"
+        },
+        "questId": {
+          "name": "questId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sequenceNumber": {
+          "name": "sequenceNumber",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "adventureQuestSteps_questId_adventureQuests_id_fk": {
+          "name": "adventureQuestSteps_questId_adventureQuests_id_fk",
+          "tableFrom": "adventureQuestSteps",
+          "tableTo": "adventureQuests",
+          "columnsFrom": [
+            "questId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "adventure_quest_steps_quest_sequence_unique": {
+          "name": "adventure_quest_steps_quest_sequence_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "questId",
+            "sequenceNumber"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "adventure_quest_steps_sequence_number_check": {
+          "name": "adventure_quest_steps_sequence_number_check",
+          "value": "\"adventureQuestSteps\".\"sequenceNumber\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

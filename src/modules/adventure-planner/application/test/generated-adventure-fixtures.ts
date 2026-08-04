@@ -33,17 +33,23 @@ export type GeneratedAdventureBoundaryPayload = {
   }>;
 };
 
+type GeneratedAdventureBoundaryQuestStepPayload = {
+  key: string;
+  description: string;
+};
+
 type GeneratedAdventureBoundaryQuestPayload = {
   key: string;
   title: string;
   description: string;
   doneCondition: string;
   rewardIntent: string;
+  steps: GeneratedAdventureBoundaryQuestStepPayload[];
   skillRewards: GeneratedAdventureBoundarySkillRewardPayload[];
   inventoryItemKeys: string[];
 };
 
-type GeneratedAdventureBoundaryBossFightPayload = GeneratedAdventureBoundaryQuestPayload;
+type GeneratedAdventureBoundaryBossFightPayload = Omit<GeneratedAdventureBoundaryQuestPayload, "steps">;
 
 type GeneratedAdventureBoundarySkillRewardPayload = {
   skillKey: string;
@@ -66,7 +72,7 @@ type GeneratedAdventureContentBoundaryQuestPayload = Omit<
   "skillRewards" | "inventoryItemKeys"
 >;
 
-type GeneratedAdventureContentBoundaryBossFightPayload = GeneratedAdventureContentBoundaryQuestPayload;
+type GeneratedAdventureContentBoundaryBossFightPayload = Omit<GeneratedAdventureContentBoundaryQuestPayload, "steps">;
 
 export type GeneratedAdventureDependencyLinksBoundaryPayload = {
   questLinks: Array<{
@@ -150,6 +156,11 @@ export function buildGeneratedAdventureBoundaryPayload(
             description: "Choose one realistic weeknight dinner and write the shopping list.",
             doneCondition: "A recipe is chosen and every needed ingredient is on a shopping list.",
             rewardIntent: "Build confidence by turning an unclear dinner goal into a concrete plan.",
+            steps: [
+              { key: "choose-recipe", description: "Pick one recipe that fits your weeknight time window." },
+              { key: "write-shopping-list", description: "Write every ingredient and tool needed before shopping." },
+              { key: "confirm-cooking-window", description: "Choose the evening and start time for cooking the meal." },
+            ],
             skillRewards: [{ skillKey: "meal-planning", xp: 25 }],
             inventoryItemKeys: ["weekly-menu-template"],
           },
@@ -161,6 +172,10 @@ export function buildGeneratedAdventureBoundaryPayload(
             description: "Clear and organize the cooking space before the first dinner attempt.",
             doneCondition: "Counter space is clear and the needed tools are ready before cooking starts.",
             rewardIntent: "Reduce friction and make the main quest easier to start.",
+            steps: [
+              { key: "clear-counter", description: "Clear enough counter space for safe chopping and staging." },
+              { key: "stage-tools", description: "Place the knife, board, pan, and template within reach." },
+            ],
             skillRewards: [{ skillKey: "knife-basics", xp: 10 }],
             inventoryItemKeys: ["sharp-chefs-knife"],
           },
@@ -199,7 +214,7 @@ export function buildGeneratedAdventureContentBoundaryPayload(
       summary: act.summary,
       mainQuests: act.mainQuests.map(stripQuestLinks),
       sideQuests: act.sideQuests.map(stripQuestLinks),
-      bossFights: act.bossFights.map(stripQuestLinks),
+      bossFights: act.bossFights.map(stripBossFightLinks),
     })),
     ...overrides,
   };
@@ -262,5 +277,18 @@ function stripQuestLinks(
     description: quest.description,
     doneCondition: quest.doneCondition,
     rewardIntent: quest.rewardIntent,
+    steps: quest.steps,
+  };
+}
+
+function stripBossFightLinks(
+  bossFight: GeneratedAdventureBoundaryBossFightPayload,
+): GeneratedAdventureContentBoundaryBossFightPayload {
+  return {
+    key: bossFight.key,
+    title: bossFight.title,
+    description: bossFight.description,
+    doneCondition: bossFight.doneCondition,
+    rewardIntent: bossFight.rewardIntent,
   };
 }

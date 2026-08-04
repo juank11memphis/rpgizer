@@ -27,6 +27,12 @@ export type GeneratedAdventureContentAct = {
   bossFights: GeneratedAdventureContentBossFight[];
 };
 
+export type GeneratedAdventureContentQuestStep = {
+  key: string;
+  description: string;
+  sequenceNumber: number;
+};
+
 export type GeneratedAdventureContentQuest = {
   key: string;
   type: "main" | "side";
@@ -34,11 +40,12 @@ export type GeneratedAdventureContentQuest = {
   description: string;
   doneCondition: string;
   rewardIntent: string;
+  steps: GeneratedAdventureContentQuestStep[];
   status: "not_started";
   sequenceNumber: number;
 };
 
-export type GeneratedAdventureContentBossFight = Omit<GeneratedAdventureContentQuest, "type">;
+export type GeneratedAdventureContentBossFight = Omit<GeneratedAdventureContentQuest, "type" | "steps">;
 
 export function parseGeneratedAdventureContent(input: unknown): GeneratedAdventureContent {
   const record = readRecord(input, "Generated adventure content must be an object.");
@@ -136,14 +143,17 @@ function parseQuest(
     description: readRequiredText(record, "description"),
     doneCondition: readRequiredText(record, "doneCondition"),
     rewardIntent: readRequiredText(record, "rewardIntent"),
+    steps: readQuestSteps(record, `${type}Quests[${index}]`),
     status: "not_started",
     sequenceNumber: index + 1,
   };
 }
 
 function parseBossFight(input: unknown, index: number): GeneratedAdventureContentBossFight {
-  const record = readRecord(input, `bossFights[${index}] must be an object.`);
-  rejectDependencyFields(record, `bossFights[${index}]`);
+  const path = `bossFights[${index}]`;
+  const record = readRecord(input, `${path} must be an object.`);
+  rejectDependencyFields(record, path);
+  rejectQuestStepFields(record, path);
 
   return {
     key: readRequiredText(record, "key"),
@@ -203,6 +213,35 @@ function parseFocusedNextAction(input: unknown, index: number): GeneratedAdventu
     description: readRequiredText(record, "description"),
     sequenceNumber: index + 1,
   };
+}
+
+function readQuestSteps(
+  input: Record<string, unknown>,
+  path: string,
+): GeneratedAdventureContentQuestStep[] {
+  const steps = readRequiredArray(input, "steps", (item, index) => {
+    const step = readRecord(item, `${path}.steps[${index}] must be an object.`);
+
+    return {
+      key: readRequiredText(step, "key"),
+      description: readRequiredText(step, "description"),
+      sequenceNumber: index + 1,
+    };
+  });
+
+  if (steps.length < 2 || steps.length > 7) {
+    throw new Error(`${path}.steps must include between 2 and 7 Quest Steps.`);
+  }
+
+  collectUniqueKeys(steps, `${path}.steps`);
+
+  return steps;
+}
+
+function rejectQuestStepFields(input: Record<string, unknown>, path: string): void {
+  if ("steps" in input) {
+    throw new Error(`${path} must not include Quest Steps.`);
+  }
 }
 
 function rejectDependencyFields(input: Record<string, unknown>, path: string): void {

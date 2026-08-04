@@ -38,6 +38,11 @@ describe("assembleGeneratedAdventure", () => {
               key: "plan-first-menu",
               skillRewards: [{ skillKey: "meal-planning", xp: 25 }],
               inventoryItemKeys: ["weekly-menu-template"],
+              steps: [
+                { key: "choose-recipe", description: "Pick one recipe that fits your weeknight time window.", sequenceNumber: 1 },
+                { key: "write-shopping-list", description: "Write every ingredient and tool needed before shopping.", sequenceNumber: 2 },
+                { key: "confirm-cooking-window", description: "Choose the evening and start time for cooking the meal.", sequenceNumber: 3 },
+              ],
             },
           ],
           sideQuests: [
@@ -45,6 +50,10 @@ describe("assembleGeneratedAdventure", () => {
               key: "prep-station-reset",
               skillRewards: [{ skillKey: "knife-basics", xp: 10 }],
               inventoryItemKeys: ["sharp-chefs-knife"],
+              steps: [
+                { key: "clear-counter", description: "Clear enough counter space for safe chopping and staging.", sequenceNumber: 1 },
+                { key: "stage-tools", description: "Place the knife, board, pan, and template within reach.", sequenceNumber: 2 },
+              ],
             },
           ],
           bossFights: [
@@ -93,5 +102,11 @@ describe("assembleGeneratedAdventure", () => {
     });
 
     expect(adventure.acts[0].sideQuests[0].inventoryItemKeys).toEqual([]);
+  });
+
+  it("does not add Quest Steps to Boss Fights", () => {
+    const adventure = assembleGeneratedAdventure(buildValidAssemblyInput());
+
+    expect(adventure.acts[0].bossFights[0]).not.toHaveProperty("steps");
   });
 });

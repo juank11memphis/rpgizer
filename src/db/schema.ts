@@ -359,6 +359,30 @@ export const adventureBossFights = pgTable(
   ],
 );
 
+
+export const adventureQuestSteps = pgTable(
+  "adventureQuestSteps",
+  {
+    id: text("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()::text`),
+    questId: text("questId")
+      .notNull()
+      .references(() => adventureQuests.id, { onDelete: "cascade" }),
+    description: text("description").notNull(),
+    sequenceNumber: integer("sequenceNumber").notNull(),
+    createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
+    updatedAt: timestamp("updatedAt", { mode: "date" }).notNull().defaultNow(),
+  },
+  (step) => [
+    unique("adventure_quest_steps_quest_sequence_unique").on(
+      step.questId,
+      step.sequenceNumber,
+    ),
+    check("adventure_quest_steps_sequence_number_check", sql`${step.sequenceNumber} > 0`),
+  ],
+);
+
 export const adventureQuestSkillRewards = pgTable(
   "adventureQuestSkillRewards",
   {

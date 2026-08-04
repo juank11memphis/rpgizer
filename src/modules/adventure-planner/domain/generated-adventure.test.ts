@@ -79,6 +79,11 @@ describe("parseGeneratedAdventure", () => {
               type: "main",
               status: "not_started",
               sequenceNumber: 1,
+              steps: [
+                { key: "choose-recipe", description: "Pick one recipe that fits your weeknight time window.", sequenceNumber: 1 },
+                { key: "write-shopping-list", description: "Write every ingredient and tool needed before shopping.", sequenceNumber: 2 },
+                { key: "confirm-cooking-window", description: "Choose the evening and start time for cooking the meal.", sequenceNumber: 3 },
+              ],
               skillRewards: [{ skillKey: "meal-planning", xp: 25 }],
               inventoryItemKeys: ["weekly-menu-template"],
             },
@@ -89,6 +94,10 @@ describe("parseGeneratedAdventure", () => {
               type: "side",
               status: "not_started",
               sequenceNumber: 1,
+              steps: [
+                { key: "clear-counter", description: "Clear enough counter space for safe chopping and staging.", sequenceNumber: 1 },
+                { key: "stage-tools", description: "Place the knife, board, pan, and template within reach.", sequenceNumber: 2 },
+              ],
             },
           ],
           bossFights: [
@@ -186,6 +195,52 @@ describe("parseGeneratedAdventure", () => {
         ],
       }),
     ).toThrow("doneCondition");
+  });
+
+
+  it("requires valid Main and Side Quest Steps and rejects Boss Fight steps", () => {
+    const payload = buildGeneratedAdventureBoundaryPayload();
+
+    expect(() =>
+      parseGeneratedAdventure({
+        ...payload,
+        acts: [{ ...payload.acts[0], mainQuests: [{ ...payload.acts[0].mainQuests[0], steps: [{ key: "only-step", description: "Do one concrete thing." }] }] }],
+      }),
+    ).toThrow("between 2 and 7");
+
+    expect(() =>
+      parseGeneratedAdventure({
+        ...payload,
+        acts: [
+          {
+            ...payload.acts[0],
+            sideQuests: [
+              {
+                ...payload.acts[0].sideQuests[0],
+                steps: [{ key: "same", description: "Do one concrete thing." }, { key: "same", description: "Do another concrete thing." }],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("duplicate key");
+
+    expect(() =>
+      parseGeneratedAdventure({
+        ...payload,
+        acts: [
+          {
+            ...payload.acts[0],
+            bossFights: [
+              {
+                ...payload.acts[0].bossFights[0],
+                steps: [{ key: "prepare", description: "Prepare proof." }, { key: "complete", description: "Complete proof." }],
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow("must not include Quest Steps");
   });
 
   it("rejects reward references to undeclared Skills", () => {
