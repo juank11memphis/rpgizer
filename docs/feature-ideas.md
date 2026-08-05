@@ -34,3 +34,28 @@
 - Explore LLM-as-judge evaluation for subjective quality checks that deterministic validations cannot cover.
 - Add fixture editing or fixture authoring workflows for maintainers.
 - Explore production monitoring if Product Quality Evaluation needs to connect to live product-health signals later.
+
+## Deeper Adaptive Goal Interview
+
+- Make the initial interview gather richer goal context before planning.
+- Capture motivation, taste/preferences, dislikes, prior attempts, fears, constraints, tools/resources, skill level, and what “beginner” means for this user.
+- Ask adaptive follow-up questions until RPGizer can generate the first useful milestone confidently.
+- Avoid over-interviewing; stop once the next milestone can be made concrete and safe.
+
+## Iterative Act Builder with Quest Approval
+
+- After the deeper interview, generate only the first Act theme and overall Act goal instead of the full adventure upfront.
+- Make adventure generation much more hand-holding: beginner-friendly, for users who do not know how to start, and baby-step-by-baby-step from basics toward harder work.
+- Generate one Quest draft at a time, starting with the first Main Quest.
+- Each Quest must still include concrete Quest Steps, but those steps should be much more explicit, basic, and hand-held.
+- Present each Quest draft to the user for discussion before approval.
+- Let the user ask clarifying questions, say a step feels too hard, mention missing resources, or request simpler instructions.
+- Refine the current Quest through conversation until the user approves it.
+- Treat Quest discussion as new planning data, not just chat history.
+- Let new discussion data update the current Quest draft and future Main Quests, Side Quests, Boss Fights, Inventory Items, Skills, and Achievements.
+- After each approved Quest, let the LLM decide the next best unit: another Main Quest, a Side Quest, or the Act Boss Fight.
+- Repeat Quest draft → discussion → approval → next-unit decision until the LLM determines the first Act is ready.
+- Only then present the full first Act to the user.
+- Keep completed or approved content stable unless the user explicitly asks to revise it.
+- Keep unapproved and future content flexible so the adventure adapts as the user reveals constraints, confidence, resources, preferences, or prior knowledge.
+- Explain that later Acts will come after the current Act is completed or enough new context exists.
