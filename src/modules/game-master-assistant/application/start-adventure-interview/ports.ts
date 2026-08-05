@@ -35,13 +35,32 @@ export type InterviewTurnRequest = {
   transcript: InterviewMessage[];
 };
 
+export const INTERVIEW_COVERED_SIGNAL_KEYS = [
+  "motivation",
+  "successDefinition",
+  "currentStage",
+  "pastFriction",
+  "constraints",
+  "existingInventory",
+  "likelyMissingResources",
+  "safetyBoundary",
+  "preferences",
+  "dislikesOrAvoidances",
+  "confidenceGaps",
+  "examplesOrInspirations",
+  "firstMilestoneReadiness",
+  "goalTypeSpecificBasics",
+] as const;
+
+export type InterviewCoveredSignalKey = (typeof INTERVIEW_COVERED_SIGNAL_KEYS)[number];
+
 export type InterviewReadinessConfirmation = "confirmed" | "not_confirmed";
 
 export type InterviewTurnResult = {
   messageToUser: string;
   readinessStatus: InterviewReadinessStatus;
   readinessConfirmation: InterviewReadinessConfirmation;
-  coveredSignals?: string[];
+  coveredSignals?: InterviewCoveredSignalKey[];
   summaryDelta?: string | null;
 };
 

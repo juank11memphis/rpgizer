@@ -152,6 +152,88 @@ describe("checkGameMasterInterviewEvalAssertions", () => {
       ]),
     );
   });
+
+  it("recognizes deeper readiness signal targets", () => {
+    const cases = [
+      ["preferences", "Which cooking style sounds most appealing: bright Mediterranean meals, cozy soups, quick stir-fries, or something else?"],
+      ["dislikesOrAvoidances", "What should this Adventure avoid: spicy food, long grammar drills, expensive tools, or something else?"],
+      ["confidenceGaps", "Where do you feel least confident right now: knife skills, timing, shopping, or cleanup?"],
+      ["examplesOrInspirations", "For example, what is one meal, chef, video, or restaurant that feels inspiring as a reference?"],
+      ["firstMilestoneReadiness", "What first milestone would feel useful and safe: one weeknight dinner, a practice conversation, or a budget review?"],
+      ["goalTypeSpecificBasics", "Which cuisine basics should we calibrate around: Mediterranean, Japanese, vegetarian, or something else?"],
+    ] as const;
+
+    for (const [signal, messageToUser] of cases) {
+      const assertions = checkGameMasterInterviewEvalAssertions(
+        buildFixture({
+          requiredUncoveredSignals: [signal],
+          requiredQuestionTargets: [signal],
+          requiresConcreteExamples: true,
+        }),
+        buildResult({ messageToUser }),
+      );
+
+      expect(assertions).toEqual(
+        expect.arrayContaining([
+          { id: `question-target-${signal}`, label: `asks about ${signal}`, status: "passed" },
+          { id: "concrete-question-support", label: "includes concrete examples or answer shapes", status: "passed" },
+        ]),
+      );
+    }
+  });
+
+  it("fails premature readiness when a deeper signal is still expected uncovered", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({
+        requiredUncoveredSignals: ["confidenceGaps"],
+        mustRemainNotReady: true,
+      }),
+      buildResult({
+        messageToUser: "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+        readinessStatus: "ready_to_generate",
+        coveredSignals: ["confidenceGaps"],
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "uncovered-signal-confidenceGaps",
+          label: "keeps confidenceGaps uncovered",
+          status: "failed",
+          message: "expected coveredSignals not to include confidenceGaps.",
+        },
+        {
+          id: "remains-not-ready",
+          label: "remains not ready",
+          status: "failed",
+          message: "expected readinessStatus to remain not_ready.",
+        },
+      ]),
+    );
+  });
+
+  it("recognizes ready but not confirmed final confirmation", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({ mustAskFinalConfirmation: true, mustRemainNotReady: false }),
+      buildResult({
+        messageToUser: "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
+        readinessStatus: "ready_to_generate",
+        readinessConfirmation: "not_confirmed",
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "final-confirmation-question",
+          label: "asks final confirmation after readiness",
+          status: "passed",
+        },
+      ]),
+    );
+  });
+
 });
 
 function buildFixture(
@@ -171,6 +253,7 @@ function buildFixture(
       requiresExistingInventoryBeforeReady: false,
       highStakesSafety: false,
       requiresConcreteExamples: false,
+      mustAskFinalConfirmation: false,
       forbiddenQuestionPatterns: [],
       ...expectationOverrides,
     },

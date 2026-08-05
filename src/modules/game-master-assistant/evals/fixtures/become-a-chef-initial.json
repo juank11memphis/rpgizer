@@ -17,6 +17,21 @@
     ],
     "requiredQuestionTargets": [
       "successDefinition"
+    ],
+    "requiredUncoveredSignals": [
+      "motivation",
+      "successDefinition",
+      "currentStage",
+      "pastFriction",
+      "constraints",
+      "existingInventory",
+      "likelyMissingResources",
+      "preferences",
+      "dislikesOrAvoidances",
+      "confidenceGaps",
+      "examplesOrInspirations",
+      "firstMilestoneReadiness",
+      "goalTypeSpecificBasics"
     ]
   },
   "transcript": [

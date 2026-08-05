@@ -1,8 +1,8 @@
 {
   "sibuVersion": "0.17.1",
-  "templateVersion": "147",
+  "templateVersion": "149",
   "generatedAt": "2026-06-29T18:44:44.969Z",
-  "updatedAt": "2026-08-04T18:14:47.376Z",
+  "updatedAt": "2026-08-05T18:05:16.098Z",
   "selectedAgents": [
     "codex"
   ],
@@ -37,8 +37,8 @@
     },
     ".agents/skills/clean-code/SKILL.md": {
       "template": "skills/clean-code/SKILL.md",
-      "templateVersion": "7",
-      "sha256": "a71cad2d7ccba81e5df2492f9aec36445dde7452a086e66737e3b899cabe7f65",
+      "templateVersion": "8",
+      "sha256": "02727b69cc5005dc2132bb7385a5bb7593cc2f0e551009339acf498ce30a684d",
       "status": "managed"
     },
     ".agents/skills/product-vision-writer/SKILL.md": {
@@ -91,8 +91,8 @@
     },
     ".agents/skills/ai-implementation-planner-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-planner-toolbox/SKILL.md",
-      "templateVersion": "5",
-      "sha256": "61b8957a90bd3146b02eea843dce3bec9b59c4f497282da911b4692cf029c551",
+      "templateVersion": "6",
+      "sha256": "282986d9d426bf4bba63219de70922c37f7f18a18df920af9fdbc4c5ce0b56a7",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-planner.toml": {
@@ -109,8 +109,8 @@
     },
     ".agents/skills/ai-implementation-executor-toolbox/SKILL.md": {
       "template": "skills/ai-implementation-executor-toolbox/SKILL.md",
-      "templateVersion": "6",
-      "sha256": "e64c4ea841355691a8e71475c5f20b0edd8640a83e6c227d04ae91225b5aa1e7",
+      "templateVersion": "7",
+      "sha256": "23c8fd8142711de376ef90be519e6a5b40f05a9f868f5b2ace5a8f723a31cf41",
       "status": "managed"
     },
     ".codex/agents/sibu-implementation-executor.toml": {
@@ -177,6 +177,12 @@
       "template": "skills/structured-logging/SKILL.md",
       "templateVersion": "2",
       "sha256": "1f5e04ae119c8d5dc7c13b687d31a3faed9a7045a4aad686f55c095f0199d564",
+      "status": "managed"
+    },
+    ".agents/scripts/check-touched-source-file-lines.mjs": {
+      "template": "scripts/check-touched-source-file-lines.mjs",
+      "templateVersion": "1",
+      "sha256": "720c40e1370e2534af94f53963c467d4dc04fc636ad14fdd2bfb083c2e27ce22",
       "status": "managed"
     }
   }

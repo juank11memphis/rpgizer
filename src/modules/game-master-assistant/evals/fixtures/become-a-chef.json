@@ -10,7 +10,12 @@
       "pastFriction",
       "constraints",
       "existingInventory",
-      "safetyBoundary"
+      "safetyBoundary",
+      "preferences",
+      "dislikesOrAvoidances",
+      "confidenceGaps",
+      "examplesOrInspirations",
+      "goalTypeSpecificBasics"
     ],
     "mustAskOneQuestion": true,
     "mustRemainNotReady": true,
@@ -18,16 +23,18 @@
     "requiresExistingInventoryBeforeReady": true,
     "highStakesSafety": false,
     "requiredUncoveredSignals": [
-      "likelyMissingResources"
+      "likelyMissingResources",
+      "firstMilestoneReadiness"
     ],
     "requiredQuestionTargets": [
       "likelyMissingResources"
-    ]
+    ],
+    "requiresConcreteExamples": true
   },
   "transcript": [
     {
       "role": "user",
-      "content": "I want to become a chef, or at least cook well enough that people would trust me with a dinner party, because hosting friends is how I feel connected and proud instead of anxious."
+      "content": "I want to become a confident Mediterranean-style home chef because hosting friends is how I feel connected and proud instead of anxious."
     },
     {
       "role": "game_master",
@@ -35,7 +42,7 @@
     },
     {
       "role": "user",
-      "content": "Success is hosting a four-course dinner for six friends in six months without panicking. I mostly cook simple weeknight meals now."
+      "content": "Success is hosting a four-course Mediterranean dinner for six friends in six months without panicking. I mostly cook simple weeknight meals now, and Samin Nosrat-style simple, confident cooking inspires me."
     },
     {
       "role": "game_master",
@@ -43,7 +50,7 @@
     },
     {
       "role": "user",
-      "content": "I tried YouTube recipes but I get overwhelmed by timing, knife work, and cleanup. I have weekends free, weeknights are short, and I own basic pans, knives, a cutting board, and a small oven."
+      "content": "I tried YouTube recipes but I get overwhelmed by timing, knife work, and cleanup. I like bright vegetables, fish, and cozy shared plates, but I want to avoid fussy plating, shellfish, and anything too spicy. I have weekends free, weeknights are short, and I own basic pans, knives, a cutting board, and a small oven."
     }
   ]
 }

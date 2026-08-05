@@ -150,6 +150,18 @@ export function checkGameMasterInterviewEvalAssertions(
     );
   }
 
+  if (fixture.expectations.mustAskFinalConfirmation === true) {
+    addAssertion(
+      assertions,
+      "final-confirmation-question",
+      "asks final confirmation after readiness",
+      result.readinessStatus === "ready_to_generate" &&
+        result.readinessConfirmation === "not_confirmed" &&
+        isFinalConfirmationQuestion(result.messageToUser),
+      "expected ready_to_generate with not_confirmed and a final confirmation question.",
+    );
+  }
+
   fixture.expectations.forbiddenQuestionPatterns.forEach((forbiddenPattern, index) => {
     addAssertion(
       assertions,
@@ -216,6 +228,30 @@ function messageTargetsSignal(
       );
     case "safetyBoundary":
       return /\b(safety|risk|professional|qualified|advisor|adviser|doctor|therapist|legal|financial|medical)\b/i.test(
+        message,
+      );
+    case "preferences":
+      return /\b(prefer|preference|favorite|like|taste|style|appeal|enjoy|drawn to|option feels|which.*like)\b/i.test(
+        message,
+      );
+    case "dislikesOrAvoidances":
+      return /\b(dislike|avoid|hate|not into|do not want|don't want|deal[- ]?breaker|off[- ]?limits|rather not)\b/i.test(
+        message,
+      );
+    case "confidenceGaps":
+      return /\b(confidence|confident|nervous|worried|fear|afraid|intimidated|intimidating|uncertain|unsure|anxious|scary)\b/i.test(
+        message,
+      );
+    case "examplesOrInspirations":
+      return /\b(example|inspiration|inspire|model|reference|role model|admire|look up to|sample|favorite)\b/i.test(
+        message,
+      );
+    case "firstMilestoneReadiness":
+      return /\b(first (milestone|quest|step|win|victory)|starter milestone|begin|start|next practical|smallest useful|ready for)\b/i.test(
+        message,
+      );
+    case "goalTypeSpecificBasics":
+      return /\b(cuisine|ingredient|dish|recipe|kana|speaking|listening|language|debt|payment|cash flow|baseline|category|domain|basics)\b/i.test(
         message,
       );
   }
@@ -289,6 +325,15 @@ function buildSafetyContext(
   ]
     .join("\n")
     .toLowerCase();
+}
+
+function isFinalConfirmationQuestion(messageToUser: string): boolean {
+  const message = messageToUser.toLowerCase();
+
+  return (
+    /\b(anything else|else you want|before i begin|before we begin|ready|forge)\b/i.test(message) &&
+    countQuestionMarks(messageToUser) === 1
+  );
 }
 
 function countQuestionMarks(message: string): number {

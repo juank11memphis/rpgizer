@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Response, ResponseCreateParamsNonStreaming } from "openai/resources/responses/responses";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -6,16 +6,13 @@ import { join } from "node:path";
 import { APPLICATION_LOG_EVENTS } from "../../../server/logging/events";
 import { REDACTED_LOG_VALUE } from "../../../server/logging/redaction";
 import { GameMasterInterviewerError } from "../application/start-adventure-interview/provider-error";
-import type { InterviewTurnRequest } from "../application/start-adventure-interview/ports";
 import { OpenAIGameMasterInterviewer } from "./openai-game-master-interviewer";
-
-type CreateResponseMock = Mock<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>;
-
-type MockOpenAIClient = {
-  responses: {
-    create: CreateResponseMock;
-  };
-};
+import {
+  baseRequest,
+  createMockClient,
+  responseWithOutput,
+  type MockOpenAIClient,
+} from "./openai-game-master-interviewer-test-helpers";
 
 const loggerMock = vi.hoisted(() => ({
   debug: vi.fn(),
@@ -46,6 +43,12 @@ const validStructuredOutput = {
     existingInventory: false,
     likelyMissingResources: false,
     safetyBoundary: true,
+    preferences: false,
+    dislikesOrAvoidances: false,
+    confidenceGaps: false,
+    examplesOrInspirations: false,
+    firstMilestoneReadiness: false,
+    goalTypeSpecificBasics: false,
   },
   summaryDelta: "The User wants to become a chef because cooking feels creative.",
 };
@@ -280,6 +283,37 @@ describe("OpenAIGameMasterInterviewer", () => {
     });
   });
 
+  it("accepts expanded covered readiness signals", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          coveredSignals: {
+            ...validStructuredOutput.coveredSignals,
+            preferences: true,
+            dislikesOrAvoidances: true,
+            confidenceGaps: true,
+            examplesOrInspirations: true,
+            firstMilestoneReadiness: true,
+            goalTypeSpecificBasics: true,
+          },
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).resolves.toMatchObject({
+      coveredSignals: expect.arrayContaining([
+        "preferences",
+        "dislikesOrAvoidances",
+        "confidenceGaps",
+        "examplesOrInspirations",
+        "firstMilestoneReadiness",
+        "goalTypeSpecificBasics",
+      ]),
+    });
+  });
+
   it("rejects malformed covered signals", async () => {
     const client = createMockClient(
       responseWithOutput(
@@ -288,6 +322,25 @@ describe("OpenAIGameMasterInterviewer", () => {
           coveredSignals: {
             ...validStructuredOutput.coveredSignals,
             motivation: "yes",
+          },
+        }),
+      ),
+    );
+    const interviewer = createInterviewer(client);
+
+    await expect(interviewer.askNextQuestion(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+    });
+  });
+
+  it("rejects unknown covered signals", async () => {
+    const client = createMockClient(
+      responseWithOutput(
+        JSON.stringify({
+          ...validStructuredOutput,
+          coveredSignals: {
+            ...validStructuredOutput.coveredSignals,
+            hiddenTemplateSignal: true,
           },
         }),
       ),
@@ -390,46 +443,27 @@ function createInterviewer(client: MockOpenAIClient): OpenAIGameMasterInterviewe
   });
 }
 
-function createMockClient(response: Response | Promise<Response>): MockOpenAIClient {
-  return {
-    responses: {
-      create: vi.fn<(params: ResponseCreateParamsNonStreaming) => Promise<Response>>().mockReturnValue(
-        response instanceof Promise ? response : Promise.resolve(response),
-      ),
-    },
-  };
-}
-
-function responseWithOutput(outputText: string): Response {
-  return {
-    status: "completed",
-    output_text: outputText,
-    output: [],
-  } as unknown as Response;
-}
-
 function infoPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
-  return loggerMock.info.mock.calls
-    .map(([payload]) => payload)
-    .filter(isPayloadFor(event));
+  return logPayloadsFor(loggerMock.info.mock.calls, event);
 }
 
 function warnPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
-  return loggerMock.warn.mock.calls
-    .map(([payload]) => payload)
-    .filter(isPayloadFor(event));
+  return logPayloadsFor(loggerMock.warn.mock.calls, event);
 }
 
 function errorPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
-  return loggerMock.error.mock.calls
-    .map(([payload]) => payload)
-    .filter(isPayloadFor(event));
+  return logPayloadsFor(loggerMock.error.mock.calls, event);
 }
 
 function debugPayloadsFor(event: string): ReadonlyArray<Record<string, unknown>> {
-  return loggerMock.debug.mock.calls
-    .map(([payload]) => payload)
-    .filter(isPayloadFor(event));
+  return logPayloadsFor(loggerMock.debug.mock.calls, event);
+}
+
+function logPayloadsFor(
+  calls: ReadonlyArray<ReadonlyArray<unknown>>,
+  event: string,
+): ReadonlyArray<Record<string, unknown>> {
+  return calls.map(([payload]) => payload).filter(isPayloadFor(event));
 }
 
 function isPayloadFor(event: string) {
@@ -447,34 +481,4 @@ function serializedLogPayloads(): string {
     ...loggerMock.info.mock.calls.map(([payload]) => payload),
     ...loggerMock.warn.mock.calls.map(([payload]) => payload),
   ]);
-}
-
-function baseRequest(): InterviewTurnRequest {
-  return {
-    userId: "user-1",
-    adventureId: "adventure-1",
-    goalText: "Become a chef",
-    readinessStatus: "not_ready",
-    interviewStatus: "interviewing",
-    transcript: [
-      message("message-1", "user", "Become a chef", 1),
-      message("message-2", "game_master", "What is your current cooking level?", 2),
-      message("message-3", "user", "I can cook eggs and pasta.", 3),
-    ],
-  };
-}
-
-function message(
-  id: string,
-  role: "user" | "game_master",
-  content: string,
-  sequenceNumber: number,
-) {
-  return {
-    id,
-    role,
-    content,
-    sequenceNumber,
-    createdAt: new Date("2026-01-01T00:00:00.000Z"),
-  };
 }

@@ -10,7 +10,13 @@
       "constraints",
       "existingInventory",
       "likelyMissingResources",
-      "safetyBoundary"
+      "safetyBoundary",
+      "preferences",
+      "dislikesOrAvoidances",
+      "confidenceGaps",
+      "examplesOrInspirations",
+      "firstMilestoneReadiness",
+      "goalTypeSpecificBasics"
     ],
     "mustAskOneQuestion": true,
     "mustRemainNotReady": true,
@@ -22,7 +28,8 @@
     ],
     "requiredQuestionTargets": [
       "pastFriction"
-    ]
+    ],
+    "requiresConcreteExamples": true
   },
   "transcript": [
     {
@@ -35,7 +42,7 @@
     },
     {
       "role": "user",
-      "content": "In a year I want to handle basic travel conversations, read kana comfortably, and understand simple listening practice. I know hiragana and a few phrases."
+      "content": "In a year I want to handle basic travel conversations, read kana comfortably, and understand simple listening practice. My first milestone would be ordering food and asking directions on a short trip. I know hiragana and a few phrases."
     },
     {
       "role": "game_master",
@@ -43,7 +50,7 @@
     },
     {
       "role": "user",
-      "content": "I can study 25 minutes most mornings. I have Genki 1, Anki, headphones, and a language exchange app, but I have not found a consistent speaking partner."
+      "content": "I can study 25 minutes most mornings. I have Genki 1, Anki, headphones, and a language exchange app, but I have not found a consistent speaking partner. I like anime clips and practical travel phrases, want to avoid dry grammar-only drills, and I feel nervous speaking out loud."
     }
   ]
 }

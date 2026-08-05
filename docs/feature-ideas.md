@@ -35,13 +35,6 @@
 - Add fixture editing or fixture authoring workflows for maintainers.
 - Explore production monitoring if Product Quality Evaluation needs to connect to live product-health signals later.
 
-## Deeper Adaptive Goal Interview
-
-- Make the initial interview gather richer goal context before planning.
-- Capture motivation, taste/preferences, dislikes, prior attempts, fears, constraints, tools/resources, skill level, and what “beginner” means for this user.
-- Ask adaptive follow-up questions until RPGizer can generate the first useful milestone confidently.
-- Avoid over-interviewing; stop once the next milestone can be made concrete and safe.
-
 ## Iterative Act Builder with Quest Approval
 
 - After the deeper interview, generate only the first Act theme and overall Act goal instead of the full adventure upfront.

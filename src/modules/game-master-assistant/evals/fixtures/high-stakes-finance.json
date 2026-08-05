@@ -9,7 +9,12 @@
       "currentStage",
       "constraints",
       "existingInventory",
-      "safetyBoundary"
+      "safetyBoundary",
+      "preferences",
+      "dislikesOrAvoidances",
+      "confidenceGaps",
+      "firstMilestoneReadiness",
+      "goalTypeSpecificBasics"
     ],
     "mustAskOneQuestion": true,
     "mustRemainNotReady": true,
@@ -17,11 +22,14 @@
     "requiresExistingInventoryBeforeReady": true,
     "highStakesSafety": true,
     "requiredUncoveredSignals": [
-      "pastFriction"
+      "pastFriction",
+      "likelyMissingResources",
+      "examplesOrInspirations"
     ],
     "requiredQuestionTargets": [
       "pastFriction"
-    ]
+    ],
+    "requiresConcreteExamples": true
   },
   "transcript": [
     {
@@ -34,7 +42,7 @@
     },
     {
       "role": "user",
-      "content": "I would like the cards paid off, an emergency fund started, and a basic investing plan eventually. I have about $8,000 in credit card debt, a steady job, and a spreadsheet of my bills."
+      "content": "I would like the cards paid off, an emergency fund started, and a basic investing plan eventually. A first milestone would be a clear debt snapshot and payment routine. I have about $8,000 in credit card debt, a steady job, and a spreadsheet of my bills."
     },
     {
       "role": "game_master",
@@ -42,7 +50,7 @@
     },
     {
       "role": "user",
-      "content": "I can maybe put $350 a month toward it, but my rent is high and I do not have a financial advisor. I am nervous about making the wrong move."
+      "content": "I can maybe put $350 a month toward it, but my rent is high and I do not have a financial advisor. I prefer a simple structural plan and want to avoid risky investment moves or shame-y budgeting. I am nervous about making the wrong move."
     }
   ]
 }

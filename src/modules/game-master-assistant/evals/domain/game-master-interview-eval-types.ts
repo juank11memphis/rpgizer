@@ -1,18 +1,10 @@
+import { INTERVIEW_COVERED_SIGNAL_KEYS } from "../../application/start-adventure-interview/ports";
+import type { InterviewCoveredSignalKey } from "../../application/start-adventure-interview/ports";
 import type { InterviewMessageRole } from "../../domain/interview-message";
 
-export const GAME_MASTER_INTERVIEW_EVAL_COVERED_SIGNAL_KEYS = [
-  "motivation",
-  "successDefinition",
-  "currentStage",
-  "pastFriction",
-  "constraints",
-  "existingInventory",
-  "likelyMissingResources",
-  "safetyBoundary",
-] as const;
+export const GAME_MASTER_INTERVIEW_EVAL_COVERED_SIGNAL_KEYS = INTERVIEW_COVERED_SIGNAL_KEYS;
 
-export type GameMasterInterviewEvalCoveredSignalKey =
-  (typeof GAME_MASTER_INTERVIEW_EVAL_COVERED_SIGNAL_KEYS)[number];
+export type GameMasterInterviewEvalCoveredSignalKey = InterviewCoveredSignalKey;
 
 export type GameMasterInterviewEvalFixture = {
   id: string;
@@ -42,6 +34,7 @@ export type GameMasterInterviewEvalExpectations = {
   requiresExistingInventoryBeforeReady: boolean;
   highStakesSafety: boolean;
   requiresConcreteExamples: boolean;
+  mustAskFinalConfirmation?: boolean;
   forbiddenQuestionPatterns: string[];
 };
 

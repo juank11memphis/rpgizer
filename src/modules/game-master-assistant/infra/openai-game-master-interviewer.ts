@@ -12,8 +12,10 @@ import type {
   ResponseCreateParamsNonStreaming,
 } from "openai/resources/responses/responses";
 
+import { INTERVIEW_COVERED_SIGNAL_KEYS } from "../application/start-adventure-interview/ports";
 import type {
   GameMasterInterviewer,
+  InterviewCoveredSignalKey,
   InterviewTurnRequest,
   InterviewTurnResult,
 } from "../application/start-adventure-interview/ports";
@@ -32,18 +34,9 @@ const PROMPT_PATH = path.join(
 
 const INTERVIEW_READINESS_CONFIRMATIONS = ["confirmed", "not_confirmed"] as const;
 
-const COVERED_SIGNAL_KEYS = [
-  "motivation",
-  "successDefinition",
-  "currentStage",
-  "pastFriction",
-  "constraints",
-  "existingInventory",
-  "likelyMissingResources",
-  "safetyBoundary",
-] as const;
+const COVERED_SIGNAL_KEYS = INTERVIEW_COVERED_SIGNAL_KEYS;
 
-type CoveredSignalKey = (typeof COVERED_SIGNAL_KEYS)[number];
+type CoveredSignalKey = InterviewCoveredSignalKey;
 
 type OpenAIResponsesClient = {
   responses: {
