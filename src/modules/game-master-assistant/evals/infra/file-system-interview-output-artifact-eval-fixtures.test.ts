@@ -15,10 +15,15 @@ describe("loadInterviewOutputArtifactEvalFixtures", () => {
       "high-stakes-financial-stability",
     ]);
     expect(fixtures[0]?.expectations.goalSummary.includes).toContain("confident");
+    expect(fixtures[0]?.expectations.dislikesOrAvoidances.includes).toContain("long");
+    expect(fixtures[0]?.expectations.firstMilestoneReadiness.includesAny).toEqual([
+      ["weeknight", "first", "meal"],
+    ]);
     expect(fixtures[1]?.expectations.coreWhy.includesAny).toEqual([
       ["stabilize", "stable"],
     ]);
     expect(fixtures[1]?.expectations.safetyBoundaries.includes).toContain("financial advice");
+    expect(fixtures[1]?.expectations.priorAttempts.includes).toContain("budgeting apps");
     expect(fixtures[1]?.expectations.currentStage.includesAny).toEqual([
       ["missed rent", "rent was missed", "behind on rent"],
     ]);

@@ -2,19 +2,28 @@ import type { InterviewOutputArtifact } from "../../domain/interview-output-arti
 
 export const INTERVIEW_OUTPUT_ARTIFACT_REQUIRED_TEXT_FIELDS = [
   "goalSummary",
+  "goalType",
   "coreWhy",
   "successDefinition",
   "currentStage",
+  "currentSkillOrBaseline",
+  "firstMilestoneReadiness",
   "compactSourceSummary",
 ] as const satisfies readonly (keyof InterviewOutputArtifact)[];
 
 export const INTERVIEW_OUTPUT_ARTIFACT_REQUIRED_TEXT_ARRAY_FIELDS = [
+  "motivationDetails",
   "blockers",
   "constraints",
   "existingResources",
   "likelyMissingResources",
+  "missingResources",
   "safetyBoundaries",
   "preferences",
+  "dislikesOrAvoidances",
+  "priorAttempts",
+  "confidenceGaps",
+  "examplesOrInspirations",
 ] as const satisfies readonly (keyof InterviewOutputArtifact)[];
 
 export type InterviewOutputArtifactRequiredTextField =
@@ -41,15 +50,24 @@ export type InterviewOutputArtifactFieldExpectation = {
 
 export type InterviewOutputArtifactEvalExpectations = {
   goalSummary: InterviewOutputArtifactFieldExpectation;
+  goalType: InterviewOutputArtifactFieldExpectation;
   coreWhy: InterviewOutputArtifactFieldExpectation;
+  motivationDetails: InterviewOutputArtifactFieldExpectation;
   successDefinition: InterviewOutputArtifactFieldExpectation;
   currentStage: InterviewOutputArtifactFieldExpectation;
+  currentSkillOrBaseline: InterviewOutputArtifactFieldExpectation;
   blockers: InterviewOutputArtifactFieldExpectation;
   constraints: InterviewOutputArtifactFieldExpectation;
   existingResources: InterviewOutputArtifactFieldExpectation;
   likelyMissingResources: InterviewOutputArtifactFieldExpectation;
+  missingResources: InterviewOutputArtifactFieldExpectation;
   safetyBoundaries: InterviewOutputArtifactFieldExpectation;
   preferences: InterviewOutputArtifactFieldExpectation;
+  dislikesOrAvoidances: InterviewOutputArtifactFieldExpectation;
+  priorAttempts: InterviewOutputArtifactFieldExpectation;
+  confidenceGaps: InterviewOutputArtifactFieldExpectation;
+  examplesOrInspirations: InterviewOutputArtifactFieldExpectation;
+  firstMilestoneReadiness: InterviewOutputArtifactFieldExpectation;
   compactSourceSummary: InterviewOutputArtifactFieldExpectation;
 };
 

@@ -1,32 +1,50 @@
 export type InterviewOutputArtifact = {
   goalSummary: string;
+  goalType: string;
   coreWhy: string;
+  motivationDetails: string[];
   successDefinition: string;
   currentStage: string;
+  currentSkillOrBaseline: string;
   blockers: string[];
   constraints: string[];
   existingResources: string[];
   likelyMissingResources: string[];
+  missingResources: string[];
   safetyBoundaries: string[];
   preferences: string[];
+  dislikesOrAvoidances: string[];
+  priorAttempts: string[];
+  confidenceGaps: string[];
+  examplesOrInspirations: string[];
+  firstMilestoneReadiness: string;
   compactSourceSummary: string;
 };
 
 const REQUIRED_TEXT_FIELDS = [
   "goalSummary",
+  "goalType",
   "coreWhy",
   "successDefinition",
   "currentStage",
+  "currentSkillOrBaseline",
+  "firstMilestoneReadiness",
   "compactSourceSummary",
 ] as const;
 
 const REQUIRED_TEXT_ARRAY_FIELDS = [
+  "motivationDetails",
   "blockers",
   "constraints",
   "existingResources",
   "likelyMissingResources",
+  "missingResources",
   "safetyBoundaries",
   "preferences",
+  "dislikesOrAvoidances",
+  "priorAttempts",
+  "confidenceGaps",
+  "examplesOrInspirations",
 ] as const;
 
 type RequiredTextField = (typeof REQUIRED_TEXT_FIELDS)[number];
@@ -67,6 +85,10 @@ function readRequiredTextArray(
   const value = input[field];
   if (!Array.isArray(value)) {
     throw new Error(`Interview output artifact field ${field} must be an array of strings.`);
+  }
+
+  if (value.length === 0) {
+    throw new Error(`Interview output artifact field ${field} must include at least one string.`);
   }
 
   return value.map((item, index) => {

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { InterviewOutputArtifact } from "../../domain/interview-output-artifact";
 import { validInterviewOutputArtifact } from "../../application/test/fake-interview-output-artifact-generator";
-import type { InterviewOutputArtifactEvalFixture } from "./interview-output-artifact-eval-types";
+import type { InterviewOutputArtifact } from "../../domain/interview-output-artifact";
 import { checkInterviewOutputArtifactEvalAssertions } from "./interview-output-artifact-eval-checks";
+import type { InterviewOutputArtifactEvalFixture } from "./interview-output-artifact-eval-types";
 
 describe("checkInterviewOutputArtifactEvalAssertions", () => {
   it("passes a complete artifact that satisfies fixture expectations", () => {
@@ -15,16 +15,25 @@ describe("checkInterviewOutputArtifactEvalAssertions", () => {
 
   const requiredFieldCases: Array<[string, Partial<InterviewOutputArtifact>]> = [
     ["goalSummary", { goalSummary: " " }],
+    ["goalType", { goalType: " " }],
     ["coreWhy", { coreWhy: " " }],
+    ["motivationDetails", { motivationDetails: [] }],
     ["successDefinition", { successDefinition: " " }],
     ["currentStage", { currentStage: " " }],
+    ["currentSkillOrBaseline", { currentSkillOrBaseline: " " }],
+    ["firstMilestoneReadiness", { firstMilestoneReadiness: " " }],
     ["compactSourceSummary", { compactSourceSummary: " " }],
     ["blockers", { blockers: [] }],
     ["constraints", { constraints: [] }],
     ["existingResources", { existingResources: [] }],
     ["likelyMissingResources", { likelyMissingResources: [] }],
+    ["missingResources", { missingResources: [] }],
     ["safetyBoundaries", { safetyBoundaries: [] }],
     ["preferences", { preferences: [] }],
+    ["dislikesOrAvoidances", { dislikesOrAvoidances: [] }],
+    ["priorAttempts", { priorAttempts: [] }],
+    ["confidenceGaps", { confidenceGaps: [] }],
+    ["examplesOrInspirations", { examplesOrInspirations: [] }],
   ];
 
   it.each(requiredFieldCases)("fails when %s is missing or empty", (_field, override) => {
@@ -37,18 +46,21 @@ describe("checkInterviewOutputArtifactEvalAssertions", () => {
     expect(result.assertions.some((assertion) => assertion.status === "failed")).toBe(true);
   });
 
-  it("returns fixture-specific diagnostics when expected text is missing", () => {
+  it("returns fixture-specific diagnostics when expected text is missing from the targeted field", () => {
     const result = checkInterviewOutputArtifactEvalAssertions(
       buildFixture(),
-      validArtifact({ likelyMissingResources: ["Nothing to add"] }),
+      validArtifact({
+        missingResources: ["Nothing to add"],
+        compactSourceSummary: "The compact summary still mentions planning.",
+      }),
     );
 
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
         {
           fixtureId: "fixture-id",
-          assertionId: "expect-likelyMissingResources-includes-planning",
-          message: "expected likelyMissingResources to include 'planning'.",
+          assertionId: "expect-missingResources-includes-planning",
+          message: "expected missingResources to include 'planning'.",
         },
       ]),
     );
@@ -98,15 +110,24 @@ describe("checkInterviewOutputArtifactEvalAssertions", () => {
 function validArtifact(overrides: Partial<InterviewOutputArtifact> = {}): InterviewOutputArtifact {
   return validInterviewOutputArtifact({
     goalSummary: "Become a confident home chef.",
+    goalType: "cooking skill",
     coreWhy: "Reduce takeout and feel capable.",
+    motivationDetails: ["Reduce takeout", "Feel capable"],
     successDefinition: "Cook three reliable weeknight meals.",
     currentStage: "Can cook basic meals.",
+    currentSkillOrBaseline: "Beginner with basic cooking skills.",
     blockers: ["Stress after work"],
     constraints: ["Mostly vegetarian"],
     existingResources: ["Basic pans"],
     likelyMissingResources: ["Meal planning routine"],
+    missingResources: ["Planning routine"],
     safetyBoundaries: ["No medical nutrition advice"],
     preferences: ["Weeknight practical meals"],
+    dislikesOrAvoidances: ["Avoid stressful recipes"],
+    priorAttempts: ["Tried cooking basic meals"],
+    confidenceGaps: ["Unsure how to plan"],
+    examplesOrInspirations: ["Vegetarian dinners"],
+    firstMilestoneReadiness: "Ready for a first meal-planning milestone.",
     compactSourceSummary: "Three vegetarian weeknight meals with planning support.",
     ...overrides,
   });
@@ -124,15 +145,24 @@ function buildFixture(): InterviewOutputArtifactEvalFixture {
     transcript: [{ role: "user", content: "I want to cook better." }],
     expectations: {
       goalSummary: { includes: ["confident"] },
+      goalType: { includes: ["cooking"] },
       coreWhy: { includes: ["takeout"] },
+      motivationDetails: { includes: ["capable"] },
       successDefinition: { includes: ["three"] },
       currentStage: { includes: ["basic"] },
+      currentSkillOrBaseline: { includes: ["beginner"] },
       blockers: { includes: ["stress"] },
       constraints: { includes: ["vegetarian"] },
       existingResources: { includes: ["pans"] },
       likelyMissingResources: { includes: ["planning"] },
+      missingResources: { includes: ["planning"] },
       safetyBoundaries: { includes: ["medical"] },
       preferences: { includes: ["weeknight"] },
+      dislikesOrAvoidances: { includes: ["stressful"] },
+      priorAttempts: { includes: ["basic"] },
+      confidenceGaps: { includes: ["plan"] },
+      examplesOrInspirations: { includes: ["vegetarian"] },
+      firstMilestoneReadiness: { includes: ["first"] },
       compactSourceSummary: { includes: ["vegetarian"] },
     },
   };

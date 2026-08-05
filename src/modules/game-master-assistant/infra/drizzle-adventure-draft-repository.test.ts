@@ -126,15 +126,24 @@ const userMessageRow = {
 
 const validArtifact: InterviewOutputArtifact = {
   goalSummary: "Become a confident home chef.",
+  goalType: "learning_skill",
   coreWhy: "Cook healthier meals for family.",
+  motivationDetails: ["Reduce takeout", "Feel capable cooking weeknight dinners"],
   successDefinition: "Prepare three reliable dinners without stress.",
   currentStage: "Can cook basic pasta and eggs.",
+  currentSkillOrBaseline: "Beginner who can cook pasta and eggs.",
   blockers: ["Limited weeknight time"],
   constraints: ["Vegetarian-friendly meals"],
   existingResources: ["Basic cookware"],
   likelyMissingResources: ["Meal planning routine"],
+  missingResources: ["Simple recipe shortlist"],
   safetyBoundaries: ["No medical nutrition advice"],
   preferences: ["Practical and encouraging tone"],
+  dislikesOrAvoidances: ["Avoid complicated recipes"],
+  priorAttempts: ["Tried improvising but it felt stressful"],
+  confidenceGaps: ["Unsure how to choose easy recipes"],
+  examplesOrInspirations: ["Mediterranean bowls"],
+  firstMilestoneReadiness: "Ready for one easy weeknight dinner milestone.",
   compactSourceSummary: "The user wants a practical cooking adventure for weeknight meals.",
 };
 
@@ -348,7 +357,7 @@ describe("DrizzleAdventureDraftRepository", () => {
   it("rejects malformed persisted artifact payloads before returning trusted data", async () => {
     const db = new QueuedDrizzleDb([
       [{ id: "adventure-1" }],
-      [{ ...artifactRow, payload: { goalSummary: "Too little" } }],
+      [{ ...artifactRow, payload: { goalSummary: "Too little", goalType: "learning_skill" } }],
     ]);
     const repository = new DrizzleAdventureDraftRepository(db.asRepositoryDb());
 

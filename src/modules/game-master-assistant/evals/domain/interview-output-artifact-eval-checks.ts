@@ -73,7 +73,10 @@ function checkRequiredTextArrayField(
   field: InterviewOutputArtifactRequiredTextArrayField,
 ): InterviewOutputArtifactEvalAssertion {
   const value = artifact[field];
-  const passed = Array.isArray(value) && value.some((item) => item.trim().length > 0);
+  const passed =
+    Array.isArray(value) &&
+    value.some((item) => typeof item === "string" && item.trim().length > 0) &&
+    value.every((item) => typeof item === "string");
   return {
     id: `required-${field}`,
     label: `${field} includes usable entries`,

@@ -9,7 +9,7 @@
   "transcript": [
     {
       "role": "user",
-      "content": "I want to cook better dinners instead of ordering takeout."
+      "content": "I want to cook better dinners instead of ordering takeout. I like Mediterranean flavors but I get intimidated by long recipes."
     },
     {
       "role": "game_master",
@@ -17,20 +17,29 @@
     },
     {
       "role": "user",
-      "content": "I want three reliable weeknight meals, mostly vegetarian, that I can cook without stress. I have basic pans but no meal planning habit."
+      "content": "I want three reliable weeknight meals, mostly vegetarian, that I can cook without stress. I have basic pans but no meal planning habit. I tried random online recipes before and gave up when prep took too long."
     }
   ],
   "expectations": {
     "goalSummary": { "includes": ["confident", "cook"] },
+    "goalType": { "includesAny": [["cooking", "home chef", "skill"]] },
     "coreWhy": { "includes": ["takeout"] },
+    "motivationDetails": { "includes": ["takeout", "confident"] },
     "successDefinition": { "includes": ["three", "weeknight"] },
     "currentStage": { "includes": ["basic"] },
+    "currentSkillOrBaseline": { "includes": ["basic", "beginner"] },
     "blockers": { "includes": ["stress"] },
     "constraints": { "includes": ["vegetarian"] },
     "existingResources": { "includes": ["pans"] },
     "likelyMissingResources": { "includes": ["planning"] },
+    "missingResources": { "includes": ["planning"] },
     "safetyBoundaries": { "includes": ["medical"] },
-    "preferences": { "includes": ["weeknight"] },
+    "preferences": { "includes": ["weeknight", "Mediterranean"] },
+    "dislikesOrAvoidances": { "includes": ["long", "stress"] },
+    "priorAttempts": { "includes": ["online recipes", "gave up"] },
+    "confidenceGaps": { "includesAny": [["intimidated", "unsure", "confidence"]] },
+    "examplesOrInspirations": { "includes": ["Mediterranean"] },
+    "firstMilestoneReadiness": { "includesAny": [["weeknight", "first", "meal"]] },
     "compactSourceSummary": { "includes": ["three", "vegetarian", "planning"] }
   }
 }

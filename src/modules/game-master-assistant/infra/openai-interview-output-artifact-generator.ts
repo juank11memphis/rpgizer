@@ -34,19 +34,28 @@ const PROMPT_PATH = path.join(
 
 const ARTIFACT_TEXT_FIELDS = [
   "goalSummary",
+  "goalType",
   "coreWhy",
   "successDefinition",
   "currentStage",
+  "currentSkillOrBaseline",
+  "firstMilestoneReadiness",
   "compactSourceSummary",
 ] as const;
 
 const ARTIFACT_ARRAY_FIELDS = [
+  "motivationDetails",
   "blockers",
   "constraints",
   "existingResources",
   "likelyMissingResources",
+  "missingResources",
   "safetyBoundaries",
   "preferences",
+  "dislikesOrAvoidances",
+  "priorAttempts",
+  "confidenceGaps",
+  "examplesOrInspirations",
 ] as const;
 
 type OpenAIResponsesClient = {
@@ -87,7 +96,7 @@ export class OpenAIInterviewOutputArtifactGenerator implements InterviewOutputAr
         instructions,
         input: buildResponseInput(input),
         text: { format: INTERVIEW_OUTPUT_ARTIFACT_FORMAT },
-        max_output_tokens: 1200,
+        max_output_tokens: 1800,
         store: false,
         safety_identifier: input.userId.slice(0, 64),
       } satisfies ResponseCreateParamsNonStreaming;

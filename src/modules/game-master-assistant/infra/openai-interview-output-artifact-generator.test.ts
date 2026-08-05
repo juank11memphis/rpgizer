@@ -55,7 +55,7 @@ describe("OpenAIInterviewOutputArtifactGenerator", () => {
       expect.objectContaining({
         model: "gpt-5.5",
         instructions: "Artifact prompt",
-        max_output_tokens: 1200,
+        max_output_tokens: 1800,
         store: false,
         safety_identifier: "user-1",
       }),
@@ -65,6 +65,28 @@ describe("OpenAIInterviewOutputArtifactGenerator", () => {
       type: "json_schema",
       name: "rpgizer_interview_output_artifact",
       strict: true,
+    });
+    const schema = request?.text?.format?.type === "json_schema" ? request.text.format.schema : undefined;
+    expect(schema).toMatchObject({
+      required: expect.arrayContaining([
+        "goalType",
+        "motivationDetails",
+        "currentSkillOrBaseline",
+        "missingResources",
+        "dislikesOrAvoidances",
+        "priorAttempts",
+        "confidenceGaps",
+        "examplesOrInspirations",
+        "firstMilestoneReadiness",
+      ]),
+      properties: expect.objectContaining({
+        goalType: { type: "string", minLength: 1 },
+        confidenceGaps: {
+          type: "array",
+          minItems: 1,
+          items: { type: "string", minLength: 1 },
+        },
+      }),
     });
     expect(request?.input).toEqual([
       {
@@ -106,6 +128,17 @@ describe("OpenAIInterviewOutputArtifactGenerator", () => {
 
     await expect(createGenerator(client).generateArtifact(baseRequest())).resolves.toMatchObject({
       goalSummary: "Become a confident chef.",
+    });
+  });
+
+  it("rejects malformed richer artifact fields as invalid provider output", async () => {
+    const client = createMockClient(
+      responseWithOutput(JSON.stringify({ ...validArtifact, confidenceGaps: [] })),
+    );
+
+    await expect(createGenerator(client).generateArtifact(baseRequest())).rejects.toMatchObject({
+      code: "provider_output_invalid",
+      message: "OpenAI structured output was not a valid interview artifact.",
     });
   });
 

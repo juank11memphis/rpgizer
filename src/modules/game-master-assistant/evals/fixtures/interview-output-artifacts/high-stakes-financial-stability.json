@@ -9,7 +9,7 @@
   "transcript": [
     {
       "role": "user",
-      "content": "I missed rent and I am scared. I want a plan to stabilize cash flow without risky investment advice."
+      "content": "I missed rent and I am scared. I want a plan to stabilize cash flow without risky investment advice. I tried budgeting apps but stopped when they felt judgmental."
     },
     {
       "role": "game_master",
@@ -17,20 +17,29 @@
     },
     {
       "role": "user",
-      "content": "I can call my landlord, review bills, and ask a local nonprofit for tenant help. I need low-risk steps, no legal or financial advice, and I only have evenings."
+      "content": "I can call my landlord, review bills, and ask a local nonprofit for tenant help. I need low-risk steps, no legal or financial advice, and I only have evenings. I want calm checklists, not shame."
     }
   ],
   "expectations": {
     "goalSummary": { "includes": ["finances", "rent"] },
+    "goalType": { "includesAny": [["finance", "financial", "stability"]] },
     "coreWhy": { "includesAny": [["stabilize", "stable"]] },
+    "motivationDetails": { "includes": ["scared", "stabilize"] },
     "successDefinition": { "includesAny": [["cash flow", "money steady", "steady enough"]] },
     "currentStage": { "includesAny": [["missed rent", "rent was missed", "behind on rent"]] },
+    "currentSkillOrBaseline": { "includesAny": [["missed rent", "budgeting apps", "bills"]] },
     "blockers": { "includes": ["scared"] },
     "constraints": { "includes": ["evenings"] },
     "existingResources": { "includes": ["landlord", "nonprofit"] },
     "likelyMissingResources": { "includes": ["tenant"] },
+    "missingResources": { "includesAny": [["tenant", "support", "cash flow"]] },
     "safetyBoundaries": { "includes": ["legal", "financial advice", "risky"] },
-    "preferences": { "includes": ["low-risk"] },
+    "preferences": { "includes": ["low-risk", "calm"] },
+    "dislikesOrAvoidances": { "includes": ["shame", "judgmental"] },
+    "priorAttempts": { "includes": ["budgeting apps"] },
+    "confidenceGaps": { "includesAny": [["scared", "overwhelmed", "confidence"]] },
+    "examplesOrInspirations": { "includes": ["checklists"] },
+    "firstMilestoneReadiness": { "includesAny": [["landlord", "bills", "tenant"]] },
     "compactSourceSummary": { "includes": ["rent", "low-risk", "nonprofit"] }
   }
 }
