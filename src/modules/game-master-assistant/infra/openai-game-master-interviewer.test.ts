@@ -69,9 +69,8 @@ describe("OpenAIGameMasterInterviewer", () => {
       "utf8",
     );
 
-    expect(prompt).toContain(
-      'If `readinessStatus` is `ready_to_generate` and `readinessConfirmation` is `not_confirmed`, `messageToUser` must ask a final confirmation question',
-    );
+    expect(prompt).toContain("Readiness is checklist-gated, not intuition-gated");
+    expect(prompt).toContain('Set `readinessStatus` from `coveredSignals`, not from intuition');
     expect(prompt).toContain(
       "Do not combine “what have you tried?” with “what got in the way?”",
     );
@@ -79,9 +78,9 @@ describe("OpenAIGameMasterInterviewer", () => {
       "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
     );
     expect(prompt).toContain("metadata `interviewStatus` is `awaiting_confirmation`");
-    expect(prompt).toContain("Set `readinessConfirmation` to `confirmed` only when the reply clearly means");
-    expect(prompt).toContain("Mark it covered for ordinary low-risk goals once no special boundary is needed");
-    expect(prompt).toContain("`safetyBoundary` must be `true` after the first User goal is read");
+    expect(prompt).toContain("set `confirmed` only when the latest User reply clearly means");
+    expect(prompt).toContain("set it to `true` for ordinary low-risk goals because no special boundary is needed");
+    expect(prompt).toContain("after reading the first User goal");
     expect(prompt).toContain("Do not treat people, groups, assumed helpers, relationships, or fantasy loot as inventory");
     expect(prompt).toContain("ask about it separately as support/context, not as inventory");
   });

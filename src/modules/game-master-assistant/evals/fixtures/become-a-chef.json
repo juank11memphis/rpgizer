@@ -15,7 +15,8 @@
       "dislikesOrAvoidances",
       "confidenceGaps",
       "examplesOrInspirations",
-      "goalTypeSpecificBasics"
+      "goalTypeSpecificBasics",
+      "firstMilestoneReadiness"
     ],
     "mustAskOneQuestion": true,
     "mustRemainNotReady": true,
@@ -23,8 +24,7 @@
     "requiresExistingInventoryBeforeReady": true,
     "highStakesSafety": false,
     "requiredUncoveredSignals": [
-      "likelyMissingResources",
-      "firstMilestoneReadiness"
+      "likelyMissingResources"
     ],
     "requiredQuestionTargets": [
       "likelyMissingResources"

@@ -14,7 +14,8 @@
       "dislikesOrAvoidances",
       "confidenceGaps",
       "firstMilestoneReadiness",
-      "goalTypeSpecificBasics"
+      "goalTypeSpecificBasics",
+      "likelyMissingResources"
     ],
     "mustAskOneQuestion": true,
     "mustRemainNotReady": true,
@@ -23,7 +24,6 @@
     "highStakesSafety": true,
     "requiredUncoveredSignals": [
       "pastFriction",
-      "likelyMissingResources",
       "examplesOrInspirations"
     ],
     "requiredQuestionTargets": [
