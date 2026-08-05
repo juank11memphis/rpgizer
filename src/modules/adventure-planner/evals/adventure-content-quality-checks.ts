@@ -3,6 +3,7 @@ import type {
   GeneratedAdventureContentBossFight,
   GeneratedAdventureContentQuest,
 } from "../domain/generated-adventure-content";
+import lemmatize from "wink-lemmatizer";
 import { buildAdventureQualityAssertionOutcomes } from "./generate-adventure-eval-types";
 import type {
   AdventureQualityCheckResult,
@@ -189,6 +190,7 @@ const QUEST_STEP_ACTION_TERMS = [
   "capture",
   "check",
   "choose",
+  "circle",
   "collect",
   "compare",
   "confirm",
@@ -196,28 +198,70 @@ const QUEST_STEP_ACTION_TERMS = [
   "decide",
   "define",
   "draft",
+  "draw",
   "gather",
+  "highlight",
   "identify",
   "install",
+  "keep",
+  "leave",
   "list",
   "log",
+  "make",
   "map",
+  "mark",
   "measure",
+  "note",
+  "open",
   "organize",
+  "place",
+  "play",
+  "pick",
   "plan",
   "practice",
   "prepare",
+  "put",
+  "pull",
   "record",
   "recruit",
   "review",
+  "save",
+  "say",
   "schedule",
   "select",
   "set",
   "share",
+  "store",
   "test",
   "update",
+  "use",
   "walk",
   "write",
+];
+const NON_ACTION_QUEST_STEP_OPENING_TERMS = [
+  "admire",
+  "appreciate",
+  "contemplate",
+  "enjoy",
+  "imagine",
+  "think",
+  "wonder",
+];
+const QUEST_STEP_OBJECT_MARKERS = [
+  "a",
+  "an",
+  "any",
+  "each",
+  "every",
+  "one",
+  "the",
+  "this",
+  "that",
+  "these",
+  "those",
+  "three",
+  "two",
+  "your",
 ];
 const GENERIC_QUEST_STEP_PATTERNS = [
   "complete the step",
@@ -417,14 +461,14 @@ function checkQuestStepQuality(
       return;
     }
 
-    if (includesAny(description, GENERIC_QUEST_STEP_PATTERNS)) {
+    if (isGenericQuestStepDescription(description)) {
       diagnostics.push({
         area: "quest step quality",
         message: `${stepLabel} is generic filler instead of quest-specific guidance.`,
       });
     }
 
-    if (!includesAny(description, QUEST_STEP_ACTION_TERMS)) {
+    if (!hasConcreteQuestStepAction(description)) {
       diagnostics.push({
         area: "quest step quality",
         message: `${stepLabel} should start from a concrete user action, decision, check, or artifact.`,
@@ -629,6 +673,38 @@ function stripGenericStepWords(text: string): string {
     .trim();
 }
 
+function hasConcreteQuestStepAction(description: string): boolean {
+  if (hasAnyWord(description, QUEST_STEP_ACTION_TERMS)) {
+    return true;
+  }
+
+  return hasPlausibleImperativeOpening(description);
+}
+
+function isGenericQuestStepDescription(description: string): boolean {
+  const strippedDescription = stripGenericStepWords(description);
+
+  return GENERIC_QUEST_STEP_PATTERNS.some((pattern) => {
+    const normalizedPattern = normalize(pattern);
+    return (
+      description === normalizedPattern ||
+      description.startsWith(`${normalizedPattern} `) ||
+      strippedDescription === stripGenericStepWords(normalizedPattern)
+    );
+  });
+}
+
+function hasPlausibleImperativeOpening(description: string): boolean {
+  const words = description.split(/[^a-z0-9]+/u).filter(Boolean);
+  const firstWord = words[0];
+
+  if (!firstWord || NON_ACTION_QUEST_STEP_OPENING_TERMS.includes(firstWord) || words.length < 5) {
+    return false;
+  }
+
+  return words.slice(1, 5).some((word) => QUEST_STEP_OBJECT_MARKERS.includes(word));
+}
+
 function buildContextTerms(fixture: GenerateAdventureEvalFixture): string[] {
   return unique([
     ...fixture.expectations.expectedGoalTerms,
@@ -636,6 +712,8 @@ function buildContextTerms(fixture: GenerateAdventureEvalFixture): string[] {
     ...fixture.expectations.expectedInventoryThemes,
     ...extractSignificantWords(fixture.goalText),
     ...extractSignificantWords(fixture.interviewOutputArtifact.goalSummary),
+    ...extractSignificantWords(fixture.interviewOutputArtifact.coreWhy),
+    ...extractSignificantWords(fixture.interviewOutputArtifact.successDefinition),
     ...extractSignificantWords(fixture.interviewOutputArtifact.currentStage),
     ...fixture.interviewOutputArtifact.blockers.flatMap(extractSignificantWords),
     ...fixture.interviewOutputArtifact.constraints.flatMap(extractSignificantWords),
@@ -706,12 +784,53 @@ function isTooGenericDoneCondition(text: string): boolean {
 }
 
 function hasAnyWord(text: string, words: readonly string[]): boolean {
-  const textWords = new Set(text.split(/[^a-z0-9]+/u).filter(Boolean));
-  return words.some((word) => textWords.has(normalize(word)));
+  const textWords = new Set(text.split(/[^a-z0-9]+/u).filter(Boolean).flatMap(wordVariants));
+  return words.some((word) => wordVariants(normalize(word)).some((variant) => textWords.has(variant)));
 }
 
 function normalize(value: string): string {
   return value.toLocaleLowerCase().replace(/\s+/gu, " ").trim();
+}
+
+function wordVariants(word: string): string[] {
+  const variants = new Set([word]);
+  variants.add(lemmatize.verb(word));
+  variants.add(lemmatize.noun(word));
+
+  if (word.length > 4 && word.endsWith("s")) {
+    variants.add(word.slice(0, -1));
+  }
+
+  if (word.length > 5 && word.endsWith("ing")) {
+    variants.add(trimDoubledConsonant(word.slice(0, -3)));
+  }
+
+  if (word.length > 4 && word.endsWith("ed")) {
+    const baseWord = trimDoubledConsonant(word.slice(0, -2));
+    variants.add(baseWord);
+    variants.add(`${baseWord}e`);
+  }
+
+  if (word === "froze" || word === "frozen") {
+    variants.add("freeze");
+  }
+
+  if (word === "freezing") {
+    variants.add("freeze");
+  }
+
+  return [...variants];
+}
+
+function trimDoubledConsonant(word: string): string {
+  const lastLetter = word.at(-1);
+  const previousLetter = word.at(-2);
+
+  if (lastLetter && lastLetter === previousLetter && !["a", "e", "i", "o", "u"].includes(lastLetter)) {
+    return word.slice(0, -1);
+  }
+
+  return word;
 }
 
 function unique(values: readonly string[]): string[] {
