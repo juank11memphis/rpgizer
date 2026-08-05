@@ -199,6 +199,7 @@ const QUEST_STEP_ACTION_TERMS = [
   "define",
   "draft",
   "draw",
+  "find",
   "gather",
   "highlight",
   "identify",
@@ -231,6 +232,7 @@ const QUEST_STEP_ACTION_TERMS = [
   "select",
   "set",
   "share",
+  "speak",
   "store",
   "test",
   "update",
@@ -244,8 +246,21 @@ const NON_ACTION_QUEST_STEP_OPENING_TERMS = [
   "contemplate",
   "enjoy",
   "imagine",
+  "notice",
   "think",
   "wonder",
+];
+const WEAK_IMPERATIVE_OPENING_TERMS = [
+  "be",
+  "continue",
+  "finish",
+  "get",
+  "go",
+  "have",
+  "let",
+  "start",
+  "try",
+  "work",
 ];
 const QUEST_STEP_OBJECT_MARKERS = [
   "a",
@@ -262,6 +277,21 @@ const QUEST_STEP_OBJECT_MARKERS = [
   "three",
   "two",
   "your",
+];
+const QUEST_STEP_OBJECT_PREPOSITIONS = [
+  "about",
+  "after",
+  "before",
+  "for",
+  "from",
+  "in",
+  "into",
+  "on",
+  "to",
+  "under",
+  "using",
+  "with",
+  "without",
 ];
 const GENERIC_QUEST_STEP_PATTERNS = [
   "complete the step",
@@ -678,6 +708,10 @@ function hasConcreteQuestStepAction(description: string): boolean {
     return true;
   }
 
+  if (hasConcreteCompoundAction(description)) {
+    return true;
+  }
+
   return hasPlausibleImperativeOpening(description);
 }
 
@@ -702,7 +736,32 @@ function hasPlausibleImperativeOpening(description: string): boolean {
     return false;
   }
 
-  return words.slice(1, 5).some((word) => QUEST_STEP_OBJECT_MARKERS.includes(word));
+  const firstWordLemma = lemmatize.verb(firstWord);
+  if (WEAK_IMPERATIVE_OPENING_TERMS.includes(firstWordLemma)) {
+    return false;
+  }
+
+  return words.slice(1, 7).some((word) => QUEST_STEP_OBJECT_MARKERS.includes(word) || QUEST_STEP_OBJECT_PREPOSITIONS.includes(word));
+}
+
+function hasConcreteCompoundAction(description: string): boolean {
+  const words = description.split(/[^a-z0-9]+/u).filter(Boolean);
+  const concreteActionTerms = new Set(QUEST_STEP_ACTION_TERMS);
+
+  for (let index = 1; index < words.length; index += 1) {
+    const word = words[index] ?? "";
+    const previousWord = words[index - 1] ?? "";
+
+    if (previousWord !== "and" && previousWord !== "then") {
+      continue;
+    }
+
+    if (wordVariants(word).some((variant) => concreteActionTerms.has(variant))) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function buildContextTerms(fixture: GenerateAdventureEvalFixture): string[] {

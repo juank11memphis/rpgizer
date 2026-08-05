@@ -556,6 +556,129 @@ describe("Adventure content quality checks", () => {
     );
   });
 
+  it("accepts natural imperative openings with concrete object or context signals", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        acts: [
+          {
+            key: "act-1",
+            title: "Foundations at the Tavern Door",
+            summary: "Make Spanish speaking less intimidating with prompts and a weekly rhythm.",
+            mainQuests: [
+              {
+                key: "mq-1-prompt-practice",
+                title: "Shape the Coffee Chat Practice",
+                description: "Prepare a Spanish prompt routine for a coffee chat.",
+                doneCondition: "A prompt routine is written with topics and practice notes.",
+                rewardIntent: "Make practice easier to repeat.",
+                steps: [
+                  { key: "step-1", description: "Pair each coffee-chat topic with one follow-up question." },
+                  { key: "step-2", description: "Thread one rescue phrase into the practice script." },
+                  { key: "step-3", description: "Label the prompt list for weekday Spanish practice." },
+                ],
+              },
+            ],
+            sideQuests: [
+              {
+                key: "sq-1-reflection",
+                title: "Build the Spanish reflection page",
+                description: "Create a tracker for Spanish speaking practice.",
+                doneCondition: "A tracker page is ready for practice notes.",
+                rewardIntent: "Make Spanish practice visible.",
+                steps: [
+                  { key: "step-1", description: "Name one freeze trigger from the last Spanish practice attempt." },
+                  { key: "step-2", description: "Rate each practice prompt for comfort and usefulness." },
+                ],
+              },
+            ],
+            bossFights: [
+              {
+                key: "bf-1-first-live-reply",
+                title: "The First Live Reply",
+                description: "Face a live Spanish exchange under light pressure.",
+                doneCondition: "A note shows one live or simulated conversation where you answered in Spanish first.",
+                rewardIntent: "Prove you can survive the opening pressure.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const diagnostics = checkGeneratedAdventureContentQuality(content, buildFixture()).diagnostics;
+
+    expect(diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        area: "quest step quality",
+        message: expect.stringContaining("should start from a concrete user action"),
+      }),
+    );
+  });
+
+  it("still rejects weak or mental-only Quest Step openings", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        acts: [
+          {
+            key: "act-1",
+            title: "Prepare the Training Hall",
+            summary: "Set the first week up before lifting.",
+            mainQuests: [
+              {
+                key: "quest-first-week-plan",
+                title: "Plan the First Strength Week",
+                description: "Choose three short strength sessions and a knee modification log.",
+                doneCondition: "Three strength sessions and knee modifications are written in the log.",
+                rewardIntent: "Reward a sustainable training plan.",
+                steps: [
+                  { key: "step-1", description: "Imagine the strength sessions going well this week." },
+                  { key: "step-2", description: "Start the strength quest with positive energy." },
+                ],
+              },
+            ],
+            sideQuests: [
+              {
+                key: "quest-warm-up-checklist",
+                title: "Create the Warm-Up Checklist",
+                description: "Prepare a short warm-up checklist for each strength session.",
+                doneCondition: "A warm-up checklist is ready beside the workout tracker.",
+                rewardIntent: "Reward safer session setup.",
+                steps: [
+                  { key: "step-1", description: "List three warm-up movements for strength sessions." },
+                  { key: "step-2", description: "Add a knee comfort check before each session." },
+                ],
+              },
+            ],
+            bossFights: [
+              {
+                key: "boss-week-one",
+                title: "Complete Week One",
+                description: "Finish the first three planned strength sessions with modifications recorded.",
+                doneCondition: "Three sessions are completed and the knee modification log is reviewed.",
+                rewardIntent: "Reward proof that the habit can start safely.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const diagnostics = checkGeneratedAdventureContentQuality(content, buildFixture()).diagnostics;
+
+    expect(diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          area: "quest step quality",
+          message: "quest-first-week-plan.steps[0] should start from a concrete user action, decision, check, or artifact.",
+        }),
+        expect.objectContaining({
+          area: "quest step quality",
+          message: "quest-first-week-plan.steps[1] should start from a concrete user action, decision, check, or artifact.",
+        }),
+      ]),
+    );
+  });
+
   it("does not treat contextual keep-going wording as generic filler", () => {
     const content = parseGeneratedAdventureContent(
       buildContentPayload({
@@ -950,6 +1073,148 @@ describe("Adventure content quality checks", () => {
       expect.objectContaining({
         area: "quest step quality",
         message: "side-quest-1.steps[2] should connect to the Quest or fixture context.",
+      }),
+    );
+  });
+
+  it("accepts speak as a concrete spoken-practice action", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        acts: [
+          {
+            key: "act-1-foundations-and-phrases",
+            title: "Act I: Foundations and Rescue Phrases",
+            summary: "Build Spanish prompts and first low-pressure repetitions.",
+            mainQuests: [
+              {
+                key: "main-quest-2-first-aloud-round",
+                title: "Complete the First Aloud Practice Round",
+                description: "Run a short solo speaking session using the prompt kit.",
+                doneCondition: "A dated practice note shows a 10-minute solo speaking round with six prompts spoken aloud.",
+                rewardIntent: "Turn speaking into a repeatable action.",
+                steps: [
+                  { key: "step-1", description: "Set a 10-minute timer for speaking practice." },
+                  { key: "step-2", description: "Speak through at least six prompts from the prompt kit in Spanish." },
+                  { key: "step-3", description: "Use at least one rescue phrase when you hesitate." },
+                ],
+              },
+            ],
+            sideQuests: [
+              {
+                key: "side-quest-1-phrase-card",
+                title: "Make a Pocket Phrase Card",
+                description: "Prepare a tiny reference card for quick Spanish review.",
+                doneCondition: "A pocket phrase card exists and is used during one practice session.",
+                rewardIntent: "Support fast recall before speaking.",
+                steps: [
+                  { key: "step-1", description: "Choose six phrases from the notebook that feel most useful." },
+                  { key: "step-2", description: "Write them on a single index card or small note." },
+                ],
+              },
+            ],
+            bossFights: [
+              {
+                key: "boss-fight-1",
+                title: "The Frozen-Moment Recovery Test",
+                description: "Recover without abandoning Spanish.",
+                doneCondition: "A practice exchange includes a freeze moment recovered with a rescue phrase.",
+                rewardIntent: "Prove the user can stay in the conversation.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const diagnostics = checkGeneratedAdventureContentQuality(content, buildFixture()).diagnostics;
+
+    expect(diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        area: "quest step quality",
+        message: "main-quest-2-first-aloud-round.steps[1] should start from a concrete user action, decision, check, or artifact.",
+      }),
+    );
+  });
+
+  it("accepts find as a concrete discovery action for high-stakes organization steps", () => {
+    const content = parseGeneratedAdventureContent(
+      buildContentPayload({
+        title: "The Ledger of Clear Numbers",
+        themeSummary: "A calm, non-authoritative debt organization quest.",
+        goalSummary: "Build a safe debt payoff organization system that reduces overwhelm.",
+        safetyNotes: [
+          "This adventure is for organization and education only, not financial advice.",
+          "Consult a qualified financial professional before choosing a strategy.",
+        ],
+        acts: [
+          {
+            key: "act-1",
+            title: "Map the Current Debt Field",
+            summary: "Turn scattered statements into one reliable inventory.",
+            mainQuests: [
+              {
+                key: "main-quest-1",
+                title: "Build the debt inventory",
+                description: "Collect core facts for each credit card without making decisions too early.",
+                doneCondition: "A tracker shows each credit card account with balance, minimum payment, due date, and APR.",
+                rewardIntent: "Create a trustworthy snapshot for professional conversation.",
+                steps: [
+                  { key: "step-1", description: "List every credit card account you can identify." },
+                  { key: "step-2", description: "Record the balance, minimum payment, due date, and APR for each account." },
+                ],
+              },
+            ],
+            sideQuests: [
+              {
+                key: "side-quest-1",
+                title: "Gather the statement stack",
+                description: "Collect every recent card statement into one physical or digital place.",
+                doneCondition: "A single folder or file contains recent source documents for each credit card account.",
+                rewardIntent: "Lower transcription errors and make review more reliable.",
+                steps: [
+                  { key: "step-1", description: "Find paper statements, downloaded PDFs, or portal screenshots for each card." },
+                  { key: "step-2", description: "Place them in one folder, envelope, or file named for this debt review." },
+                  { key: "step-3", description: "Check that each account has at least one recent source document saved." },
+                ],
+              },
+            ],
+            bossFights: [
+              {
+                key: "boss-fight-1",
+                title: "Prepare a professional-ready debt snapshot",
+                description: "Create a clean summary and question set for a qualified financial professional.",
+                doneCondition: "A one-page summary and question list are ready to share.",
+                rewardIntent: "Present the situation clearly without deciding alone.",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    const fixture = buildFixture({
+      id: "high-stakes-boundary",
+      name: "High stakes boundary",
+      goalText: "Organize credit card debt details before talking to a qualified financial professional.",
+      interviewOutputArtifact: {
+        ...buildFixture().interviewOutputArtifact,
+        goalSummary: "Build a safe debt payoff organization system.",
+        compactSourceSummary: "The user needs to organize debt facts, source documents, and questions.",
+      },
+      expectations: {
+        ...buildFixture().expectations,
+        highStakesSafety: true,
+        expectedGoalTerms: ["debt", "credit", "tracker"],
+        expectedSkillThemes: ["organize", "financial"],
+        expectedInventoryThemes: ["statement", "question"],
+      },
+    });
+    const diagnostics = checkGeneratedAdventureContentQuality(content, fixture).diagnostics;
+
+    expect(diagnostics).not.toContainEqual(
+      expect.objectContaining({
+        area: "quest step quality",
+        message: "side-quest-1.steps[0] should start from a concrete user action, decision, check, or artifact.",
       }),
     );
   });
