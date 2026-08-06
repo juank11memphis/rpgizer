@@ -75,6 +75,12 @@ describe("OpenAIGameMasterInterviewer", () => {
       "Do not combine “what have you tried?” with “what got in the way?”",
     );
     expect(prompt).toContain(
+      "When asking either one, include concrete options or quoted answer shapes",
+    );
+    expect(prompt).toContain(
+      "I tried an app but stopped updating it",
+    );
+    expect(prompt).toContain(
       "I have what I need to forge this Adventure. Anything else you want me to know before I begin?",
     );
     expect(prompt).toContain("metadata `interviewStatus` is `awaiting_confirmation`");
@@ -83,6 +89,12 @@ describe("OpenAIGameMasterInterviewer", () => {
     expect(prompt).toContain("after reading the first User goal");
     expect(prompt).toContain("Do not treat people, groups, assumed helpers, relationships, or fantasy loot as inventory");
     expect(prompt).toContain("ask about it separately as support/context, not as inventory");
+    expect(prompt).toContain(
+      "do not require every other readiness signal to be covered before marking this covered",
+    );
+    expect(prompt).toContain(
+      "Do not require known missing resources before covering first-milestone readiness",
+    );
   });
 
   it("calls OpenAI Responses with the Markdown prompt as instructions and returns RPGizer-owned data", async () => {

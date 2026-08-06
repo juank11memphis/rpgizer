@@ -158,7 +158,7 @@ describe("checkGameMasterInterviewEvalAssertions", () => {
       ["preferences", "Which cooking style sounds most appealing: bright Mediterranean meals, cozy soups, quick stir-fries, or something else?"],
       ["dislikesOrAvoidances", "What should this Adventure avoid: spicy food, long grammar drills, expensive tools, or something else?"],
       ["confidenceGaps", "Where do you feel least confident right now: knife skills, timing, shopping, or cleanup?"],
-      ["examplesOrInspirations", "For example, what is one meal, chef, video, or restaurant that feels inspiring as a reference?"],
+      ["examplesOrInspirations", "Which reference feels inspiring: one meal, chef, video, restaurant, or something else?"],
       ["firstMilestoneReadiness", "What first milestone would feel useful and safe: one weeknight dinner, a practice conversation, or a budget review?"],
       ["goalTypeSpecificBasics", "Which cuisine basics should we calibrate around: Mediterranean, Japanese, vegetarian, or something else?"],
     ] as const;
@@ -176,10 +176,64 @@ describe("checkGameMasterInterviewEvalAssertions", () => {
       expect(assertions).toEqual(
         expect.arrayContaining([
           { id: `question-target-${signal}`, label: `asks about ${signal}`, status: "passed" },
-          { id: "concrete-question-support", label: "includes concrete examples or answer shapes", status: "passed" },
+          { id: "concrete-question-support", label: "includes concrete options or answer shapes", status: "passed" },
         ]),
       );
     }
+  });
+
+  it("recognizes quoted answer-shaped examples as concrete question support", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({ requiresConcreteExamples: true }),
+      buildResult({
+        messageToUser:
+          'What are you missing or still need help with? For example: “I need a menu plan,” “I’m missing serving dishes,” or “I need a friend to help with cleanup.”',
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        { id: "concrete-question-support", label: "includes concrete options or answer shapes", status: "passed" },
+      ]),
+    );
+  });
+
+  it("recognizes colon-introduced concrete choices after the question", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({ requiresConcreteExamples: true }),
+      buildResult({
+        messageToUser:
+          "Perfect—one more clue for the map: what do you feel you’re missing most right now, if anything? For example: a friend to practice with, more recipes, better knife skills, a bigger budget, serving pieces, or confidence managing timing.",
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        { id: "concrete-question-support", label: "includes concrete options or answer shapes", status: "passed" },
+      ]),
+    );
+  });
+
+  it("fails broad category examples with a clear message", () => {
+    const assertions = checkGameMasterInterviewEvalAssertions(
+      buildFixture({ requiresConcreteExamples: true }),
+      buildResult({
+        messageToUser:
+          "Perfect, your kitchen map is coming into focus. What are you missing or still need help with—examples could be specific recipes, technique confidence, serving dishes, a bigger budget, more time, or support from a friend?",
+      }),
+    );
+
+    expect(assertions).toEqual(
+      expect.arrayContaining([
+        {
+          id: "concrete-question-support",
+          label: "includes concrete options or answer shapes",
+          status: "failed",
+          message:
+            "expected the question to include concrete choices or quoted answer-shaped examples; broad category examples alone are not enough.",
+        },
+      ]),
+    );
   });
 
   it("fails premature readiness when a deeper signal is still expected uncovered", () => {

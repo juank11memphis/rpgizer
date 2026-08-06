@@ -144,9 +144,9 @@ export function checkGameMasterInterviewEvalAssertions(
     addAssertion(
       assertions,
       "concrete-question-support",
-      "includes concrete examples or answer shapes",
+      "includes concrete options or answer shapes",
       hasConcreteQuestionSupport(result),
-      "expected the question to include concrete examples, options, or answer shapes.",
+      "expected the question to include concrete choices or quoted answer-shaped examples; broad category examples alone are not enough.",
     );
   }
 
@@ -262,12 +262,35 @@ function hasConcreteQuestionSupport(result: InterviewTurnResult): boolean {
     return true;
   }
 
-  const message = result.messageToUser.toLowerCase();
+  const message = result.messageToUser;
+
   return (
-    message.includes("/") ||
-    message.includes(":") ||
-    /\b(for example|such as|like|which version|which option|options|closest|or something else)\b/i.test(message)
+    hasQuotedAnswerShape(message) ||
+    hasDelimitedChoices(message) ||
+    /\b(which version|which option|options|closest|or something else)\b/i.test(message)
   );
+}
+
+function hasQuotedAnswerShape(message: string): boolean {
+  return /[“"][^”"]*\b(i|i'm|i am|i need|we need|my|our)\b[^”"]*[”"]/i.test(message);
+}
+
+function hasDelimitedChoices(message: string): boolean {
+  return message.includes("/") || hasColonIntroducedChoiceList(message);
+}
+
+function hasColonIntroducedChoiceList(message: string): boolean {
+  const colonIntroducedText = message.split(":").slice(1).join(":");
+  if (colonIntroducedText.trim().length === 0) {
+    return false;
+  }
+
+  const choiceCount = colonIntroducedText
+    .split(/,|\bor\b/i)
+    .map((choice) => choice.trim())
+    .filter((choice) => choice.length > 0).length;
+
+  return choiceCount >= 3;
 }
 
 function addHighStakesSafetyAssertions(

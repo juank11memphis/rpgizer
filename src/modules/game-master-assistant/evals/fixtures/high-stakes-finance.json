@@ -29,7 +29,10 @@
     "requiredQuestionTargets": [
       "pastFriction"
     ],
-    "requiresConcreteExamples": true
+    "requiresConcreteExamples": true,
+    "forbiddenQuestionPatterns": [
+      "what have you .{0,80}(what got in the way|got in your way|gets? in the way|what got in your way)"
+    ]
   },
   "transcript": [
     {
